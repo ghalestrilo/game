@@ -139,6 +139,44 @@ defmodule Game.ClassSkills do
 end
 ```
 
+### Class mechanics
+
+**Rogue**
+
+- Start with lvl 1 Stealth and Attack cards
+  - Stealth: Become invisible until next round. At beginning of next round, scry 3 (then shuffle back):
+    - if there's a stealth card, you may cast it for 0 ap cost
+    - if there's an attack card, you may cast it for double damage
+    - leveling up increases scry
+  - Gets many reaction cards - eg. on targeted, attacked or discard events
+
+**Monk**
+
+- Many cards with cycling/scry
+- Start with lvl 1 Flurry of blows and Attack cards
+  - Flurry of blows: attack w/ effect - scry 3 (then shuffle back):
+    - if there's an attack card, you may cast it for double damage
+    - leveling up increases scry
+
+**Sorcerer**
+
+- Access to metamagic booster packs
+
+**Mage**
+
+- Many cards with scry
+- Many cards with keep - can returns this card to hand once it's been played
+
+**Fighter**
+
+- Some options here
+  - +1 hand size
+  - +1 AP
+
+**Druid**
+
+-
+
 ## References and resourcess
 
 https://elixirforum.com/t/is-liveview-a-suitable-choice-for-serving-as-a-game-server-for-a-simple-three-js-game/58155/6
