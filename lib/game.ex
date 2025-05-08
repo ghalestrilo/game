@@ -1,9 +1,19 @@
 defmodule Game do
-  @moduledoc """
-  Game keeps the contexts that define your domain
-  and business logic.
+  alias __MODULE__
 
-  Contexts are also responsible for managing your data, regardless
-  if it comes from the database, an external API or others.
+  require Logger
+
+  @doc """
+  This module implements a turn-based combat system via a GenServer
+
+  The rules of the game are defined in the `Game.Combat` module.
   """
+
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts)
+  end
+
+  def init(opts) do
+    {:ok, opts}
+  end
 end
