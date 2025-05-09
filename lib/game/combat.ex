@@ -62,11 +62,15 @@ defmodule Game.Combat do
         # Update grid and combat state
         updated_grid = Grid.update_position(grid, moved_player, player.position, target_position)
 
+        # Update queue and players list
+        updated_queue = TurnQueue.rotate(queue, moved_player)
+        updated_players = update_player_in_list(combat.players, moved_player)
+
         updated_combat = %{
           combat
           | grid: updated_grid,
-            queue: TurnQueue.rotate(queue, moved_player),
-            players: update_player_in_list(combat.players, moved_player)
+            queue: updated_queue,
+            players: updated_players
         }
 
         {:ok, updated_combat}
@@ -74,6 +78,7 @@ defmodule Game.Combat do
   end
 
   # Play Card:
+  # - Check if it's the player's turn
   # - Check if player has enough AP
   # - Check if target is valid
   # - Apply damage/healing
@@ -89,14 +94,61 @@ defmodule Game.Combat do
       not Character.has_enough_ap?(player, card.cost) ->
         {:error, "Not enough AP"}
 
-      # Get target character if any
-      target = Grid.get_object(combat.grid, target_position) ->
-        # Apply card effect and handle consequences
-        updated_target = Character.apply_card_effect(target, card.effect)
-        handle_card_effect(combat, player, updated_target)
-
       true ->
-        {:error, "Invalid target"}
+        # Get target character if any
+        target = Grid.get_object(combat.grid, target_position)
+
+        # Handle self-targeting or targeting empty tiles
+        cond do
+          # Self-targeting (healing or damage)
+          target == nil and player.position == target_position ->
+            updated_player = Character.apply_card_effect(player, card.effect)
+            # Update the player's state in the queue and players list
+            updated_queue = TurnQueue.rotate(queue, updated_player)
+            updated_players = update_player_in_list(combat.players, updated_player)
+            updated_combat = %{combat | queue: updated_queue, players: updated_players}
+
+            updated_combat = %{
+              updated_combat
+              | grid: Grid.update_character(updated_combat.grid, updated_player)
+            }
+
+            # Check for death after self-targeting
+            if Character.is_dead?(updated_player) do
+              updated_combat = remove_player(updated_combat, updated_player)
+              check_game_over(updated_combat)
+            else
+              {:ok, updated_combat}
+            end
+
+          # Targeting another character
+          target != nil ->
+            updated_target = Character.apply_card_effect(target, card.effect)
+
+            # Check for death
+            if Character.is_dead?(updated_target) do
+              updated_combat = remove_player(combat, updated_target)
+              check_game_over(updated_combat)
+            else
+              # Update combat state with the target's new state
+              updated_combat = %{
+                combat
+                | grid: Grid.update_character(combat.grid, updated_target)
+              }
+
+              updated_combat = %{
+                updated_combat
+                | players: update_player_in_list(combat.players, updated_target)
+              }
+
+              updated_combat = %{updated_combat | queue: TurnQueue.rotate(queue, player)}
+              {:ok, updated_combat}
+            end
+
+          # Invalid target (empty tile)
+          true ->
+            {:error, "Invalid target"}
+        end
     end
   end
 
@@ -158,22 +210,34 @@ defmodule Game.Combat do
          target,
          current_player
        ) do
+    # Update the grid with the target's new state
+    updated_grid = Grid.update_character(grid, target)
+
+    # Update the players list with both target and current player
+    updated_players = update_player_in_list(players, target)
+    updated_players = update_player_in_list(updated_players, current_player)
+
+    # Update the queue - rotate after current player's action
+    updated_queue = TurnQueue.rotate(queue, current_player)
+    # If target was also updated and it's not the current player, update their state in queue
+    updated_queue =
+      if target.id != current_player.id do
+        TurnQueue.update_character(updated_queue, target)
+      else
+        updated_queue
+      end
+
     %{
       combat
-      | grid: Grid.update_character(grid, target),
-        players: update_player_in_list(players, target),
-        queue:
-          if target.id == current_player.id do
-            TurnQueue.rotate(queue, target)
-          else
-            TurnQueue.update_character(TurnQueue.rotate(queue, current_player), target)
-          end
+      | grid: updated_grid,
+        players: updated_players,
+        queue: updated_queue
     }
   end
 
   defp update_player_in_list(players, updated_player) do
-    Enum.map(players, fn p ->
-      if p.id == updated_player.id, do: updated_player, else: p
+    Enum.map(players, fn player ->
+      if player.id == updated_player.id, do: updated_player, else: player
     end)
   end
 

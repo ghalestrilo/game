@@ -49,7 +49,8 @@ defmodule Game.Character do
   Heals a character
   """
   def heal(character, amount) do
-    %{character | hp: character.hp + amount}
+    # Cap healing at max HP (which is the initial HP value)
+    %{character | hp: min(character.hp + amount, 20)}
   end
 
   @doc """
