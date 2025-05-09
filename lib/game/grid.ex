@@ -37,4 +37,30 @@ defmodule Game.Grid do
       _ -> nil
     end
   end
+
+  @doc """
+  Updates a character's position on the grid
+  """
+  def update_position(%Grid{} = grid, character, old_position, new_position) do
+    %{
+      grid
+      | tiles:
+          Map.update!(grid.tiles, old_position, &%{&1 | occupied_by: nil})
+          |> Map.update!(new_position, &%{&1 | occupied_by: character})
+    }
+  end
+
+  @doc """
+  Updates a character's state at their current position
+  """
+  def update_character(%Grid{tiles: tiles} = grid, character) do
+    %{grid | tiles: Map.update!(tiles, character.position, &%{&1 | occupied_by: character})}
+  end
+
+  @doc """
+  Removes a character from the grid
+  """
+  def remove_character(%Grid{tiles: tiles} = grid, character) do
+    %{grid | tiles: Map.update!(tiles, character.position, &%{&1 | occupied_by: nil})}
+  end
 end

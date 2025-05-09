@@ -1,7 +1,6 @@
 defmodule Game.Combat do
   require Logger
-  alias Game.Character
-  alias Game.Grid
+  alias Game.{Character, Grid, TurnQueue}
   alias __MODULE__
 
   defstruct state: :initialized,
@@ -41,16 +40,15 @@ defmodule Game.Combat do
   def act(
         %Combat{
           state: :running,
-          queue: [current_player | rest],
-          current_turn: %{
-            starting_position: _starting_position
-          },
+          queue: queue,
           grid: grid
         } = combat,
         {:move, player, target_position}
-      )
-      when current_player.id == player.id do
+      ) do
     cond do
+      not TurnQueue.is_players_turn?(queue, player) ->
+        {:error, "Not player's turn"}
+
       Grid.distance(grid, player.position, target_position) > player.movement_range ->
         {:error, "Not enough movement"}
 
@@ -61,23 +59,14 @@ defmodule Game.Combat do
         # Update player position
         moved_player = Character.move(player, target_position)
 
-        # Update grid to reflect new position
-        updated_grid = %{
-          grid
-          | tiles:
-              Map.update!(grid.tiles, player.position, &%{&1 | occupied_by: nil})
-              |> Map.update!(target_position, &%{&1 | occupied_by: moved_player})
-        }
+        # Update grid and combat state
+        updated_grid = Grid.update_position(grid, moved_player, player.position, target_position)
 
-        # Update combat state with next turn
         updated_combat = %{
           combat
           | grid: updated_grid,
-            queue: rest ++ [moved_player],
-            players:
-              Enum.map(combat.players, fn p ->
-                if p.id == player.id, do: moved_player, else: p
-              end)
+            queue: TurnQueue.rotate(queue, moved_player),
+            players: update_player_in_list(combat.players, moved_player)
         }
 
         {:ok, updated_combat}
@@ -90,81 +79,21 @@ defmodule Game.Combat do
   # - Apply damage/healing
   # - Check for death
   def act(
-        %Combat{state: :running, queue: [current_player | rest]} = combat,
+        %Combat{state: :running, queue: queue} = combat,
         {:play_card, player, card, target_position}
-      )
-      when current_player.id == player.id do
+      ) do
     cond do
-      player.ap < card.cost ->
+      not TurnQueue.is_players_turn?(queue, player) ->
+        {:error, "Not player's turn"}
+
+      not Character.has_enough_ap?(player, card.cost) ->
         {:error, "Not enough AP"}
 
       # Get target character if any
       target = Grid.get_object(combat.grid, target_position) ->
-        # Apply card effect (damage/healing)
-        updated_target =
-          case card.effect do
-            {:damage, amount} -> %{target | hp: target.hp - amount}
-            # No cap on healing
-            {:heal, amount} -> %{target | hp: target.hp + amount}
-            _ -> target
-          end
-
-        # Check if target died
-        {updated_combat, target_died} =
-          if updated_target.hp <= 0 do
-            # Remove dead character from queue and players
-            {
-              %{
-                combat
-                | # Only keep the current player
-                  queue: [player],
-                  players: Enum.reject(combat.players, &(&1.id == updated_target.id))
-              },
-              true
-            }
-          else
-            # Update target in queue and players
-            updated_queue =
-              if target.id == player.id do
-                # If healing self, update in rest of queue
-                rest ++ [updated_target]
-              else
-                # If targeting other, keep them in their position
-                Enum.map(rest, fn p ->
-                  if p.id == target.id, do: updated_target, else: p
-                end) ++ [player]
-              end
-
-            {
-              %{
-                combat
-                | queue: updated_queue,
-                  players:
-                    Enum.map(combat.players, fn p ->
-                      if p.id == target.id, do: updated_target, else: p
-                    end)
-              },
-              false
-            }
-          end
-
-        # Check for game over (only one team remaining)
-        remaining_teams =
-          updated_combat.players
-          |> Enum.map(& &1.team)
-          |> Enum.uniq()
-          |> length()
-
-        cond do
-          remaining_teams <= 1 ->
-            {:ok, %Combat{updated_combat | state: :game_over}}
-
-          target_died ->
-            {:ok, updated_combat}
-
-          true ->
-            {:ok, updated_combat}
-        end
+        # Apply card effect and handle consequences
+        updated_target = Character.apply_card_effect(target, card.effect)
+        handle_card_effect(combat, player, updated_target)
 
       true ->
         {:error, "Invalid target"}
@@ -199,5 +128,66 @@ defmodule Game.Combat do
     """)
 
     {:error, "Invalid state"}
+  end
+
+  # Private helper functions
+
+  defp handle_card_effect(combat, player, target) do
+    if Character.is_dead?(target) do
+      # Remove dead character and check for game over
+      updated_combat = remove_player(combat, target)
+      check_game_over(updated_combat)
+    else
+      # Update target state and continue game
+      updated_combat = update_player(combat, target, player)
+      {:ok, updated_combat}
+    end
+  end
+
+  defp remove_player(%Combat{grid: grid, players: players, queue: queue} = combat, player) do
+    %{
+      combat
+      | grid: Grid.remove_character(grid, player),
+        players: Enum.reject(players, &(&1.id == player.id)),
+        queue: TurnQueue.remove_character(queue, player.id)
+    }
+  end
+
+  defp update_player(
+         %Combat{grid: grid, players: players, queue: queue} = combat,
+         target,
+         current_player
+       ) do
+    %{
+      combat
+      | grid: Grid.update_character(grid, target),
+        players: update_player_in_list(players, target),
+        queue:
+          if target.id == current_player.id do
+            TurnQueue.rotate(queue, target)
+          else
+            TurnQueue.update_character(TurnQueue.rotate(queue, current_player), target)
+          end
+    }
+  end
+
+  defp update_player_in_list(players, updated_player) do
+    Enum.map(players, fn p ->
+      if p.id == updated_player.id, do: updated_player, else: p
+    end)
+  end
+
+  defp check_game_over(%Combat{players: players} = combat) do
+    remaining_teams =
+      players
+      |> Enum.map(& &1.team)
+      |> Enum.uniq()
+      |> length()
+
+    if remaining_teams <= 1 do
+      {:ok, %Combat{combat | state: :game_over}}
+    else
+      {:ok, combat}
+    end
   end
 end
