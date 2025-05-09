@@ -7,23 +7,34 @@ defmodule Game.Grid do
   defstruct tiles: %{}
 
   @doc """
-  Returns the distance in tiles between two positions
-  Based on an A* algorithm implementation
+  Returns the distance in tiles between two positions on a hex grid
+  Using cube coordinates (q, r, s) where q + r + s = 0
   """
-  def distance(%Grid{tiles: tiles}, starting_position, target_position) do
-    # starting_position
-    # |> AStar.find_path(target_position)
-    # |> length()
-    2
+  def distance(%Grid{}, {q1, r1, s1}, {q2, r2, s2}) do
+    # In cube coordinates, distance is max absolute difference of coordinates
+    [abs(q1 - q2), abs(r1 - r2), abs(s1 - s2)]
+    |> Enum.max()
   end
 
   @doc """
-
+  Returns true if a tile is blocked (wall or occupied)
   """
   def tile_blocked?(%Grid{tiles: tiles}, target_position) do
-    case Map.get(tiles, target_position, nil) do
-      nil -> false
-      _tile -> true
+    case Map.get(tiles, target_position) do
+      nil -> true
+      %{terrain: :wall} -> true
+      %{occupied_by: character} when not is_nil(character) -> true
+      _ -> false
+    end
+  end
+
+  @doc """
+  Returns the character at the given position, if any
+  """
+  def get_object(%Grid{tiles: tiles}, position) do
+    case Map.get(tiles, position) do
+      %{occupied_by: character} when not is_nil(character) -> character
+      _ -> nil
     end
   end
 end

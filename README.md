@@ -1,5 +1,5 @@
 # Game
-
+  - 
 To start your Phoenix server:
 
 - Run `mix setup` to install and setup dependencies
@@ -182,3 +182,24 @@ end
 https://elixirforum.com/t/is-liveview-a-suitable-choice-for-serving-as-a-game-server-for-a-simple-three-js-game/58155/6
 https://github.com/5e-bits/5e-database
 https://davehardee.com/QRSCoords/
+
+
+
+## Current state
+
+- Movement Rules:
+  - Characters can move within their movement range
+  - Characters cannot move beyond their range
+  - Characters cannot move to blocked tiles or tiles occupied by other characters
+  - Movement updates the grid and character positions
+- Combat Rules:
+  - Characters can play cards if they have enough AP
+  - Cards can deal damage or heal targets
+  - Characters die when their HP reaches 0
+  - Dead characters are removed from the game
+  - Game ends when only one team remains
+- Turn Management:
+  - Characters take turns in sequence
+  - After an action, the character moves to the end of the queue
+  - Dead characters are removed from the turn order
+  - The combat module now provides a solid foundation for a card-based turn-based strategy game. The rules are clear and well-tested, covering all the core mechanics needed for the MVP
