@@ -99,6 +99,7 @@ defmodule Game do
     else
       case Combat.act(state.combat, {:play_card, current_character, card, target_position}) do
         {:ok, updated_combat} ->
+          current_character = Enum.find(updated_combat.players, &(&1.id == current_character.id))
           # Update the character's state in the game state
           updated_state = %{state | combat: updated_combat}
           {:reply, {:ok, updated_combat}, updated_state}

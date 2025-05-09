@@ -50,7 +50,14 @@ defmodule Game.Character do
   """
   def heal(character, amount) do
     # Cap healing at max HP (which is the initial HP value)
-    %{character | hp: min(character.hp + amount, 20)}
+    max_hp =
+      case character.class do
+        :fighter -> 20
+        :mage -> 15
+        _ -> 15
+      end
+
+    %{character | hp: min(character.hp + amount, max_hp)}
   end
 
   @doc """

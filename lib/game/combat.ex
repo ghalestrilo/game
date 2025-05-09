@@ -46,8 +46,6 @@ defmodule Game.Combat do
         } = combat,
         {:move, player, target_position}
       ) do
-    dbg(combat)
-
     cond do
       not TurnQueue.is_players_turn?(queue, player) ->
         {:error, "Not player's turn"}
@@ -71,7 +69,16 @@ defmodule Game.Combat do
         updated_queue =
           Enum.map(queue, fn p -> if p.id == player.id, do: moved_player, else: p end)
 
-        {:ok, %{combat | grid: updated_grid, players: updated_players, queue: updated_queue}}
+        # Update current_turn with the new position
+        updated_combat = %{
+          combat
+          | grid: updated_grid,
+            players: updated_players,
+            queue: updated_queue,
+            current_turn: %{starting_position: target_position}
+        }
+
+        {:ok, updated_combat}
     end
   end
 
@@ -141,6 +148,7 @@ defmodule Game.Combat do
                 | players: update_player_in_list(combat.players, updated_target)
               }
 
+              # Update queue - rotate after current player's action
               updated_queue = TurnQueue.rotate(queue, player)
               [next_player | _] = updated_queue
 

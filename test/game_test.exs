@@ -75,7 +75,9 @@ defmodule GameTest do
           {0, 0, 0} => %{terrain: :plain, occupied_by: warrior},
           {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
           {2, 0, -2} => %{terrain: :plain, occupied_by: mage},
-          {3, 0, -3} => %{terrain: :plain, occupied_by: nil}
+          {3, 0, -3} => %{terrain: :plain, occupied_by: nil},
+          {4, 0, -4} => %{terrain: :plain, occupied_by: nil},
+          {5, 0, -5} => %{terrain: :plain, occupied_by: nil}
         }
       }
 
@@ -97,7 +99,7 @@ defmodule GameTest do
       warrior = Enum.find(combat.players, &(&1.id == warrior.id))
 
       # 2. Play a card
-      [strike_card | _] = warrior.hand
+      strike_card = Enum.find(warrior.hand, &(&1.id == 1))
       {:ok, combat} = Game.play_card(game_pid, warrior, strike_card, {2, 0, -2})
       updated_mage = Enum.find(combat.players, &(&1.id == mage.id))
       # 15 - 5 damage
@@ -108,8 +110,6 @@ defmodule GameTest do
 
       # Mage's turn
       # 1. Move away from the warrior
-      dbg(mage)
-      dbg(combat.current_turn)
       {:ok, combat} = Game.move_character(game_pid, mage, {3, 0, -3})
       assert combat.grid.tiles[{3, 0, -3}].occupied_by.id == mage.id
       assert combat.grid.tiles[{2, 0, -2}].occupied_by == nil
@@ -118,7 +118,7 @@ defmodule GameTest do
       mage = Enum.find(combat.players, &(&1.id == mage.id))
 
       # 2. Play a healing card on self
-      [heal_card | _] = mage.hand
+      heal_card = Enum.find(mage.hand, &(&1.id == 4))
       {:ok, combat} = Game.play_card(game_pid, mage, heal_card, {3, 0, -3})
       updated_mage = Enum.find(combat.players, &(&1.id == mage.id))
       # 10 + 5 healing
@@ -137,7 +137,7 @@ defmodule GameTest do
       warrior = Enum.find(combat.players, &(&1.id == warrior.id))
 
       # 2. Play the powerful card
-      [power_strike | _] = warrior.hand
+      power_strike = Enum.find(warrior.hand, &(&1.id == 2))
       {:ok, combat} = Game.play_card(game_pid, warrior, power_strike, {3, 0, -3})
       updated_mage = Enum.find(combat.players, &(&1.id == mage.id))
       # 15 - 10 damage
@@ -148,10 +148,12 @@ defmodule GameTest do
 
       # Mage's final turn
       # 1. Try to move but fail (not enough movement range)
-      assert {:error, "Not enough movement"} = Game.move_character(game_pid, mage, {4, 0, -4})
+      assert {:error, "Not enough movement"} = Game.move_character(game_pid, mage, {5, 0, -5})
+      assert {:ok, combat} = Game.move_character(game_pid, mage, {4, 0, -4})
+      # Print whatever is in {4, 0, -4}
 
       # 2. Play fireball
-      [fireball | _] = mage.hand
+      fireball = Enum.find(mage.hand, &(&1.id == 3))
       {:ok, combat} = Game.play_card(game_pid, mage, fireball, {2, 0, -2})
       updated_warrior = Enum.find(combat.players, &(&1.id == warrior.id))
       # 20 - 8 damage
@@ -169,7 +171,7 @@ defmodule GameTest do
 
       assert final_warrior.position == {2, 0, -2}
       assert final_warrior.hp == 12
-      assert final_mage.position == {3, 0, -3}
+      assert final_mage.position == {4, 0, -4}
       assert final_mage.hp == 5
     end
 
