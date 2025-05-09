@@ -41,15 +41,18 @@ defmodule Game.Combat do
         %Combat{
           state: :running,
           queue: queue,
-          grid: grid
+          grid: grid,
+          current_turn: %{starting_position: starting_position}
         } = combat,
         {:move, player, target_position}
       ) do
+    dbg(combat)
+
     cond do
       not TurnQueue.is_players_turn?(queue, player) ->
         {:error, "Not player's turn"}
 
-      Grid.distance(grid, player.position, target_position) > player.movement_range ->
+      Grid.distance(grid, starting_position, target_position) > player.movement_range ->
         {:error, "Not enough movement"}
 
       Grid.tile_blocked?(grid, target_position) ->
@@ -62,18 +65,13 @@ defmodule Game.Combat do
         # Update grid and combat state
         updated_grid = Grid.update_position(grid, moved_player, player.position, target_position)
 
-        # Update queue and players list
-        updated_queue = TurnQueue.rotate(queue, moved_player)
-        updated_players = update_player_in_list(combat.players, moved_player)
+        updated_players =
+          Enum.map(combat.players, fn p -> if p.id == player.id, do: moved_player, else: p end)
 
-        updated_combat = %{
-          combat
-          | grid: updated_grid,
-            queue: updated_queue,
-            players: updated_players
-        }
+        updated_queue =
+          Enum.map(queue, fn p -> if p.id == player.id, do: moved_player, else: p end)
 
-        {:ok, updated_combat}
+        {:ok, %{combat | grid: updated_grid, players: updated_players, queue: updated_queue}}
     end
   end
 
@@ -106,11 +104,13 @@ defmodule Game.Combat do
             # Update the player's state in the queue and players list
             updated_queue = TurnQueue.rotate(queue, updated_player)
             updated_players = update_player_in_list(combat.players, updated_player)
+            [next_player | _] = updated_queue
             updated_combat = %{combat | queue: updated_queue, players: updated_players}
 
             updated_combat = %{
               updated_combat
-              | grid: Grid.update_character(updated_combat.grid, updated_player)
+              | grid: Grid.update_character(updated_combat.grid, updated_player),
+                current_turn: %{starting_position: next_player.position}
             }
 
             # Check for death after self-targeting
@@ -141,7 +141,15 @@ defmodule Game.Combat do
                 | players: update_player_in_list(combat.players, updated_target)
               }
 
-              updated_combat = %{updated_combat | queue: TurnQueue.rotate(queue, player)}
+              updated_queue = TurnQueue.rotate(queue, player)
+              [next_player | _] = updated_queue
+
+              updated_combat = %{
+                updated_combat
+                | queue: updated_queue,
+                  current_turn: %{starting_position: next_player.position}
+              }
+
               {:ok, updated_combat}
             end
 

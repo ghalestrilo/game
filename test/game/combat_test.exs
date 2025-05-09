@@ -74,15 +74,40 @@ defmodule Game.CombatTest do
     test "character can move within range", %{combat: combat, warrior: warrior} do
       assert {:ok, updated_combat} = Combat.act(combat, {:move, warrior, {1, 0, -1}})
       [next_player | _] = updated_combat.queue
-      # Mage's turn next
-      assert next_player.id == 2
+      # Warrior's turn still
+      assert next_player.id == warrior.id
 
       # Find warrior in players list
       moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
       assert moved_warrior.position == {1, 0, -1}
     end
 
-    test "character cannot move beyond range", %{combat: combat, warrior: warrior} do
+    test "character can move multiple times within range", %{combat: combat, warrior: warrior} do
+      # First move
+      assert {:ok, updated_combat} = Combat.act(combat, {:move, warrior, {1, 0, -1}})
+      moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
+
+      # Second move
+      assert {:ok, updated_combat} = Combat.act(updated_combat, {:move, moved_warrior, {0, 0, 0}})
+      moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
+
+      # Third move
+      assert {:ok, updated_combat} =
+               Combat.act(updated_combat, {:move, moved_warrior, {1, 0, -1}})
+
+      # Check turn order hasn't changed
+      [next_player | _] = updated_combat.queue
+      assert next_player.id == warrior.id
+
+      # Check final position
+      moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
+      assert moved_warrior.position == {1, 0, -1}
+    end
+
+    test "character cannot move beyond range from starting position", %{
+      combat: combat,
+      warrior: warrior
+    } do
       assert {:error, "Not enough movement"} =
                Combat.act(combat, {:move, warrior, {3, 0, -3}})
     end
@@ -222,14 +247,13 @@ defmodule Game.CombatTest do
   end
 
   describe "turn management" do
-    test "turn order is maintained after action", %{combat: combat, warrior: warrior} do
+    test "turn order is maintained after movement", %{combat: combat, warrior: warrior} do
       # Warrior moves
       assert {:ok, updated_combat} = Combat.act(combat, {:move, warrior, {1, 0, -1}})
 
-      # Check turn order
+      # Check turn order hasn't changed
       [next_player | _] = updated_combat.queue
-      # Mage's turn next
-      assert next_player.id == 2
+      assert next_player.id == warrior.id
     end
 
     test "dead characters are removed from turn order", %{
@@ -363,12 +387,17 @@ defmodule Game.CombatTest do
     test "turn order edge cases", %{combat: combat, warrior: warrior, mage: mage} do
       # Test that turn order is maintained after multiple actions
       assert {:ok, updated_combat} = Combat.act(combat, {:move, warrior, {1, 0, -1}})
-      assert {:ok, updated_combat} = Combat.act(updated_combat, {:move, mage, {3, 0, -3}})
-      assert {:ok, updated_combat} = Combat.act(updated_combat, {:move, warrior, {0, 0, 0}})
+      moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
+
+      assert {:ok, updated_combat} = Combat.act(updated_combat, {:move, moved_warrior, {0, 0, 0}})
+      moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
+
+      assert {:ok, updated_combat} =
+               Combat.act(updated_combat, {:move, moved_warrior, {1, 0, -1}})
 
       # Check turn order is still correct
       [next_player | _] = updated_combat.queue
-      assert next_player.id == mage.id
+      assert next_player.id == warrior.id
     end
   end
 end

@@ -108,6 +108,8 @@ defmodule GameTest do
 
       # Mage's turn
       # 1. Move away from the warrior
+      dbg(mage)
+      dbg(combat.current_turn)
       {:ok, combat} = Game.move_character(game_pid, mage, {3, 0, -3})
       assert combat.grid.tiles[{3, 0, -3}].occupied_by.id == mage.id
       assert combat.grid.tiles[{2, 0, -2}].occupied_by == nil

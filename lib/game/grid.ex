@@ -42,12 +42,10 @@ defmodule Game.Grid do
   Updates a character's position on the grid
   """
   def update_position(%Grid{} = grid, character, old_position, new_position) do
-    %{
-      grid
-      | tiles:
-          Map.update!(grid.tiles, old_position, &%{&1 | occupied_by: nil})
-          |> Map.update!(new_position, &%{&1 | occupied_by: character})
-    }
+    # First clear the old position
+    grid = %{grid | tiles: Map.update!(grid.tiles, old_position, &%{&1 | occupied_by: nil})}
+    # Then set the new position
+    %{grid | tiles: Map.update!(grid.tiles, new_position, &%{&1 | occupied_by: character})}
   end
 
   @doc """
