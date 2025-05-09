@@ -15,7 +15,9 @@ defmodule Game.Character do
             # Cards in hand
             hand: [],
             # Movement range in tiles
-            movement_range: nil
+            movement_range: nil,
+            # Team identifier
+            team: nil
 
   def move(character, target_position) do
     %{character | position: target_position}

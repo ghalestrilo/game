@@ -2,10 +2,11 @@ import Config
 
 # Configure your database
 config :game, Game.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "game_dev",
+  username: System.get_env("DATABASE_USERNAME") || "postgres",
+  password: System.get_env("DATABASE_PASSWORD") || "postgres",
+  hostname: System.get_env("DATABASE_HOSTNAME") || "localhost",
+  database: System.get_env("DATABASE_NAME") || "game_dev",
+  port: System.get_env("DATABASE_PORT") || 5432,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10

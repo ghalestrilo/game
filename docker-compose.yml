@@ -1,0 +1,46 @@
+version: "3.6"
+services:
+  db:
+    image: postgres:14-alpine
+    privileged: true
+    ports:
+      - 5432:5432
+    volumes:
+      - postgresql_data:/var/lib/postgresql
+    container_name: game-db
+    hostname: game-db
+    networks:
+      - network1
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    ports:
+      - 4000:4000
+      - 9568:9568
+    volumes:
+      - ./priv/repo/migrations:/app/priv/repo/migrations
+      - ./lib:/app/lib
+      - ./_docker_build:/code/_build
+    container_name: game-api
+    hostname: game-api
+    environment:
+      MIX_ENV: dev
+      DATABASE_HOSTNAME: game-db
+    networks:
+      - network1
+    depends_on:
+      - db
+
+volumes:
+  postgresql_data:
+    name: postgresql_data
+
+
+networks:
+  network1:
+    name: network1

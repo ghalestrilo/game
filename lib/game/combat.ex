@@ -63,20 +63,66 @@ defmodule Game.Combat do
 
   # Play Card:
   # - Check if player has enough AP
-  # - Check for game over
+  # - Check if target is valid
+  # - Apply damage/healing
+  # - Check for death
   def act(
         %Combat{state: :running} = combat,
         {:play_card, player, card, target_position}
       ) do
     cond do
-      player.ap < card.ap_cost ->
+      player.ap < card.cost ->
         {:error, "Not enough AP"}
 
-      %Character{} = Grid.get_object(target_position) ->
-        {:ok, next_turn(combat)}
+      # Get target character if any
+      target = Grid.get_object(target_position) ->
+        # Apply card effect (damage/healing)
+        updated_target =
+          case card.effect do
+            {:damage, amount} -> %{target | hp: target.hp - amount}
+            {:heal, amount} -> %{target | hp: target.hp + amount}
+            _ -> target
+          end
+
+        # Check if target died
+        combat =
+          if updated_target.hp <= 0 do
+            # Remove dead character from queue and players
+            %{
+              combat
+              | queue: Enum.reject(combat.queue, &(&1.id == updated_target.id)),
+                players: Enum.reject(combat.players, &(&1.id == updated_target.id))
+            }
+          else
+            # Update target in queue and players
+            %{
+              combat
+              | queue:
+                  Enum.map(combat.queue, fn p ->
+                    if p.id == updated_target.id, do: updated_target, else: p
+                  end),
+                players:
+                  Enum.map(combat.players, fn p ->
+                    if p.id == updated_target.id, do: updated_target, else: p
+                  end)
+            }
+          end
+
+        # Check for game over (only one team remaining)
+        remaining_teams =
+          combat.players
+          |> Enum.map(& &1.team)
+          |> Enum.uniq()
+          |> length()
+
+        if remaining_teams <= 1 do
+          {:ok, %Combat{combat | state: :game_over}}
+        else
+          {:ok, next_turn(combat)}
+        end
 
       true ->
-        {:ok, next_turn(combat)}
+        {:error, "Invalid target"}
     end
   end
 

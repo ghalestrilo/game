@@ -3,6 +3,14 @@ defmodule Game do
 
   require Logger
 
+  @initial_state %{
+    grid: %Game.Grid{},
+    characters: [
+      %Game.Character{},
+      %Game.Character{}
+    ],
+    combat: %Game.Combat{}
+  }
   @doc """
   This module implements a turn-based combat system via a GenServer
 
@@ -13,7 +21,8 @@ defmodule Game do
     GenServer.start_link(__MODULE__, opts)
   end
 
+  # Initialize combat with a random grid with two characters
   def init(opts) do
-    {:ok, opts}
+    {:ok, @initial_state}
   end
 end
