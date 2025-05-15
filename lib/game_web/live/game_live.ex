@@ -6,13 +6,7 @@ defmodule GameWeb.GameLive do
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      {:ok, game_pid} = Game.start_link()
-
-      # Initialize the game state with fixtures
-      combat = Fixtures.basic_combat()
-      {:ok, _combat} = Game.init_combat(game_pid, combat.players, combat.grid)
-      game_state = Game.get_state(game_pid)
-
+      {game_pid, game_state} = initialize_game()
       {:ok, assign(socket, game_pid: game_pid, game_state: game_state)}
     else
       {:ok, assign(socket, game_pid: nil, game_state: nil)}
@@ -25,13 +19,10 @@ defmodule GameWeb.GameLive do
   end
 
   @impl true
+  @spec handle_event(<<_::40>>, any(), any()) :: {:noreply, any()}
   def handle_event("reset", _params, socket) do
-    # Reset using the fixtures
-    combat = Fixtures.basic_combat()
-    {:ok, _combat} = Game.init_combat(socket.assigns.game_pid, combat.players, combat.grid)
-    game_state = Game.get_state(socket.assigns.game_pid)
-
-    {:noreply, assign(socket, game_state: game_state)}
+    {game_pid, game_state} = initialize_game()
+    {:noreply, assign(socket, game_pid: game_pid, game_state: game_state)}
   end
 
   def render(assigns) do
@@ -47,14 +38,27 @@ defmodule GameWeb.GameLive do
       </div>
       
       <%= if @game_state do %>
+        <% mage = Enum.find(@game_state.characters, &(&1.class == :mage)) %>
         <div class="game-board">
           <%= for {q, r, s} <- get_visible_tiles(@game_state.grid) do %>
             <div class="hex-cell" style={get_hex_position(q, r)}>
               <%= if character = find_character(@game_state.characters, {q, r, s}) do %>
-                <div class="character" data-character-id={character.id}>
-                  {character.name}
+                <div class={character_class(character)} data-character-id={character.id}>
+                  <div class="character-name">{character.name}</div>
+                  
+                  <div class="character-hp">HP: {character.hp}</div>
                 </div>
               <% end %>
+            </div>
+          <% end %>
+        </div>
+        
+        <div class="card-row">
+          <%= for card <- mage.hand || [] do %>
+            <div class="card">
+              <div class="card-title">{card.name}</div>
+              
+              <div class="card-effect">Cost: {card.cost} | {inspect(card.effect)}</div>
             </div>
           <% end %>
         </div>
@@ -74,15 +78,53 @@ defmodule GameWeb.GameLive do
   end
 
   defp get_hex_position(q, r) do
-    # Convert cube coordinates to pixel position
-    # Horizontal spacing
-    x = q * 90
-    # Vertical spacing (adjusted for hex height)
-    y = r * 78
-
-    # Offset every other row
-    y = if rem(q, 2) == 0, do: y, else: y + 39
-
+    # Regular hex geometry (pointy-topped)
+    width = 60
+    height = 52
+    x = (q * (width * 0.75)) |> round()
+    y = r * height + if rem(q, 2) == 1, do: height / 2, else: 0
+    y = round(y)
     "transform: translate(#{x}px, #{y}px)"
+  end
+
+  defp character_class(%{class: :mage}), do: "character mage"
+  defp character_class(%{class: :fighter}), do: "character warrior"
+  defp character_class(_), do: "character"
+
+  defp initialize_game() do
+    {:ok, game_pid} = Game.start_link()
+    combat = Fixtures.basic_combat()
+    mage = Enum.find(combat.players, &(&1.class == :mage))
+
+    mage_with_cards = %{
+      mage
+      | hand: [
+          %Game.Card{
+            id: 1,
+            name: "Fireball",
+            cost: 2,
+            effect: {:damage, 8},
+            range: 3,
+            targeting: :single
+          },
+          %Game.Card{
+            id: 2,
+            name: "Heal",
+            cost: 2,
+            effect: {:heal, 5},
+            range: 1,
+            targeting: :single
+          }
+        ]
+    }
+
+    updated_players =
+      Enum.map(combat.players, fn player ->
+        if player.id == mage_with_cards.id, do: mage_with_cards, else: player
+      end)
+
+    {:ok, _combat} = Game.init_combat(game_pid, updated_players, combat.grid)
+    game_state = Game.get_state(game_pid)
+    {game_pid, game_state}
   end
 end
