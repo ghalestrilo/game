@@ -1,21 +1,16 @@
 defmodule GameWeb.GameLive do
   use GameWeb, :live_view
   alias Game
+  alias Game.Fixtures
 
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
       {:ok, game_pid} = Game.start_link()
 
-      # Initialize the game state immediately
-      grid = %Game.Grid{}
-
-      characters = [
-        %Game.Character{id: 1, position: {0, 0}},
-        %Game.Character{id: 2, position: {2, 2}}
-      ]
-
-      {:ok, _combat} = Game.init_combat(game_pid, characters, grid)
+      # Initialize the game state with fixtures
+      combat = Fixtures.basic_combat()
+      {:ok, _combat} = Game.init_combat(game_pid, combat.players, combat.grid)
       game_state = Game.get_state(game_pid)
 
       {:ok, assign(socket, game_pid: game_pid, game_state: game_state)}
@@ -31,15 +26,9 @@ defmodule GameWeb.GameLive do
 
   @impl true
   def handle_event("reset", _params, socket) do
-    # Create a simple grid and two characters for demonstration
-    grid = %Game.Grid{}
-
-    characters = [
-      %Game.Character{id: 1, position: {0, 0}},
-      %Game.Character{id: 2, position: {2, 2}}
-    ]
-
-    {:ok, _combat} = Game.init_combat(socket.assigns.game_pid, characters, grid)
+    # Reset using the fixtures
+    combat = Fixtures.basic_combat()
+    {:ok, _combat} = Game.init_combat(socket.assigns.game_pid, combat.players, combat.grid)
     game_state = Game.get_state(socket.assigns.game_pid)
 
     {:noreply, assign(socket, game_state: game_state)}
@@ -59,15 +48,11 @@ defmodule GameWeb.GameLive do
       
       <%= if @game_state do %>
         <div class="game-board">
-          <%= for {row, row_idx} <- Enum.with_index(@game_state.grid.cells) do %>
-            <div class="flex justify-center">
-              <%= for {cell, col_idx} <- Enum.with_index(row) do %>
-                <div class="hex-cell">
-                  <%= if character = find_character(@game_state.characters, {row_idx, col_idx}) do %>
-                    <div class="character" data-character-id={character.id}>
-                      {character.id}
-                    </div>
-                  <% end %>
+          <%= for {q, r, s} <- get_visible_tiles(@game_state.grid) do %>
+            <div class="hex-cell" style={get_hex_position(q, r)}>
+              <%= if character = find_character(@game_state.characters, {q, r, s}) do %>
+                <div class="character" data-character-id={character.id}>
+                  {character.name}
                 </div>
               <% end %>
             </div>
@@ -80,5 +65,24 @@ defmodule GameWeb.GameLive do
 
   defp find_character(characters, position) do
     Enum.find(characters, fn char -> char.position == position end)
+  end
+
+  defp get_visible_tiles(%{tiles: tiles}) do
+    tiles
+    |> Map.keys()
+    |> Enum.sort_by(fn {q, r, s} -> {r, q} end)
+  end
+
+  defp get_hex_position(q, r) do
+    # Convert cube coordinates to pixel position
+    # Horizontal spacing
+    x = q * 90
+    # Vertical spacing (adjusted for hex height)
+    y = r * 78
+
+    # Offset every other row
+    y = if rem(q, 2) == 0, do: y, else: y + 39
+
+    "transform: translate(#{x}px, #{y}px)"
   end
 end

@@ -1,6 +1,7 @@
 defmodule GameTest do
   use ExUnit.Case
   alias Game.{Character, Card, Grid}
+  alias Game.Fixtures
 
   setup do
     # Start a new game instance for each test
@@ -11,62 +12,48 @@ defmodule GameTest do
   describe "full match simulation" do
     test "simulates a complete match with movement and combat", %{game_pid: game_pid} do
       # Create two characters with different classes and positions
-      warrior = %Character{
-        id: 1,
-        name: "Warrior",
-        class: :fighter,
-        ap: 3,
-        hp: 20,
-        position: {0, 0, 0},
-        movement_range: 2,
-        team: :team1,
-        hand: [
-          %Card{
-            id: 1,
-            name: "Strike",
-            cost: 1,
-            effect: {:damage, 5},
-            range: 1,
-            targeting: :single
-          },
-          %Card{
-            id: 2,
-            name: "Power Strike",
-            cost: 3,
-            effect: {:damage, 10},
-            range: 1,
-            targeting: :single
-          }
-        ]
+      warrior = %{
+        Fixtures.warrior()
+        | hand: [
+            %Card{
+              id: 1,
+              name: "Strike",
+              cost: 1,
+              effect: {:damage, 5},
+              range: 1,
+              targeting: :single
+            },
+            %Card{
+              id: 2,
+              name: "Power Strike",
+              cost: 3,
+              effect: {:damage, 10},
+              range: 1,
+              targeting: :single
+            }
+          ]
       }
 
-      mage = %Character{
-        id: 2,
-        name: "Mage",
-        class: :mage,
-        ap: 3,
-        hp: 15,
-        position: {2, 0, -2},
-        movement_range: 1,
-        team: :team2,
-        hand: [
-          %Card{
-            id: 3,
-            name: "Fireball",
-            cost: 2,
-            effect: {:damage, 8},
-            range: 3,
-            targeting: :single
-          },
-          %Card{
-            id: 4,
-            name: "Heal",
-            cost: 2,
-            effect: {:heal, 5},
-            range: 1,
-            targeting: :single
-          }
-        ]
+      mage = %{
+        Fixtures.mage()
+        | hand: [
+            %Card{
+              id: 3,
+              name: "Fireball",
+              cost: 2,
+              effect: {:damage, 8},
+              range: 3,
+              targeting: :single
+            },
+            %Card{
+              id: 4,
+              name: "Heal",
+              cost: 2,
+              effect: {:heal, 5},
+              range: 1,
+              targeting: :single
+            }
+          ]
       }
 
       # Create a grid with the characters' initial positions
@@ -150,7 +137,6 @@ defmodule GameTest do
       # 1. Try to move but fail (not enough movement range)
       assert {:error, "Not enough movement"} = Game.move_character(game_pid, mage, {5, 0, -5})
       assert {:ok, combat} = Game.move_character(game_pid, mage, {4, 0, -4})
-      # Print whatever is in {4, 0, -4}
 
       # 2. Play fireball
       fireball = Enum.find(mage.hand, &(&1.id == 3))
@@ -176,30 +162,9 @@ defmodule GameTest do
     end
 
     test "handles invalid moves and actions", %{game_pid: game_pid} do
-      # Create characters
-      warrior = %Character{
-        id: 1,
-        name: "Warrior",
-        class: :fighter,
-        ap: 3,
-        hp: 20,
-        position: {0, 0, 0},
-        movement_range: 2,
-        team: :team1,
-        hand: []
-      }
-
-      mage = %Character{
-        id: 2,
-        name: "Mage",
-        class: :mage,
-        ap: 3,
-        hp: 15,
-        position: {2, 0, -2},
-        movement_range: 1,
-        team: :team2,
-        hand: []
-      }
+      # Create characters with empty hands
+      warrior = %{Fixtures.warrior() | hand: []}
+      mage = %{Fixtures.mage() | hand: []}
 
       # Create grid with a wall
       grid = %Grid{
