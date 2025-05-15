@@ -1,72 +1,16 @@
 defmodule Game.CombatTest do
   use ExUnit.Case
   alias Game.{Combat, Character, Card, Grid}
+  alias Game.Fixtures
 
   setup do
-    # Create two characters
-    warrior = %Character{
-      id: 1,
-      name: "Warrior",
-      class: :fighter,
-      ap: 3,
-      hp: 20,
-      position: {0, 0, 0},
-      movement_range: 2,
-      team: :team1
-    }
-
-    mage = %Character{
-      id: 2,
-      name: "Mage",
-      class: :mage,
-      ap: 3,
-      hp: 15,
-      position: {2, 0, -2},
-      movement_range: 1,
-      team: :team2
-    }
-
-    # Create a basic grid with characters in their positions
-    grid = %Grid{
-      tiles: %{
-        {0, 0, 0} => %{terrain: :plain, occupied_by: warrior},
-        {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
-        {2, 0, -2} => %{terrain: :plain, occupied_by: mage},
-        {3, 0, -3} => %{terrain: :plain, occupied_by: nil}
-      }
-    }
-
-    # Create some cards
-    attack_card = %Card{
-      id: 1,
-      name: "Strike",
-      cost: 1,
-      effect: {:damage, 5}
-    }
-
-    heal_card = %Card{
-      id: 2,
-      name: "Heal",
-      cost: 2,
-      effect: {:heal, 3}
-    }
-
-    # Create initial combat state
-    combat = %Combat{
-      state: :running,
-      players: [warrior, mage],
-      queue: [warrior, mage],
-      grid: grid,
-      current_turn: %{starting_position: warrior.position}
-    }
-
     %{
-      combat: combat,
-      warrior: warrior,
-      mage: mage,
-      attack_card: attack_card,
-      heal_card: heal_card,
-      grid: grid
+      combat: Fixtures.basic_combat(),
+      warrior: Fixtures.warrior(),
+      mage: Fixtures.mage(),
+      attack_card: Fixtures.attack_card(),
+      heal_card: Fixtures.heal_card(),
+      grid: Fixtures.basic_grid()
     }
   end
 
@@ -146,16 +90,8 @@ defmodule Game.CombatTest do
       warrior: warrior,
       mage: mage
     } do
-      # Create expensive card
-      expensive_card = %Card{
-        id: 3,
-        name: "Mega Strike",
-        cost: 5,
-        effect: {:damage, 10}
-      }
-
       assert {:error, "Not enough AP"} =
-               Combat.act(combat, {:play_card, warrior, expensive_card, mage.position})
+               Combat.act(combat, {:play_card, warrior, Fixtures.expensive_card(), mage.position})
     end
 
     test "healing card restores HP", %{combat: combat, warrior: warrior, heal_card: heal_card} do
@@ -192,18 +128,14 @@ defmodule Game.CombatTest do
     end
 
     test "self-targeting with damage card reduces own HP", %{combat: combat, warrior: warrior} do
-      damage_card = %Card{
-        id: 5,
-        name: "Self Harm",
-        cost: 1,
-        effect: {:damage, 5}
-      }
-
       # Ensure it's warrior's turn
       updated_combat = %{combat | queue: [warrior, Enum.at(combat.queue, 1)]}
 
       assert {:ok, updated_combat} =
-               Combat.act(updated_combat, {:play_card, warrior, damage_card, warrior.position})
+               Combat.act(
+                 updated_combat,
+                 {:play_card, warrior, Fixtures.self_harm_card(), warrior.position}
+               )
 
       updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
       assert updated_warrior.hp == warrior.hp - 5
@@ -212,16 +144,8 @@ defmodule Game.CombatTest do
 
   describe "death and game over" do
     test "character dies when HP reaches 0", %{combat: combat, warrior: warrior, mage: mage} do
-      # Create lethal damage card
-      lethal_card = %Card{
-        id: 4,
-        name: "Death Strike",
-        cost: 1,
-        effect: {:damage, 20}
-      }
-
       assert {:ok, updated_combat} =
-               Combat.act(combat, {:play_card, warrior, lethal_card, mage.position})
+               Combat.act(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
 
       # Check mage is removed from players and queue
       assert length(updated_combat.players) == 1
@@ -231,16 +155,8 @@ defmodule Game.CombatTest do
     end
 
     test "game ends when only one team remains", %{combat: combat, warrior: warrior, mage: mage} do
-      # Create lethal damage card
-      lethal_card = %Card{
-        id: 4,
-        name: "Death Strike",
-        cost: 1,
-        effect: {:damage, 20}
-      }
-
       assert {:ok, updated_combat} =
-               Combat.act(combat, {:play_card, warrior, lethal_card, mage.position})
+               Combat.act(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
 
       assert updated_combat.state == :game_over
     end
@@ -261,16 +177,8 @@ defmodule Game.CombatTest do
       warrior: warrior,
       mage: mage
     } do
-      # Create lethal damage card
-      lethal_card = %Card{
-        id: 4,
-        name: "Death Strike",
-        cost: 1,
-        effect: {:damage, 20}
-      }
-
       assert {:ok, updated_combat} =
-               Combat.act(combat, {:play_card, warrior, lethal_card, mage.position})
+               Combat.act(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
 
       # Check turn order only contains warrior
       assert length(updated_combat.queue) == 1
@@ -289,45 +197,29 @@ defmodule Game.CombatTest do
     end
 
     test "multiple characters on same team", %{combat: combat, warrior: warrior} do
-      # Add another warrior to team1
-      warrior2 = %Character{
-        id: 3,
-        name: "Warrior 2",
-        class: :fighter,
-        ap: 3,
-        hp: 20,
-        position: {1, 0, -1},
-        movement_range: 2,
-        team: :team1
-      }
-
       # Update grid and combat state
       updated_grid = %{
         combat.grid
         | tiles:
-            Map.put(combat.grid.tiles, warrior2.position, %{
+            Map.put(combat.grid.tiles, Fixtures.warrior2().position, %{
               terrain: :plain,
-              occupied_by: warrior2
+              occupied_by: Fixtures.warrior2()
             })
       }
 
       updated_combat = %{
         combat
-        | players: [warrior, warrior2, Enum.at(combat.players, 1)],
-          queue: [warrior, warrior2, Enum.at(combat.queue, 1)],
+        | players: [warrior, Fixtures.warrior2(), Enum.at(combat.players, 1)],
+          queue: [warrior, Fixtures.warrior2(), Enum.at(combat.queue, 1)],
           grid: updated_grid
       }
 
       # Test that game doesn't end when one team member dies
-      lethal_card = %Card{
-        id: 6,
-        name: "Death Strike",
-        cost: 1,
-        effect: {:damage, 20}
-      }
-
       assert {:ok, updated_combat} =
-               Combat.act(updated_combat, {:play_card, warrior, lethal_card, warrior2.position})
+               Combat.act(
+                 updated_combat,
+                 {:play_card, warrior, Fixtures.lethal_card(), Fixtures.warrior2().position}
+               )
 
       assert updated_combat.state == :running
       assert length(updated_combat.players) == 2
@@ -348,35 +240,24 @@ defmodule Game.CombatTest do
       updated_combat = %{combat | queue: [warrior, mage]}
 
       # Test healing beyond max HP
-      max_heal_card = %Card{
-        id: 7,
-        name: "Max Heal",
-        cost: 1,
-        effect: {:heal, 100}
-      }
-
       assert {:ok, updated_combat} =
-               Combat.act(updated_combat, {:play_card, warrior, max_heal_card, warrior.position})
+               Combat.act(
+                 updated_combat,
+                 {:play_card, warrior, Fixtures.max_heal_card(), warrior.position}
+               )
 
       updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
       # Should not exceed max HP
       assert updated_warrior.hp == warrior.hp
 
       # Test negative damage
-      negative_damage_card = %Card{
-        id: 8,
-        name: "Negative Strike",
-        cost: 1,
-        effect: {:damage, -5}
-      }
-
       # Ensure it's still warrior's turn
       updated_combat = %{updated_combat | queue: [warrior, mage]}
 
       assert {:ok, updated_combat} =
                Combat.act(
                  updated_combat,
-                 {:play_card, warrior, negative_damage_card, mage.position}
+                 {:play_card, warrior, Fixtures.negative_damage_card(), mage.position}
                )
 
       updated_mage = Enum.find(updated_combat.players, &(&1.id == mage.id))
