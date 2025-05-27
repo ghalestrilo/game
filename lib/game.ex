@@ -5,7 +5,7 @@ defmodule Game do
   require Logger
 
   @initial_state %{
-    grid: %Game.Grid{},
+    grid: Game.Grid.new({2, 2, 2}),  # Creates a 5x5x5 hex grid centered at (0,0,0)
     characters: [
       %Game.Character{},
       %Game.Character{}

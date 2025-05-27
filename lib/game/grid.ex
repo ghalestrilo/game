@@ -7,6 +7,41 @@ defmodule Game.Grid do
   defstruct tiles: %{}
 
   @doc """
+  Creates a new contiguous hex grid with the specified radius.
+  The grid will be centered at (0,0,0) and extend outward by the given radius.
+  Each tile will be initialized with basic terrain and no occupants.
+
+  ## Parameters
+    * `radius` - A tuple {x, y, z} specifying the radius in each direction.
+                 For example, {1,1,1} creates a single cell at (0,0,0),
+                 {2,2,2} creates a grid with 7 cells (center + 6 neighbors).
+
+  ## Examples
+      iex> Game.Grid.new({1,1,1}) |> Map.get(:tiles) |> Map.keys()
+      [{{0, 0, 0}}]
+
+      iex> Game.Grid.new({2,2,2}) |> Map.get(:tiles) |> Map.keys()
+      [
+        {0, 0, 0},
+        {1, 0, -1}, {0, 1, -1}, {-1, 1, 0},
+        {-1, 0, 1}, {0, -1, 1}, {1, -1, 0}
+      ]
+  """
+  def new(radius) do
+    {x, y, z} = radius
+    tiles = for q <- -x..x,
+                r <- -y..y,
+                s <- -z..z,
+                q + r + s == 0,
+                abs(q) <= x and abs(r) <= y and abs(s) <= z do
+      {{q, r, s}, %{terrain: :floor, occupied_by: nil}}
+    end
+    |> Map.new()
+
+    %Grid{tiles: tiles}
+  end
+
+  @doc """
   Returns the distance in tiles between two positions on a hex grid
   Using cube coordinates (q, r, s) where q + r + s = 0
   """
