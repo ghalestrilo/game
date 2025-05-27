@@ -20,8 +20,8 @@ services:
       context: .
       dockerfile: Dockerfile.dev
     ports:
-      - 4000:4000
-      - 9568:9568
+      - "0.0.0.0:4000:4000"
+      - "0.0.0.0:9568:9568"
     volumes:
       - ./priv/repo/migrations:/app/priv/repo/migrations
       - ./lib:/app/lib
@@ -31,6 +31,7 @@ services:
     environment:
       MIX_ENV: dev
       DATABASE_HOSTNAME: game-db
+      PHX_HOST: "0.0.0.0"
     networks:
       - network1
     depends_on:
@@ -39,7 +40,6 @@ services:
 volumes:
   postgresql_data:
     name: postgresql_data
-
 
 networks:
   network1:
