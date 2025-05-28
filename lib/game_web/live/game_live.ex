@@ -48,7 +48,7 @@ defmodule GameWeb.GameLive do
                     <div class={character_class(character)} data-character-id={character.id}>
                       <div class="character-name">{character.name}</div>
                       
-                      <div class="character-hp">HP: {character.hp}</div>
+                      <div class="character-hp text-gray-200">HP: {character.hp}</div>
                     </div>
                   <% end %>
                 </div>
