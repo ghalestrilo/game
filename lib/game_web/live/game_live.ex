@@ -36,28 +36,30 @@ defmodule GameWeb.GameLive do
           Reset Game
         </button>
       </div>
-      
+
       <%= if @game_state do %>
         <% mage = Enum.find(@game_state.characters, &(&1.class == :mage)) %>
         <div class="game-board">
-          <%= for {q, r, s} <- get_visible_tiles(@game_state.grid) do %>
-            <div class="hex-cell" style={get_hex_position(q, r)}>
-              <%= if character = find_character(@game_state.characters, {q, r, s}) do %>
-                <div class={character_class(character)} data-character-id={character.id}>
-                  <div class="character-name">{character.name}</div>
-                  
-                  <div class="character-hp">HP: {character.hp}</div>
+          <%= for row <- Game.Grid.to_rows(@game_state.grid) do %>
+            <div class="flex flex-row justify-center">
+              <%= for {q, r, s, tile} <- row do %>
+                <div class="hex-cell border border-gray-300 w-16 h-16 flex items-center justify-center m-1 bg-white">
+                  <%= if character = find_character(@game_state.characters, {q, r, s}) do %>
+                    <div class={character_class(character)} data-character-id={character.id}>
+                      <div class="character-name">{character.name}</div>
+                      <div class="character-hp">HP: {character.hp}</div>
+                    </div>
+                  <% end %>
                 </div>
               <% end %>
             </div>
           <% end %>
         </div>
-        
+
         <div class="card-row">
           <%= for card <- mage.hand || [] do %>
             <div class="card">
               <div class="card-title">{card.name}</div>
-              
               <div class="card-effect">Cost: {card.cost} | {inspect(card.effect)}</div>
             </div>
           <% end %>
@@ -123,7 +125,10 @@ defmodule GameWeb.GameLive do
         if player.id == mage_with_cards.id, do: mage_with_cards, else: player
       end)
 
-    {:ok, _combat} = Game.init_combat(game_pid, updated_players, combat.grid)
+    # Use the new 6x6 grid
+    grid = Game.Grid.new({3, 3, 3})
+
+    {:ok, _combat} = Game.init_combat(game_pid, updated_players, grid)
     game_state = Game.get_state(game_pid)
     {game_pid, game_state}
   end

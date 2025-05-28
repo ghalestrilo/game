@@ -96,4 +96,19 @@ defmodule Game.Grid do
   def remove_character(%Grid{tiles: tiles} = grid, character) do
     %{grid | tiles: Map.update!(tiles, character.position, &%{&1 | occupied_by: nil})}
   end
+
+  @doc """
+  Converts the grid into a list of lists, each representing a horizontal row (constant r).
+  Each sublist contains tuples {q, r, s, tile}, sorted by q.
+  """
+  def to_rows(%Grid{tiles: tiles}) do
+    tiles
+    |> Enum.group_by(fn {{_q, r, _s}, _tile} -> r end)
+    |> Enum.sort_by(fn {r, _} -> r end)
+    |> Enum.map(fn {_r, row_tiles} ->
+      row_tiles
+      |> Enum.map(fn {{q, r, s}, tile} -> {q, r, s, tile} end)
+      |> Enum.sort_by(fn {q, _r, _s, _tile} -> q end)
+    end)
+  end
 end

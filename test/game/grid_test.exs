@@ -41,4 +41,21 @@ defmodule Game.GridTest do
       end)
     end
   end
+
+  describe "to_rows/1" do
+    test "returns rows of tiles for a radius-2 grid" do
+      grid = Grid.new({2, 2, 2})
+      rows = Grid.to_rows(grid)
+      # For radius 2, r goes from -2 to 2
+      assert length(rows) == 5
+      # The number of tiles per row for radius 2: [1, 2, 3, 2, 1]
+      expected_counts = [1, 2, 3, 2, 1]
+      actual_counts = Enum.map(rows, &length/1)
+      assert actual_counts == expected_counts
+      # Check that all tiles are present
+      all_tiles = rows |> List.flatten() |> Enum.map(fn {q, r, s, _tile} -> {q, r, s} end) |> Enum.sort()
+      expected_tiles = Map.keys(grid.tiles) |> Enum.sort()
+      assert all_tiles == expected_tiles
+    end
+  end
 end

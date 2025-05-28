@@ -62,6 +62,9 @@ defmodule Game do
   # Callbacks
 
   def handle_call({:init_combat, characters, grid}, _from, _state) do
+    # Initialize a 6x6 grid if none provided
+    grid = if grid == %Game.Grid{}, do: Game.Grid.new({3, 3, 3}), else: grid
+
     combat = %Combat{
       state: :running,
       players: characters,

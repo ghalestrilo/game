@@ -6,7 +6,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - postgresql_data:/var/lib/postgresql
+      - ./.postgresql_data:/var/lib/postgresql
     container_name: game-db
     hostname: game-db
     networks:
