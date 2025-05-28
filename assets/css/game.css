@@ -107,8 +107,3 @@
   font-size: 12px;
   color: #666;
 }
-
-/* Offset every other row to create hex grid effect */
-.flex.justify-center:nth-child(even) {
-  margin-left: 30px;
-} 

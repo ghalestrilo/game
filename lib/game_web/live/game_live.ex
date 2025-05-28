@@ -19,12 +19,12 @@ defmodule GameWeb.GameLive do
   end
 
   @impl true
-  @spec handle_event(<<_::40>>, any(), any()) :: {:noreply, any()}
   def handle_event("reset", _params, socket) do
     {game_pid, game_state} = initialize_game()
     {:noreply, assign(socket, game_pid: game_pid, game_state: game_state)}
   end
 
+  @impl true
   def render(assigns) do
     ~H"""
     <div class="container mx-auto p-4">
@@ -36,17 +36,18 @@ defmodule GameWeb.GameLive do
           Reset Game
         </button>
       </div>
-
+      
       <%= if @game_state do %>
         <% mage = Enum.find(@game_state.characters, &(&1.class == :mage)) %>
         <div class="game-board">
           <%= for row <- Game.Grid.to_rows(@game_state.grid) do %>
-            <div class="flex flex-row justify-center">
-              <%= for {q, r, s, tile} <- row do %>
+            <div class="flex flex-row justify-center gap-2">
+              <%= for {q, r, s, _tile} <- row do %>
                 <div class="hex-cell border border-gray-300 w-16 h-16 flex items-center justify-center m-1 bg-white">
                   <%= if character = find_character(@game_state.characters, {q, r, s}) do %>
                     <div class={character_class(character)} data-character-id={character.id}>
                       <div class="character-name">{character.name}</div>
+                      
                       <div class="character-hp">HP: {character.hp}</div>
                     </div>
                   <% end %>
@@ -55,11 +56,12 @@ defmodule GameWeb.GameLive do
             </div>
           <% end %>
         </div>
-
+        
         <div class="card-row">
           <%= for card <- mage.hand || [] do %>
             <div class="card">
               <div class="card-title">{card.name}</div>
+              
               <div class="card-effect">Cost: {card.cost} | {inspect(card.effect)}</div>
             </div>
           <% end %>
