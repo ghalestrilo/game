@@ -26,4 +26,12 @@ defmodule Game.Card do
     # Scaling mechanics (e.g., increased power per use, missing HP bonus, etc.)
     :scaling
   ]
+
+  @type t() :: %__MODULE__{
+          id: integer(),
+          name: String.t(),
+          description: String.t(),
+          cost: integer(),
+          effect: function()
+        }
 end

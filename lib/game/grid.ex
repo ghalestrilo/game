@@ -1,6 +1,15 @@
 defmodule Game.Grid do
   alias __MODULE__
 
+  @type t() :: %__MODULE__{
+          tiles: %{
+            {integer(), integer(), integer()} => %{
+              terrain: atom(),
+              occupied_by: Character.t() | nil
+            }
+          }
+        }
+
   @doc """
   Map of {q, r, s} => tile info
   """
@@ -29,14 +38,16 @@ defmodule Game.Grid do
   """
   def new(radius) do
     {x, y, z} = radius
-    tiles = for q <- -x..x,
-                r <- -y..y,
-                s <- -z..z,
-                q + r + s == 0,
-                abs(q) <= x and abs(r) <= y and abs(s) <= z do
-      {{q, r, s}, %{terrain: :floor, occupied_by: nil}}
-    end
-    |> Map.new()
+
+    tiles =
+      for q <- -x..x,
+          r <- -y..y,
+          s <- -z..z,
+          q + r + s == 0,
+          abs(q) <= x and abs(r) <= y and abs(s) <= z do
+        {{q, r, s}, %{terrain: :floor, occupied_by: nil}}
+      end
+      |> Map.new()
 
     %Grid{tiles: tiles}
   end

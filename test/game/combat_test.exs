@@ -32,7 +32,9 @@ defmodule Game.CombatTest do
       moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
 
       # Second move
-      assert {:ok, updated_combat} = Combat.process_action(updated_combat, {:move, moved_warrior, {0, 0, 0}})
+      assert {:ok, updated_combat} =
+               Combat.process_action(updated_combat, {:move, moved_warrior, {0, 0, 0}})
+
       moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
 
       # Third move
@@ -91,7 +93,10 @@ defmodule Game.CombatTest do
       mage: mage
     } do
       assert {:error, "Not enough AP"} =
-               Combat.process_action(combat, {:play_card, warrior, Fixtures.expensive_card(), mage.position})
+               Combat.process_action(
+                 combat,
+                 {:play_card, warrior, Fixtures.expensive_card(), mage.position}
+               )
     end
 
     test "healing card restores HP", %{combat: combat, warrior: warrior, heal_card: heal_card} do
@@ -145,7 +150,10 @@ defmodule Game.CombatTest do
   describe "death and game over" do
     test "character dies when HP reaches 0", %{combat: combat, warrior: warrior, mage: mage} do
       assert {:ok, updated_combat} =
-               Combat.process_action(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
+               Combat.process_action(
+                 combat,
+                 {:play_card, warrior, Fixtures.lethal_card(), mage.position}
+               )
 
       # Check mage is removed from players and queue
       assert length(updated_combat.players) == 1
@@ -156,7 +164,10 @@ defmodule Game.CombatTest do
 
     test "game ends when only one team remains", %{combat: combat, warrior: warrior, mage: mage} do
       assert {:ok, updated_combat} =
-               Combat.process_action(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
+               Combat.process_action(
+                 combat,
+                 {:play_card, warrior, Fixtures.lethal_card(), mage.position}
+               )
 
       assert updated_combat.state == :game_over
     end
@@ -178,7 +189,10 @@ defmodule Game.CombatTest do
       mage: mage
     } do
       assert {:ok, updated_combat} =
-               Combat.process_action(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
+               Combat.process_action(
+                 combat,
+                 {:play_card, warrior, Fixtures.lethal_card(), mage.position}
+               )
 
       # Check turn order only contains warrior
       assert length(updated_combat.queue) == 1
@@ -270,7 +284,9 @@ defmodule Game.CombatTest do
       assert {:ok, updated_combat} = Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
       moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
 
-      assert {:ok, updated_combat} = Combat.process_action(updated_combat, {:move, moved_warrior, {0, 0, 0}})
+      assert {:ok, updated_combat} =
+               Combat.process_action(updated_combat, {:move, moved_warrior, {0, 0, 0}})
+
       moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
 
       assert {:ok, updated_combat} =

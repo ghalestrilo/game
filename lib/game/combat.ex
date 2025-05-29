@@ -1,5 +1,6 @@
 defmodule Game.Combat do
   require Logger
+  alias Game.Card
   alias Game.{Character, Grid, TurnQueue}
   alias __MODULE__
 
@@ -8,14 +9,21 @@ defmodule Game.Combat do
             queue: [],
             grid: %Grid{},
             current_turn: %{
-              starting_position: {0, 0, 0}
+              player: %Character{},
+              starting_position: {0, 0, 0},
+              card: %Card{}
             }
 
   @type t() :: %__MODULE__{
           state: atom(),
           players: list(any()),
           queue: list(any()),
-          grid: Grid.t()
+          grid: Grid.t(),
+          current_turn: %{
+            player: Character.t() | nil,
+            starting_position: {0, 0, 0},
+            card: Card.t() | nil
+          }
         }
 
   def new, do: %Combat{}
@@ -25,7 +33,8 @@ defmodule Game.Combat do
   It receives the current game state and an action to perform
   The action can be an action() or a {action(), any()} tuple.
   """
-  @spec process_action(Combat.t(), atom() | {atom(), any()}) :: {:ok, Combat.t()} | {:error, String.t()}
+  @spec process_action(Combat.t(), atom() | {atom(), any()}) ::
+          {:ok, Combat.t()} | {:error, String.t()}
   def process_action(combat, action)
 
   # TODO: currently not used but in the future the :initialized state will precede the :running state
@@ -89,8 +98,15 @@ defmodule Game.Combat do
   # - Apply damage/healing
   # - Check for death
   def process_action(
-        %Combat{state: :running, queue: queue} = combat,
-        {:play_card, player, card, target_position}
+        %Combat{
+          state: :card_selected,
+          queue: queue,
+          current_turn: %{
+            player: player,
+            card: card
+          }
+        } = combat,
+        {:play_card, target_position}
       ) do
     cond do
       not TurnQueue.is_players_turn?(queue, player) ->
@@ -165,6 +181,23 @@ defmodule Game.Combat do
           true ->
             {:error, "Invalid target"}
         end
+    end
+  end
+
+  # Define a `:pick_card` action
+  def process_action(%Combat{state: :running} = combat, {:pick_card, player, card}) do
+    cond do
+      not TurnQueue.is_players_turn?(combat.queue, player) ->
+        {:error, "Not player's turn"}
+
+      true ->
+        {:ok,
+         %{
+           combat
+           | card: card,
+             state: :card_selected,
+             current_turn: %{player: %{player | hand: player.hand |> List.delete(card)}}
+         }}
     end
   end
 

@@ -19,6 +19,20 @@ defmodule Game.Character do
             # Team identifier
             team: nil
 
+  @type t() :: %__MODULE__{
+          id: integer(),
+          name: String.t(),
+          class: atom(),
+          ap: integer(),
+          hp: integer(),
+          deck: list(Card.t()),
+          position: {integer(), integer(), integer()},
+          status_effects: list(atom()),
+          hand: list(Card.t()),
+          movement_range: integer(),
+          team: atom()
+        }
+
   @doc """
   Moves a character to a new position
   """
