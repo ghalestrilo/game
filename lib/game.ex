@@ -81,7 +81,7 @@ defmodule Game do
     # Get the latest version of the character from state
     current_character = Enum.find(state.combat.players, &(&1.id == character.id))
 
-    case Combat.act(state.combat, {:move, current_character, target_position}) do
+    case Combat.process_action(state.combat, {:move, current_character, target_position}) do
       {:ok, updated_combat} ->
         {:reply, {:ok, updated_combat}, %{state | combat: updated_combat}}
 
@@ -100,7 +100,7 @@ defmodule Game do
     if current_turn.id != current_character.id do
       {:reply, {:error, "Not player's turn"}, state}
     else
-      case Combat.act(state.combat, {:play_card, current_character, card, target_position}) do
+      case Combat.process_action(state.combat, {:play_card, current_character, card, target_position}) do
         {:ok, updated_combat} ->
           current_character = Enum.find(updated_combat.players, &(&1.id == current_character.id))
           # Update the character's state in the game state

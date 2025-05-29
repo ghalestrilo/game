@@ -16,7 +16,7 @@ defmodule Game.CombatTest do
 
   describe "movement" do
     test "character can move within range", %{combat: combat, warrior: warrior} do
-      assert {:ok, updated_combat} = Combat.act(combat, {:move, warrior, {1, 0, -1}})
+      assert {:ok, updated_combat} = Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
       [next_player | _] = updated_combat.queue
       # Warrior's turn still
       assert next_player.id == warrior.id
@@ -28,16 +28,16 @@ defmodule Game.CombatTest do
 
     test "character can move multiple times within range", %{combat: combat, warrior: warrior} do
       # First move
-      assert {:ok, updated_combat} = Combat.act(combat, {:move, warrior, {1, 0, -1}})
+      assert {:ok, updated_combat} = Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
       moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
 
       # Second move
-      assert {:ok, updated_combat} = Combat.act(updated_combat, {:move, moved_warrior, {0, 0, 0}})
+      assert {:ok, updated_combat} = Combat.process_action(updated_combat, {:move, moved_warrior, {0, 0, 0}})
       moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
 
       # Third move
       assert {:ok, updated_combat} =
-               Combat.act(updated_combat, {:move, moved_warrior, {1, 0, -1}})
+               Combat.process_action(updated_combat, {:move, moved_warrior, {1, 0, -1}})
 
       # Check turn order hasn't changed
       [next_player | _] = updated_combat.queue
@@ -53,7 +53,7 @@ defmodule Game.CombatTest do
       warrior: warrior
     } do
       assert {:error, "Not enough movement"} =
-               Combat.act(combat, {:move, warrior, {3, 0, -3}})
+               Combat.process_action(combat, {:move, warrior, {3, 0, -3}})
     end
 
     test "character cannot move to blocked tile", %{combat: combat, warrior: warrior} do
@@ -66,7 +66,7 @@ defmodule Game.CombatTest do
       combat = %{combat | grid: blocked_grid}
 
       assert {:error, "Tile is blocked"} =
-               Combat.act(combat, {:move, warrior, {1, 0, -1}})
+               Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
     end
   end
 
@@ -78,7 +78,7 @@ defmodule Game.CombatTest do
       attack_card: attack_card
     } do
       assert {:ok, updated_combat} =
-               Combat.act(combat, {:play_card, warrior, attack_card, mage.position})
+               Combat.process_action(combat, {:play_card, warrior, attack_card, mage.position})
 
       # Find mage in updated players list
       updated_mage = Enum.find(updated_combat.players, &(&1.id == mage.id))
@@ -91,7 +91,7 @@ defmodule Game.CombatTest do
       mage: mage
     } do
       assert {:error, "Not enough AP"} =
-               Combat.act(combat, {:play_card, warrior, Fixtures.expensive_card(), mage.position})
+               Combat.process_action(combat, {:play_card, warrior, Fixtures.expensive_card(), mage.position})
     end
 
     test "healing card restores HP", %{combat: combat, warrior: warrior, heal_card: heal_card} do
@@ -117,7 +117,7 @@ defmodule Game.CombatTest do
       }
 
       assert {:ok, updated_combat} =
-               Combat.act(
+               Combat.process_action(
                  updated_combat,
                  {:play_card, damaged_warrior, heal_card, damaged_warrior.position}
                )
@@ -132,7 +132,7 @@ defmodule Game.CombatTest do
       updated_combat = %{combat | queue: [warrior, Enum.at(combat.queue, 1)]}
 
       assert {:ok, updated_combat} =
-               Combat.act(
+               Combat.process_action(
                  updated_combat,
                  {:play_card, warrior, Fixtures.self_harm_card(), warrior.position}
                )
@@ -145,7 +145,7 @@ defmodule Game.CombatTest do
   describe "death and game over" do
     test "character dies when HP reaches 0", %{combat: combat, warrior: warrior, mage: mage} do
       assert {:ok, updated_combat} =
-               Combat.act(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
+               Combat.process_action(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
 
       # Check mage is removed from players and queue
       assert length(updated_combat.players) == 1
@@ -156,7 +156,7 @@ defmodule Game.CombatTest do
 
     test "game ends when only one team remains", %{combat: combat, warrior: warrior, mage: mage} do
       assert {:ok, updated_combat} =
-               Combat.act(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
+               Combat.process_action(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
 
       assert updated_combat.state == :game_over
     end
@@ -165,7 +165,7 @@ defmodule Game.CombatTest do
   describe "turn management" do
     test "turn order is maintained after movement", %{combat: combat, warrior: warrior} do
       # Warrior moves
-      assert {:ok, updated_combat} = Combat.act(combat, {:move, warrior, {1, 0, -1}})
+      assert {:ok, updated_combat} = Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
 
       # Check turn order hasn't changed
       [next_player | _] = updated_combat.queue
@@ -178,7 +178,7 @@ defmodule Game.CombatTest do
       mage: mage
     } do
       assert {:ok, updated_combat} =
-               Combat.act(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
+               Combat.process_action(combat, {:play_card, warrior, Fixtures.lethal_card(), mage.position})
 
       # Check turn order only contains warrior
       assert length(updated_combat.queue) == 1
@@ -189,11 +189,11 @@ defmodule Game.CombatTest do
 
   describe "edge cases" do
     test "invalid action returns error", %{combat: combat} do
-      assert {:error, "Invalid action"} = Combat.act(combat, :invalid_action)
+      assert {:error, "Invalid action"} = Combat.process_action(combat, :invalid_action)
     end
 
     test "invalid state returns error" do
-      assert {:error, "Invalid state"} = Combat.act(:invalid_state, :move)
+      assert {:error, "Invalid state"} = Combat.process_action(:invalid_state, :move)
     end
 
     test "multiple characters on same team", %{combat: combat, warrior: warrior} do
@@ -216,7 +216,7 @@ defmodule Game.CombatTest do
 
       # Test that game doesn't end when one team member dies
       assert {:ok, updated_combat} =
-               Combat.act(
+               Combat.process_action(
                  updated_combat,
                  {:play_card, warrior, Fixtures.lethal_card(), Fixtures.warrior2().position}
                )
@@ -228,11 +228,11 @@ defmodule Game.CombatTest do
     test "movement edge cases", %{combat: combat, warrior: warrior} do
       # Test moving to same position
       assert {:error, "Tile is blocked"} =
-               Combat.act(combat, {:move, warrior, warrior.position})
+               Combat.process_action(combat, {:move, warrior, warrior.position})
 
       # Test moving to occupied position
       assert {:error, "Tile is blocked"} =
-               Combat.act(combat, {:move, warrior, {2, 0, -2}})
+               Combat.process_action(combat, {:move, warrior, {2, 0, -2}})
     end
 
     test "card effect edge cases", %{combat: combat, warrior: warrior, mage: mage} do
@@ -241,7 +241,7 @@ defmodule Game.CombatTest do
 
       # Test healing beyond max HP
       assert {:ok, updated_combat} =
-               Combat.act(
+               Combat.process_action(
                  updated_combat,
                  {:play_card, warrior, Fixtures.max_heal_card(), warrior.position}
                )
@@ -255,7 +255,7 @@ defmodule Game.CombatTest do
       updated_combat = %{updated_combat | queue: [warrior, mage]}
 
       assert {:ok, updated_combat} =
-               Combat.act(
+               Combat.process_action(
                  updated_combat,
                  {:play_card, warrior, Fixtures.negative_damage_card(), mage.position}
                )
@@ -267,14 +267,14 @@ defmodule Game.CombatTest do
 
     test "turn order edge cases", %{combat: combat, warrior: warrior, mage: mage} do
       # Test that turn order is maintained after multiple actions
-      assert {:ok, updated_combat} = Combat.act(combat, {:move, warrior, {1, 0, -1}})
+      assert {:ok, updated_combat} = Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
       moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
 
-      assert {:ok, updated_combat} = Combat.act(updated_combat, {:move, moved_warrior, {0, 0, 0}})
+      assert {:ok, updated_combat} = Combat.process_action(updated_combat, {:move, moved_warrior, {0, 0, 0}})
       moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
 
       assert {:ok, updated_combat} =
-               Combat.act(updated_combat, {:move, moved_warrior, {1, 0, -1}})
+               Combat.process_action(updated_combat, {:move, moved_warrior, {1, 0, -1}})
 
       # Check turn order is still correct
       [next_player | _] = updated_combat.queue

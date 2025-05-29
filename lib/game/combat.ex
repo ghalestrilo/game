@@ -25,19 +25,19 @@ defmodule Game.Combat do
   It receives the current game state and an action to perform
   The action can be an action() or a {action(), any()} tuple.
   """
-  @spec act(Combat.t(), atom() | {atom(), any()}) :: {:ok, Combat.t()} | {:error, String.t()}
-  def act(combat, action)
+  @spec process_action(Combat.t(), atom() | {atom(), any()}) :: {:ok, Combat.t()} | {:error, String.t()}
+  def process_action(combat, action)
 
   # TODO: currently not used but in the future the :initialized state will precede the :running state
   # and represent a moment when the players are still picking their characters and decks
-  def act(%Combat{state: :initialized} = combat, :add_player),
+  def process_action(%Combat{state: :initialized} = combat, :add_player),
     do: {:ok, %Combat{combat | state: :running}}
 
   # Move:
   # - Check if it's the player's turn (pattern matching on the queue)
   # - Check if player has enough movement (in tiles)
   # - Check if the target tile is empty
-  def act(
+  def process_action(
         %Combat{
           state: :running,
           queue: queue,
@@ -88,7 +88,7 @@ defmodule Game.Combat do
   # - Check if target is valid
   # - Apply damage/healing
   # - Check for death
-  def act(
+  def process_action(
         %Combat{state: :running, queue: queue} = combat,
         {:play_card, player, card, target_position}
       ) do
@@ -169,7 +169,7 @@ defmodule Game.Combat do
   end
 
   # Game over check
-  def act(%Combat{state: :running} = combat, {:win_check, win_or_not}) do
+  def process_action(%Combat{state: :running} = combat, {:win_check, win_or_not}) do
     case win_or_not do
       :no_win -> {:ok, combat}
       :win -> {:ok, %Combat{combat | state: :game_over}}
@@ -177,7 +177,7 @@ defmodule Game.Combat do
   end
 
   # Catch-all for invalid actions
-  def act(%Combat{} = combat, action) do
+  def process_action(%Combat{} = combat, action) do
     Logger.error("""
     Invalid action-state:
     state: #{inspect(combat)}
@@ -188,7 +188,7 @@ defmodule Game.Combat do
   end
 
   # Catch-all for invalid state
-  def act(state, action) do
+  def process_action(state, action) do
     Logger.error("""
     Invalid state:
     state: #{inspect(state)}
