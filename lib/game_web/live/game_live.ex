@@ -59,7 +59,7 @@ defmodule GameWeb.GameLive do
         
         <div class="card-row">
           <%= for card <- mage.hand || [] do %>
-            <div class="card">
+            <div phx-click="pick_card" phx-value-card-id={card.id} class="card">
               <div class="card-title">{card.name}</div>
               
               <div class="card-effect">Cost: {card.cost} | {inspect(card.effect)}</div>
@@ -133,5 +133,12 @@ defmodule GameWeb.GameLive do
     {:ok, _combat} = Game.init_combat(game_pid, updated_players, grid)
     game_state = Game.get_state(game_pid)
     {game_pid, game_state}
+  end
+
+  def handle_event("pick_card", params, socket) do
+    {:ok, updated_combat} =
+      Game.process_action(socket.assigns.game_pid, {:pick_card, params["card_id"]})
+
+    {:noreply, assign(socket, game_state: updated_combat)}
   end
 end

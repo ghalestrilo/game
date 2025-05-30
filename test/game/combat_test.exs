@@ -1,6 +1,6 @@
 defmodule Game.CombatTest do
   use ExUnit.Case
-  alias Game.{Combat, Character, Card, Grid}
+  alias Game.Combat
   alias Game.Fixtures
 
   setup do
@@ -79,8 +79,13 @@ defmodule Game.CombatTest do
       mage: mage,
       attack_card: attack_card
     } do
+      # First pick the card
+      assert {:ok, card_selected_combat} =
+               Combat.process_action(combat, {:pick_card, warrior, attack_card})
+
+      # Then play the card
       assert {:ok, updated_combat} =
-               Combat.process_action(combat, {:play_card, warrior, attack_card, mage.position})
+               Combat.process_action(card_selected_combat, {:play_card, mage.position})
 
       # Find mage in updated players list
       updated_mage = Enum.find(updated_combat.players, &(&1.id == mage.id))
@@ -92,11 +97,13 @@ defmodule Game.CombatTest do
       warrior: warrior,
       mage: mage
     } do
+      # First pick the expensive card
+      assert {:ok, card_selected_combat} =
+               Combat.process_action(combat, {:pick_card, warrior, Fixtures.expensive_card()})
+
+      # Then try to play the card - should fail due to insufficient AP
       assert {:error, "Not enough AP"} =
-               Combat.process_action(
-                 combat,
-                 {:play_card, warrior, Fixtures.expensive_card(), mage.position}
-               )
+               Combat.process_action(card_selected_combat, {:play_card, mage.position})
     end
 
     test "healing card restores HP", %{combat: combat, warrior: warrior, heal_card: heal_card} do
@@ -121,11 +128,13 @@ defmodule Game.CombatTest do
           grid: updated_grid
       }
 
+      # First pick the heal card
+      assert {:ok, card_selected_combat} =
+               Combat.process_action(updated_combat, {:pick_card, damaged_warrior, heal_card})
+
+      # Then play the card on self
       assert {:ok, updated_combat} =
-               Combat.process_action(
-                 updated_combat,
-                 {:play_card, damaged_warrior, heal_card, damaged_warrior.position}
-               )
+               Combat.process_action(card_selected_combat, {:play_card, damaged_warrior.position})
 
       updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
       # 15 + 3 healing
@@ -136,11 +145,16 @@ defmodule Game.CombatTest do
       # Ensure it's warrior's turn
       updated_combat = %{combat | queue: [warrior, Enum.at(combat.queue, 1)]}
 
-      assert {:ok, updated_combat} =
+      # First pick the self harm card
+      assert {:ok, card_selected_combat} =
                Combat.process_action(
                  updated_combat,
-                 {:play_card, warrior, Fixtures.self_harm_card(), warrior.position}
+                 {:pick_card, warrior, Fixtures.self_harm_card()}
                )
+
+      # Then play the card on self
+      assert {:ok, updated_combat} =
+               Combat.process_action(card_selected_combat, {:play_card, warrior.position})
 
       updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
       assert updated_warrior.hp == warrior.hp - 5
@@ -149,11 +163,13 @@ defmodule Game.CombatTest do
 
   describe "death and game over" do
     test "character dies when HP reaches 0", %{combat: combat, warrior: warrior, mage: mage} do
+      # First pick the lethal card
+      assert {:ok, card_selected_combat} =
+               Combat.process_action(combat, {:pick_card, warrior, Fixtures.lethal_card()})
+
+      # Then play the card
       assert {:ok, updated_combat} =
-               Combat.process_action(
-                 combat,
-                 {:play_card, warrior, Fixtures.lethal_card(), mage.position}
-               )
+               Combat.process_action(card_selected_combat, {:play_card, mage.position})
 
       # Check mage is removed from players and queue
       assert length(updated_combat.players) == 1
@@ -163,11 +179,13 @@ defmodule Game.CombatTest do
     end
 
     test "game ends when only one team remains", %{combat: combat, warrior: warrior, mage: mage} do
+      # First pick the lethal card
+      assert {:ok, card_selected_combat} =
+               Combat.process_action(combat, {:pick_card, warrior, Fixtures.lethal_card()})
+
+      # Then play the card
       assert {:ok, updated_combat} =
-               Combat.process_action(
-                 combat,
-                 {:play_card, warrior, Fixtures.lethal_card(), mage.position}
-               )
+               Combat.process_action(card_selected_combat, {:play_card, mage.position})
 
       assert updated_combat.state == :game_over
     end
@@ -188,11 +206,13 @@ defmodule Game.CombatTest do
       warrior: warrior,
       mage: mage
     } do
+      # First pick the lethal card
+      assert {:ok, card_selected_combat} =
+               Combat.process_action(combat, {:pick_card, warrior, Fixtures.lethal_card()})
+
+      # Then play the card
       assert {:ok, updated_combat} =
-               Combat.process_action(
-                 combat,
-                 {:play_card, warrior, Fixtures.lethal_card(), mage.position}
-               )
+               Combat.process_action(card_selected_combat, {:play_card, mage.position})
 
       # Check turn order only contains warrior
       assert length(updated_combat.queue) == 1
@@ -228,11 +248,18 @@ defmodule Game.CombatTest do
           grid: updated_grid
       }
 
-      # Test that game doesn't end when one team member dies
-      assert {:ok, updated_combat} =
+      # First pick the lethal card
+      assert {:ok, card_selected_combat} =
                Combat.process_action(
                  updated_combat,
-                 {:play_card, warrior, Fixtures.lethal_card(), Fixtures.warrior2().position}
+                 {:pick_card, warrior, Fixtures.lethal_card()}
+               )
+
+      # Then play the card on warrior2
+      assert {:ok, updated_combat} =
+               Combat.process_action(
+                 card_selected_combat,
+                 {:play_card, Fixtures.warrior2().position}
                )
 
       assert updated_combat.state == :running
@@ -254,11 +281,16 @@ defmodule Game.CombatTest do
       updated_combat = %{combat | queue: [warrior, mage]}
 
       # Test healing beyond max HP
-      assert {:ok, updated_combat} =
+      # First pick the max heal card
+      assert {:ok, card_selected_combat} =
                Combat.process_action(
                  updated_combat,
-                 {:play_card, warrior, Fixtures.max_heal_card(), warrior.position}
+                 {:pick_card, warrior, Fixtures.max_heal_card()}
                )
+
+      # Then play the card on self
+      assert {:ok, updated_combat} =
+               Combat.process_action(card_selected_combat, {:play_card, warrior.position})
 
       updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
       # Should not exceed max HP
@@ -268,18 +300,23 @@ defmodule Game.CombatTest do
       # Ensure it's still warrior's turn
       updated_combat = %{updated_combat | queue: [warrior, mage]}
 
-      assert {:ok, updated_combat} =
+      # First pick the negative damage card
+      assert {:ok, card_selected_combat} =
                Combat.process_action(
                  updated_combat,
-                 {:play_card, warrior, Fixtures.negative_damage_card(), mage.position}
+                 {:pick_card, warrior, Fixtures.negative_damage_card()}
                )
+
+      # Then play the card on mage
+      assert {:ok, updated_combat} =
+               Combat.process_action(card_selected_combat, {:play_card, mage.position})
 
       updated_mage = Enum.find(updated_combat.players, &(&1.id == mage.id))
       # Negative damage should heal
       assert updated_mage.hp == mage.hp + 5
     end
 
-    test "turn order edge cases", %{combat: combat, warrior: warrior, mage: mage} do
+    test "turn order edge cases", %{combat: combat, warrior: warrior} do
       # Test that turn order is maintained after multiple actions
       assert {:ok, updated_combat} = Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
       moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))

@@ -128,12 +128,18 @@ defmodule Game.Combat do
             updated_queue = TurnQueue.rotate(queue, updated_player)
             updated_players = update_player_in_list(combat.players, updated_player)
             [next_player | _] = updated_queue
-            updated_combat = %{combat | queue: updated_queue, players: updated_players}
+
+            updated_combat = %{
+              combat
+              | queue: updated_queue,
+                players: updated_players,
+                state: :running,
+                current_turn: %{starting_position: next_player.position, player: nil, card: nil}
+            }
 
             updated_combat = %{
               updated_combat
-              | grid: Grid.update_character(updated_combat.grid, updated_player),
-                current_turn: %{starting_position: next_player.position}
+              | grid: Grid.update_character(updated_combat.grid, updated_player)
             }
 
             # Check for death after self-targeting
@@ -171,7 +177,8 @@ defmodule Game.Combat do
               updated_combat = %{
                 updated_combat
                 | queue: updated_queue,
-                  current_turn: %{starting_position: next_player.position}
+                  state: :running,
+                  current_turn: %{starting_position: next_player.position, player: nil, card: nil}
               }
 
               {:ok, updated_combat}
@@ -194,9 +201,12 @@ defmodule Game.Combat do
         {:ok,
          %{
            combat
-           | card: card,
-             state: :card_selected,
-             current_turn: %{player: %{player | hand: player.hand |> List.delete(card)}}
+           | state: :card_selected,
+             current_turn: %{
+               player: %{player | hand: player.hand |> List.delete(card)},
+               starting_position: combat.current_turn.starting_position,
+               card: card
+             }
          }}
     end
   end
@@ -300,7 +310,8 @@ defmodule Game.Combat do
     if remaining_teams <= 1 do
       {:ok, %Combat{combat | state: :game_over}}
     else
-      {:ok, combat}
+      # Ensure we return to running state if game continues
+      {:ok, %Combat{combat | state: :running}}
     end
   end
 end
