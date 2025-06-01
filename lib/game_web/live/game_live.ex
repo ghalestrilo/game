@@ -39,35 +39,38 @@ defmodule GameWeb.GameLive do
       </div>
       
       <%= if @game_state do %>
-        <% mage = Enum.find(@game_state.characters, &(&1.class == :mage)) %>
         <div class="game-board">
-          <%= for row <- Game.Grid.to_rows(@game_state.grid) do %>
+          <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
             <div class="flex flex-row justify-center gap-2">
               <%= for {q, r, s, _tile} <- row do %>
-                <div class={
-                  [
-                    "hex-cell border border-gray-300 w-16 h-16 flex items-center justify-center m-1 bg-white",
-                    # If distance from `:starting_position` is within `:movement_range` highlight the hex cell
-                    if(
-                      Grid.distance(
-                        @game_state.grid,
-                        {q, r, s},
-                        @game_state.combat.current_turn.starting_position
-                      ) <=
-                        @game_state.combat.current_turn.player.movement_range,
-                      do: "bg-yellow-50",
-                      else: ""
-                    ),
-                    # If it's the current turn, highlight the hex cell
-                    if(
-                      find_character(@game_state.characters, {q, r, s}) ==
-                        @game_state.combat.current_turn.player,
-                      do: "bg-green-200",
-                      else: ""
-                    )
-                  ]
-                }>
-                  <%= if character = find_character(@game_state.characters, {q, r, s}) do %>
+                <div
+                  phx-click="interact"
+                  phx-value-target_position={"#{q}_#{r}_#{s}"}
+                  class={
+                    [
+                      "hex-cell border border-gray-300 w-16 h-16 flex items-center justify-center m-1 bg-white",
+                      # If distance from `:starting_position` is within `:movement_range` highlight the hex cell
+                      if(
+                        Grid.distance(
+                          @game_state.grid,
+                          {q, r, s},
+                          @game_state.combat.current_turn.starting_position
+                        ) <=
+                          @game_state.combat.current_turn.player.movement_range,
+                        do: "bg-yellow-50",
+                        else: ""
+                      ),
+                      # If it's the current turn, highlight the hex cell
+                      if(
+                        find_character(@game_state.combat.players, {q, r, s}) ==
+                          @game_state.combat.current_turn.player,
+                        do: "bg-green-200",
+                        else: ""
+                      )
+                    ]
+                  }
+                >
+                  <%= if character = find_character(@game_state.combat.players, {q, r, s}) do %>
                     <div class={character_class(character)} data-character-id={character.id}>
                       <div class="character-name">{character.name}</div>
                       
@@ -197,5 +200,33 @@ defmodule GameWeb.GameLive do
     dbg(combat)
 
     {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
+  end
+
+  def handle_event(
+        "interact",
+        params,
+        %{
+          assigns: %{game_state: %{combat: %{state: :card_selected, current_turn: %{card: card}}}}
+        } = socket
+      ) do
+    dbg(params)
+
+    [q, r, s] =
+      params["target_position"]
+      |> String.split("_")
+      |> Enum.map(&String.to_integer/1)
+
+    {:ok, combat} =
+      Game.Combat.process_action(
+        socket.assigns.game_state.combat,
+        {:play_card, {q, r, s}}
+      )
+
+    {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
+  end
+
+  def handle_event("interact", params, socket) do
+    dbg(params)
+    {:noreply, socket}
   end
 end

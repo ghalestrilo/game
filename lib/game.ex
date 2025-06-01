@@ -66,6 +66,23 @@ defmodule Game do
     # Initialize a 6x6 grid if none provided
     grid = if grid == %Game.Grid{}, do: Game.Grid.new({3, 3, 3}), else: grid
 
+    grid =
+      Map.update(grid, :tiles, %{}, fn tiles ->
+        Enum.reduce(tiles, %{}, fn {key, value}, acc ->
+          character = Enum.find(characters, &(&1.position == key))
+
+          Map.put(acc, key, %{
+            value
+            | occupied_by:
+                if character do
+                  character
+                else
+                  nil
+                end
+          })
+        end)
+      end)
+
     combat = %Combat{
       state: :running,
       players: characters,

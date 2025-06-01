@@ -78,8 +78,10 @@ defmodule Game.Grid do
   Returns the character at the given position, if any
   """
   def get_object(%Grid{tiles: tiles}, position) do
+    dbg(Map.get(tiles, position))
+
     case Map.get(tiles, position) do
-      %{occupied_by: character} when not is_nil(character) -> character
+      %{occupied_by: character} when not is_nil(character) -> {:ok, character}
       _ -> nil
     end
   end

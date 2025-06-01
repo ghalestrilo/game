@@ -103,6 +103,7 @@ defmodule Game.Combat do
         %Combat{
           state: :card_selected,
           queue: queue,
+          grid: grid,
           current_turn: %{
             player: player,
             card: card
@@ -110,6 +111,10 @@ defmodule Game.Combat do
         } = combat,
         {:play_card, target_position}
       ) do
+    # dbg(target_position)
+    # dbg(Grid.get_object(grid, target_position))
+    # dbg(grid)
+
     cond do
       not TurnQueue.is_players_turn?(queue, player) ->
         {:error, "Not player's turn"}
@@ -117,11 +122,9 @@ defmodule Game.Combat do
       not Character.has_enough_ap?(player, card.cost) ->
         {:error, "Not enough AP"}
 
-      true ->
-        # Get target character if any
-        target = Grid.get_object(combat.grid, target_position)
-
+      {:ok, target} = Grid.get_object(grid, target_position) ->
         # Handle self-targeting or targeting empty tiles
+
         cond do
           # Self-targeting (healing or damage)
           target == nil and player.position == target_position ->

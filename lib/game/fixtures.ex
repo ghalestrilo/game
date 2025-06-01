@@ -56,7 +56,8 @@ defmodule Game.Fixtures do
       id: 1,
       name: "Strike",
       cost: 1,
-      effect: {:damage, 5}
+      effect: {:damage, 5},
+      range: 3
     }
   end
 
