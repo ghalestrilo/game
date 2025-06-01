@@ -10,7 +10,19 @@ defmodule Game.Fixtures do
       hp: 20,
       position: {0, 0, 0},
       movement_range: 2,
-      team: :team1
+      team: :team1,
+      deck: [
+        attack_card(),
+        attack_card(),
+        attack_card(),
+        attack_card(),
+        attack_card(),
+        attack_card(),
+        attack_card(),
+        attack_card(),
+        attack_card(),
+        attack_card()
+      ]
     }
   end
 
@@ -23,7 +35,19 @@ defmodule Game.Fixtures do
       hp: 15,
       position: {2, 0, -2},
       movement_range: 1,
-      team: :team2
+      team: :team2,
+      deck: [
+        heal_card(),
+        heal_card(),
+        heal_card(),
+        heal_card(),
+        heal_card(),
+        heal_card(),
+        heal_card(),
+        heal_card(),
+        heal_card(),
+        heal_card()
+      ]
     }
   end
 
@@ -66,12 +90,15 @@ defmodule Game.Fixtures do
   end
 
   def basic_combat do
+    warrior = warrior()
+    mage = mage()
+
     %Combat{
       state: :running,
-      players: [warrior(), mage()],
-      queue: [warrior(), mage()],
+      players: [warrior, mage],
+      queue: [warrior, mage],
       grid: basic_grid(),
-      current_turn: %{starting_position: warrior().position}
+      current_turn: %{starting_position: warrior.position}
     }
   end
 

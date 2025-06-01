@@ -73,7 +73,9 @@ defmodule Game do
       grid: grid,
       current_turn: %{
         starting_position: hd(characters).position,
-        player: hd(characters)
+        player: hd(characters),
+        card: nil,
+        hand: Enum.take(hd(characters).deck, 5)
       }
     }
 

@@ -83,8 +83,8 @@ defmodule GameWeb.GameLive do
         </div>
         
         <div class="card-row">
-          <%= for card <- mage.hand || [] do %>
-            <div phx-click="pick_card" phx-value-card-id={card.id} class="card">
+          <%= for {card, index} <- Enum.with_index(@game_state.combat.current_turn.player.hand) do %>
+            <div phx-click="pick_card" phx-value-card_index={index} class="card">
               <div class="card-title">{card.name}</div>
               
               <div class="card-effect">Cost: {card.cost} | {inspect(card.effect)}</div>
@@ -161,8 +161,20 @@ defmodule GameWeb.GameLive do
   end
 
   def handle_event("pick_card", params, socket) do
+    # dbg(socket.assigns)
+    dbg(params)
+
+    current_turn = socket.assigns.game_state.combat.current_turn
+    card = current_turn.player.hand |> Enum.at(String.to_integer(params["card_index"]))
+
+    dbg(current_turn.player.hand)
+    dbg(card)
+
     {:ok, updated_combat} =
-      Game.process_action(socket.assigns.game_pid, {:pick_card, params["card_id"]})
+      Game.process_action(
+        socket.assigns.game_pid,
+        {:pick_card, current_turn.player, card}
+      )
 
     {:noreply, assign(socket, game_state: updated_combat)}
   end
