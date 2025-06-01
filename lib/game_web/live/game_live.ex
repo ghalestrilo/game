@@ -83,8 +83,18 @@ defmodule GameWeb.GameLive do
         </div>
         
         <div class="card-row">
-          <%= for {card, index} <- Enum.with_index(@game_state.combat.current_turn.player.hand) do %>
-            <div phx-click="pick_card" phx-value-card_index={index} class="card">
+          <%= for {card, index} <- Enum.with_index(@game_state.combat.current_turn.hand) do %>
+            <div
+              phx-click="pick_card"
+              phx-value-card_index={index}
+              class={[
+                "card",
+                if(card == Map.get(@game_state.combat.current_turn, :card, nil),
+                  do: "!bg-yellow-50",
+                  else: ""
+                )
+              ]}
+            >
               <div class="card-title">{card.name}</div>
               
               <div class="card-effect">Cost: {card.cost} | {inspect(card.effect)}</div>
@@ -165,17 +175,27 @@ defmodule GameWeb.GameLive do
     dbg(params)
 
     current_turn = socket.assigns.game_state.combat.current_turn
-    card = current_turn.player.hand |> Enum.at(String.to_integer(params["card_index"]))
+    card = current_turn.hand |> Enum.at(String.to_integer(params["card_index"]))
 
-    dbg(current_turn.player.hand)
+    dbg(socket.assigns.game_state.combat.state)
+    dbg(current_turn.card)
     dbg(card)
 
-    {:ok, updated_combat} =
-      Game.process_action(
-        socket.assigns.game_pid,
-        {:pick_card, current_turn.player, card}
-      )
+    combat =
+      with {:ok, updated_combat} <-
+             Game.Combat.process_action(
+               socket.assigns.game_state.combat,
+               {:pick_card, current_turn.player, card}
+             ) do
+        updated_combat
+      else
+        {:error, error} ->
+          dbg(error)
+          socket.assigns.game_state.combat
+      end
 
-    {:noreply, assign(socket, game_state: updated_combat)}
+    dbg(combat)
+
+    {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
   end
 end

@@ -11,7 +11,8 @@ defmodule Game.Combat do
             current_turn: %{
               player: %Character{},
               starting_position: {0, 0, 0},
-              card: %Card{}
+              card: %Card{},
+              hand: []
             }
 
   @type t() :: %__MODULE__{
@@ -22,7 +23,8 @@ defmodule Game.Combat do
           current_turn: %{
             player: Character.t() | nil,
             starting_position: {0, 0, 0},
-            card: Card.t() | nil
+            card: Card.t() | nil,
+            hand: list(Card.t())
           }
         }
 
@@ -84,7 +86,7 @@ defmodule Game.Combat do
           | grid: updated_grid,
             players: updated_players,
             queue: updated_queue,
-            current_turn: %{starting_position: target_position}
+            current_turn: %{position: target_position}
         }
 
         {:ok, updated_combat}
@@ -134,7 +136,12 @@ defmodule Game.Combat do
               | queue: updated_queue,
                 players: updated_players,
                 state: :running,
-                current_turn: %{starting_position: next_player.position, player: nil, card: nil}
+                current_turn: %{
+                  starting_position: next_player.position,
+                  player: next_player,
+                  card: nil,
+                  hand: Enum.take(next_player.deck, 5)
+                }
             }
 
             updated_combat = %{
@@ -178,7 +185,12 @@ defmodule Game.Combat do
                 updated_combat
                 | queue: updated_queue,
                   state: :running,
-                  current_turn: %{starting_position: next_player.position, player: nil, card: nil}
+                  current_turn: %{
+                    starting_position: next_player.position,
+                    player: next_player,
+                    card: nil,
+                    hand: Enum.take(next_player.deck, 5)
+                  }
               }
 
               {:ok, updated_combat}
@@ -193,6 +205,8 @@ defmodule Game.Combat do
 
   # Define a `:pick_card` action
   def process_action(%Combat{state: :running} = combat, {:pick_card, player, card}) do
+    dbg("Processing event: pick_card")
+
     cond do
       not TurnQueue.is_players_turn?(combat.queue, player) ->
         {:error, "Not player's turn"}
@@ -202,11 +216,7 @@ defmodule Game.Combat do
          %{
            combat
            | state: :card_selected,
-             current_turn: %{
-               player: %{player | hand: player.hand |> List.delete(card)},
-               starting_position: combat.current_turn.starting_position,
-               card: card
-             }
+             current_turn: %{combat.current_turn | card: card}
          }}
     end
   end
