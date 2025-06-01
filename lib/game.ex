@@ -5,7 +5,8 @@ defmodule Game do
   require Logger
 
   @initial_state %{
-    grid: Game.Grid.new({2, 2, 2}),  # Creates a 5x5x5 hex grid centered at (0,0,0)
+    # Creates a 5x5x5 hex grid centered at (0,0,0)
+    grid: Game.Grid.new({2, 2, 2}),
     characters: [
       %Game.Character{},
       %Game.Character{}
@@ -70,10 +71,18 @@ defmodule Game do
       players: characters,
       queue: characters,
       grid: grid,
-      current_turn: %{starting_position: hd(characters).position}
+      current_turn: %{
+        starting_position: hd(characters).position,
+        player: hd(characters)
+      }
     }
 
-    new_state = %{grid: grid, characters: characters, combat: combat}
+    new_state = %{
+      grid: grid,
+      characters: characters,
+      combat: combat
+    }
+
     {:reply, {:ok, combat}, new_state}
   end
 
@@ -100,7 +109,10 @@ defmodule Game do
     if current_turn.id != current_character.id do
       {:reply, {:error, "Not player's turn"}, state}
     else
-      case Combat.process_action(state.combat, {:play_card, current_character, card, target_position}) do
+      case Combat.process_action(
+             state.combat,
+             {:play_card, current_character, card, target_position}
+           ) do
         {:ok, updated_combat} ->
           current_character = Enum.find(updated_combat.players, &(&1.id == current_character.id))
           # Update the character's state in the game state

@@ -1,4 +1,5 @@
 defmodule GameWeb.GameLive do
+  alias Game.Grid
   use GameWeb, :live_view
   alias Game
   alias Game.Fixtures
@@ -43,12 +44,36 @@ defmodule GameWeb.GameLive do
           <%= for row <- Game.Grid.to_rows(@game_state.grid) do %>
             <div class="flex flex-row justify-center gap-2">
               <%= for {q, r, s, _tile} <- row do %>
-                <div class="hex-cell border border-gray-300 w-16 h-16 flex items-center justify-center m-1 bg-white">
+                <div class={
+                  [
+                    "hex-cell border border-gray-300 w-16 h-16 flex items-center justify-center m-1 bg-white",
+                    # If distance from `:starting_position` is within `:movement_range` highlight the hex cell
+                    if(
+                      Grid.distance(
+                        @game_state.grid,
+                        {q, r, s},
+                        @game_state.combat.current_turn.starting_position
+                      ) <=
+                        @game_state.combat.current_turn.player.movement_range,
+                      do: "bg-yellow-50",
+                      else: ""
+                    ),
+                    # If it's the current turn, highlight the hex cell
+                    if(
+                      find_character(@game_state.characters, {q, r, s}) ==
+                        @game_state.combat.current_turn.player,
+                      do: "bg-green-200",
+                      else: ""
+                    )
+                  ]
+                }>
                   <%= if character = find_character(@game_state.characters, {q, r, s}) do %>
                     <div class={character_class(character)} data-character-id={character.id}>
                       <div class="character-name">{character.name}</div>
                       
                       <div class="character-hp text-gray-200">HP: {character.hp}</div>
+                      
+                      <div class="character-ap text-gray-200">AP: {character.ap}</div>
                     </div>
                   <% end %>
                 </div>
