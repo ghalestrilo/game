@@ -221,6 +221,28 @@ defmodule Game.Combat do
     end
   end
 
+  def process_action(
+        %Combat{
+          state: :card_selected,
+          current_turn: %{card: card} = current_turn
+        } = combat,
+        {:pick_card, _player, card}
+      ) do
+    Logger.info("Picked same card, unpicking")
+    {:ok, %{combat | state: :running, current_turn: %{current_turn | card: nil}}}
+  end
+
+  def process_action(
+        %Combat{
+          state: :card_selected,
+          current_turn: %{card: %Card{}} = current_turn
+        } = combat,
+        {:pick_card, _player, card}
+      ) do
+    Logger.info("Picked different card, updating")
+    {:ok, %{combat | current_turn: %{current_turn | card: card}}}
+  end
+
   # Game over check
   def process_action(%Combat{state: :running} = combat, {:win_check, win_or_not}) do
     case win_or_not do
@@ -240,7 +262,7 @@ defmodule Game.Combat do
     {:error, "Invalid action"}
   end
 
-  # Catch-all for invalid state
+  # lCatch-all for invalid state
   def process_action(state, action) do
     Logger.error("""
     Invalid state:
