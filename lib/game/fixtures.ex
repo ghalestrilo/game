@@ -38,6 +38,7 @@ defmodule Game.Fixtures do
       team: :team2,
       deck: [
         heal_card(),
+        fireball_card(),
         heal_card(),
         heal_card(),
         heal_card(),
@@ -57,7 +58,7 @@ defmodule Game.Fixtures do
       name: "Strike",
       cost: 1,
       effect: {:damage, 5},
-      range: 3
+      range: 1
     }
   end
 
@@ -149,6 +150,15 @@ defmodule Game.Fixtures do
       name: "Negative Strike",
       cost: 1,
       effect: {:damage, -5}
+    }
+  end
+
+  def fireball_card() do
+    %Card{
+      id: 9,
+      name: "Fireball",
+      cost: 1,
+      effect: {:damage, 10}
     }
   end
 end

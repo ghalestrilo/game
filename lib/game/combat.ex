@@ -81,13 +81,17 @@ defmodule Game.Combat do
         updated_queue =
           Enum.map(queue, fn p -> if p.id == player.id, do: moved_player, else: p end)
 
-        # Update current_turn with the new position
+        # Update current_turn with the new position and updated player
         updated_combat = %{
           combat
           | grid: updated_grid,
             players: updated_players,
             queue: updated_queue,
-            current_turn: %{combat.current_turn | starting_position: target_position}
+            current_turn: %{
+              combat.current_turn
+              | starting_position: target_position,
+                player: moved_player
+            }
         }
 
         {:ok, updated_combat}
