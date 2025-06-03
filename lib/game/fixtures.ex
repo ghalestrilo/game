@@ -37,17 +37,16 @@ defmodule Game.Fixtures do
       movement_range: 1,
       team: :team2,
       deck: [
-        heal_card(),
+        fireball_card(),
+        fireball_card(),
         fireball_card(),
         heal_card(),
         heal_card(),
         heal_card(),
         heal_card(),
         heal_card(),
-        heal_card(),
-        heal_card(),
-        heal_card(),
-        heal_card()
+        fireball_card(),
+        fireball_card()
       ]
     }
   end

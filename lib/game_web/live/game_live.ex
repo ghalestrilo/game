@@ -165,7 +165,6 @@ defmodule GameWeb.GameLive do
         if player.id == mage_with_cards.id, do: mage_with_cards, else: player
       end)
 
-    # Use the new 6x6 grid
     grid = Game.Grid.new({3, 3, 3})
 
     {:ok, _combat} = Game.init_combat(game_pid, updated_players, grid)
@@ -174,22 +173,12 @@ defmodule GameWeb.GameLive do
   end
 
   def handle_event("pick_card", params, socket) do
-    # dbg(socket.assigns)
-    dbg(params)
-
     current_turn = socket.assigns.game_state.combat.current_turn
     card = current_turn.hand |> Enum.at(String.to_integer(params["card_index"]))
 
-    dbg(socket.assigns.game_state.combat.state)
-    dbg(current_turn.card)
-    dbg(card)
-
     combat =
       with {:ok, updated_combat} <-
-             Game.Combat.process_action(
-               socket.assigns.game_state.combat,
-               {:pick_card, current_turn.player, card}
-             ) do
+             process_game_action(socket, {:pick_card, current_turn.player, card}) do
         updated_combat
       else
         {:error, error} ->
@@ -209,17 +198,17 @@ defmodule GameWeb.GameLive do
           assigns: %{game_state: %{combat: %{state: :card_selected, current_turn: %{card: card}}}}
         } = socket
       ) do
-    dbg(params)
+    with {:ok, position} <- parse_target_position(params["target_position"]),
+         {:ok, combat} <- process_game_action(socket, {:play_card, position}) do
+      {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
+    else
+      {:error, error} ->
+        socket =
+          socket
+          |> put_flash(:error, "#{error}")
 
-    {:ok, position} = parse_target_position(params["target_position"])
-
-    {:ok, combat} =
-      Game.Combat.process_action(
-        socket.assigns.game_state.combat,
-        {:play_card, position}
-      )
-
-    {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
+        {:noreply, socket}
+    end
   end
 
   def handle_event(
@@ -231,8 +220,16 @@ defmodule GameWeb.GameLive do
       ) do
     {:ok, position} = parse_target_position(target_position)
 
-    {:ok, combat} = process_game_action({:move, player, position}, socket)
-    {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
+    with {:ok, combat} <- process_game_action(socket, {:move, player, position}) do
+      {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
+    else
+      {:error, error} ->
+        socket =
+          socket
+          |> put_flash(:error, "#{error}")
+
+        {:noreply, socket}
+    end
   end
 
   def handle_event("interact", params, socket) do
@@ -240,7 +237,7 @@ defmodule GameWeb.GameLive do
     {:noreply, socket}
   end
 
-  defp process_game_action(action, socket) do
+  defp process_game_action(socket, action) do
     with {:ok, updated_combat} <-
            Game.Combat.process_action(
              socket.assigns.game_state.combat,

@@ -89,8 +89,7 @@ defmodule Game.Combat do
             queue: updated_queue,
             current_turn: %{
               combat.current_turn
-              | starting_position: target_position,
-                player: moved_player
+              | player: moved_player
             }
         }
 
@@ -99,11 +98,6 @@ defmodule Game.Combat do
   end
 
   # Play Card:
-  # - Check if it's the player's turn
-  # - Check if player has enough AP
-  # - Check if target is valid
-  # - Apply damage/healing
-  # - Check for death
   def process_action(
         %Combat{
           state: :card_selected,
@@ -116,9 +110,8 @@ defmodule Game.Combat do
         } = combat,
         {:play_card, target_position}
       ) do
-    # dbg(target_position)
-    # dbg(Grid.get_object(grid, target_position))
-    # dbg(grid)
+    position = Grid.get_object(grid, target_position)
+    dbg(position)
 
     cond do
       not TurnQueue.is_players_turn?(queue, player) ->
@@ -127,45 +120,52 @@ defmodule Game.Combat do
       not Character.has_enough_ap?(player, card.cost) ->
         {:error, "Not enough AP"}
 
-      {:ok, target} = Grid.get_object(grid, target_position) ->
+      # Self-targeting (healing or damage)
+      position == {:ok, nil} and player.position == target_position ->
+        updated_player = Character.apply_card_effect(player, card.effect)
+        # Update the player's state in the queue and players list
+        updated_queue = TurnQueue.rotate(queue, updated_player)
+        updated_players = update_player_in_list(combat.players, updated_player)
+        [next_player | _] = updated_queue
+
+        updated_combat = %{
+          combat
+          | queue: updated_queue,
+            players: updated_players,
+            state: :running,
+            current_turn: %{
+              starting_position: next_player.position,
+              player: next_player,
+              card: nil,
+              hand: Enum.take(next_player.deck, 5)
+            }
+        }
+
+        updated_combat = %{
+          updated_combat
+          | grid: Grid.update_character(updated_combat.grid, updated_player)
+        }
+
+        # Check for death after self-targeting
+        if Character.is_dead?(updated_player) do
+          updated_combat = remove_player(updated_combat, updated_player)
+          check_game_over(updated_combat)
+        else
+          {:ok, updated_combat}
+        end
+
+      is_nil(position) ->
+        {:error, "There's nothing targetable in this tile"}
+
+      elem(position, 0) == :ok ->
         # Handle self-targeting or targeting empty tiles
+        {:ok, target} = position
 
         cond do
-          # Self-targeting (healing or damage)
-          target == nil and player.position == target_position ->
-            updated_player = Character.apply_card_effect(player, card.effect)
-            # Update the player's state in the queue and players list
-            updated_queue = TurnQueue.rotate(queue, updated_player)
-            updated_players = update_player_in_list(combat.players, updated_player)
-            [next_player | _] = updated_queue
-
-            updated_combat = %{
-              combat
-              | queue: updated_queue,
-                players: updated_players,
-                state: :running,
-                current_turn: %{
-                  starting_position: next_player.position,
-                  player: next_player,
-                  card: nil,
-                  hand: Enum.take(next_player.deck, 5)
-                }
-            }
-
-            updated_combat = %{
-              updated_combat
-              | grid: Grid.update_character(updated_combat.grid, updated_player)
-            }
-
-            # Check for death after self-targeting
-            if Character.is_dead?(updated_player) do
-              updated_combat = remove_player(updated_combat, updated_player)
-              check_game_over(updated_combat)
-            else
-              {:ok, updated_combat}
-            end
-
           # Targeting another character
+          Grid.distance(grid, player.position, target.position) > card.range ->
+            {:error, "Out of range"}
+
           target != nil ->
             updated_target = Character.apply_card_effect(target, card.effect)
 
