@@ -52,7 +52,7 @@ defmodule GameWeb.GameLive do
                       # If distance from `:starting_position` is within `:movement_range` highlight the hex cell
                       if(
                         Grid.distance(
-                          @game_state.grid,
+                          @game_state.combat.grid,
                           {q, r, s},
                           @game_state.combat.current_turn.starting_position
                         ) <=
@@ -64,7 +64,7 @@ defmodule GameWeb.GameLive do
                       if(
                         find_character(@game_state.combat.players, {q, r, s}) ==
                           @game_state.combat.current_turn.player,
-                        do: "bg-green-200",
+                        do: "!bg-green-200",
                         else: ""
                       )
                     ]
@@ -211,22 +211,57 @@ defmodule GameWeb.GameLive do
       ) do
     dbg(params)
 
-    [q, r, s] =
-      params["target_position"]
-      |> String.split("_")
-      |> Enum.map(&String.to_integer/1)
+    {:ok, position} = parse_target_position(params["target_position"])
 
     {:ok, combat} =
       Game.Combat.process_action(
         socket.assigns.game_state.combat,
-        {:play_card, {q, r, s}}
+        {:play_card, position}
       )
 
+    {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
+  end
+
+  def handle_event(
+        "interact",
+        %{"target_position" => target_position},
+        %{
+          assigns: %{game_state: %{combat: %{state: :running, current_turn: %{player: player}}}}
+        } = socket
+      ) do
+    {:ok, position} = parse_target_position(target_position)
+
+    {:ok, combat} = process_game_action({:move, player, position}, socket)
     {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
   end
 
   def handle_event("interact", params, socket) do
     dbg(params)
     {:noreply, socket}
+  end
+
+  defp process_game_action(action, socket) do
+    with {:ok, updated_combat} <-
+           Game.Combat.process_action(
+             socket.assigns.game_state.combat,
+             action
+           ) do
+      {:ok, updated_combat}
+    else
+      {:error, error} ->
+        dbg(error)
+        {:error, error}
+    end
+  end
+
+  defp parse_target_position(target_position) do
+    with [q, r, s] <-
+           target_position
+           |> String.split("_")
+           |> Enum.map(&String.to_integer/1) do
+      {:ok, {q, r, s}}
+    else
+      _ -> {:error, "Invalid target position"}
+    end
   end
 end

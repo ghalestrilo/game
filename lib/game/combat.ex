@@ -48,6 +48,7 @@ defmodule Game.Combat do
   # - Check if it's the player's turn (pattern matching on the queue)
   # - Check if player has enough movement (in tiles)
   # - Check if the target tile is empty
+  # - Update current_turn with the new position
   def process_action(
         %Combat{
           state: :running,
@@ -86,7 +87,7 @@ defmodule Game.Combat do
           | grid: updated_grid,
             players: updated_players,
             queue: updated_queue,
-            current_turn: %{position: target_position}
+            current_turn: %{combat.current_turn | starting_position: target_position}
         }
 
         {:ok, updated_combat}
