@@ -99,7 +99,12 @@ defmodule Game.Fixtures do
       players: [warrior, mage],
       queue: [warrior, mage],
       grid: basic_grid(),
-      current_turn: %{starting_position: warrior.position}
+      current_turn: %{
+        starting_position: warrior.position,
+        player: warrior,
+        card: nil,
+        hand: Enum.take(warrior.deck, 5)
+      }
     }
   end
 

@@ -9,9 +9,9 @@ defmodule Game.Combat do
             queue: [],
             grid: %Grid{},
             current_turn: %{
-              player: %Character{},
+              player: nil,
               starting_position: {0, 0, 0},
-              card: %Card{},
+              card: nil,
               hand: []
             }
 
