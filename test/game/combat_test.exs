@@ -1,16 +1,21 @@
 defmodule Game.CombatTest do
   use ExUnit.Case
   alias Game.Combat
-  alias Game.Fixtures
 
   setup do
+    {:ok, combat} = Combat.load_from_json()
+    {:ok, warrior} = Combat.load_character_from_json("warrior")
+    {:ok, mage} = Combat.load_character_from_json("mage")
+    {:ok, attack_card} = Combat.load_card_from_json("attack_card")
+    {:ok, heal_card} = Combat.load_card_from_json("heal_card")
+
     %{
-      combat: Fixtures.basic_combat(),
-      warrior: Fixtures.warrior(),
-      mage: Fixtures.mage(),
-      attack_card: Fixtures.attack_card(),
-      heal_card: Fixtures.heal_card(),
-      grid: Fixtures.basic_grid()
+      combat: combat,
+      warrior: warrior,
+      mage: mage,
+      attack_card: attack_card,
+      heal_card: heal_card,
+      grid: combat.grid
     }
   end
 
@@ -98,8 +103,10 @@ defmodule Game.CombatTest do
       mage: mage
     } do
       # First pick the expensive card
+      {:ok, expensive_card} = Combat.load_card_from_json("expensive_card")
+
       assert {:ok, card_selected_combat} =
-               Combat.process_action(combat, {:pick_card, warrior, Fixtures.expensive_card()})
+               Combat.process_action(combat, {:pick_card, warrior, expensive_card})
 
       # Then try to play the card - should fail due to insufficient AP
       assert {:error, "Not enough AP"} =
@@ -146,10 +153,12 @@ defmodule Game.CombatTest do
       updated_combat = %{combat | queue: [warrior, Enum.at(combat.queue, 1)]}
 
       # First pick the self harm card
+      {:ok, self_harm_card} = Combat.load_card_from_json("self_harm_card")
+
       assert {:ok, card_selected_combat} =
                Combat.process_action(
                  updated_combat,
-                 {:pick_card, warrior, Fixtures.self_harm_card()}
+                 {:pick_card, warrior, self_harm_card}
                )
 
       # Then play the card on self
@@ -164,8 +173,10 @@ defmodule Game.CombatTest do
   describe "death and game over" do
     test "character dies when HP reaches 0", %{combat: combat, warrior: warrior, mage: mage} do
       # First pick the lethal card
+      {:ok, lethal_card} = Combat.load_card_from_json("lethal_card")
+
       assert {:ok, card_selected_combat} =
-               Combat.process_action(combat, {:pick_card, warrior, Fixtures.lethal_card()})
+               Combat.process_action(combat, {:pick_card, warrior, lethal_card})
 
       # Then play the card
       assert {:ok, updated_combat} =
@@ -180,8 +191,10 @@ defmodule Game.CombatTest do
 
     test "game ends when only one team remains", %{combat: combat, warrior: warrior, mage: mage} do
       # First pick the lethal card
+      {:ok, lethal_card} = Combat.load_card_from_json("lethal_card")
+
       assert {:ok, card_selected_combat} =
-               Combat.process_action(combat, {:pick_card, warrior, Fixtures.lethal_card()})
+               Combat.process_action(combat, {:pick_card, warrior, lethal_card})
 
       # Then play the card
       assert {:ok, updated_combat} =
@@ -207,8 +220,10 @@ defmodule Game.CombatTest do
       mage: mage
     } do
       # First pick the lethal card
+      {:ok, lethal_card} = Combat.load_card_from_json("lethal_card")
+
       assert {:ok, card_selected_combat} =
-               Combat.process_action(combat, {:pick_card, warrior, Fixtures.lethal_card()})
+               Combat.process_action(combat, {:pick_card, warrior, lethal_card})
 
       # Then play the card
       assert {:ok, updated_combat} =
@@ -232,34 +247,38 @@ defmodule Game.CombatTest do
 
     test "multiple characters on same team", %{combat: combat, warrior: warrior} do
       # Update grid and combat state
+      {:ok, warrior2} = Combat.load_character_from_json("warrior2")
+
       updated_grid = %{
         combat.grid
         | tiles:
-            Map.put(combat.grid.tiles, Fixtures.warrior2().position, %{
+            Map.put(combat.grid.tiles, warrior2.position, %{
               terrain: :plain,
-              occupied_by: Fixtures.warrior2()
+              occupied_by: warrior2
             })
       }
 
       updated_combat = %{
         combat
-        | players: [warrior, Fixtures.warrior2(), Enum.at(combat.players, 1)],
-          queue: [warrior, Fixtures.warrior2(), Enum.at(combat.queue, 1)],
+        | players: [warrior, warrior2, Enum.at(combat.players, 1)],
+          queue: [warrior, warrior2, Enum.at(combat.queue, 1)],
           grid: updated_grid
       }
 
       # First pick the lethal card
+      {:ok, lethal_card} = Combat.load_card_from_json("lethal_card")
+
       assert {:ok, card_selected_combat} =
                Combat.process_action(
                  updated_combat,
-                 {:pick_card, warrior, Fixtures.lethal_card()}
+                 {:pick_card, warrior, lethal_card}
                )
 
       # Then play the card on warrior2
       assert {:ok, updated_combat} =
                Combat.process_action(
                  card_selected_combat,
-                 {:play_card, Fixtures.warrior2().position}
+                 {:play_card, warrior2.position}
                )
 
       assert updated_combat.state == :running
@@ -282,10 +301,12 @@ defmodule Game.CombatTest do
 
       # Test healing beyond max HP
       # First pick the max heal card
+      {:ok, max_heal_card} = Combat.load_card_from_json("max_heal_card")
+
       assert {:ok, card_selected_combat} =
                Combat.process_action(
                  updated_combat,
-                 {:pick_card, warrior, Fixtures.max_heal_card()}
+                 {:pick_card, warrior, max_heal_card}
                )
 
       # Then play the card on self
@@ -301,10 +322,12 @@ defmodule Game.CombatTest do
       updated_combat = %{updated_combat | queue: [warrior, mage]}
 
       # First pick the negative damage card
+      {:ok, negative_damage_card} = Combat.load_card_from_json("negative_damage_card")
+
       assert {:ok, card_selected_combat} =
                Combat.process_action(
                  updated_combat,
-                 {:pick_card, warrior, Fixtures.negative_damage_card()}
+                 {:pick_card, warrior, negative_damage_card}
                )
 
       # Then play the card on mage
