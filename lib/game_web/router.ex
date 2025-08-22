@@ -25,6 +25,18 @@ defmodule GameWeb.Router do
   # scope "/api", GameWeb do
   #   pipe_through :api
   # end
+  #
+  scope "/admin", GameWeb do
+    pipe_through :browser
+
+
+    live "/basecards", BaseCardLive.Index, :index
+    live "/basecards/new", BaseCardLive.Index, :new
+    live "/basecards/:id/edit", BaseCardLive.Index, :edit
+
+    live "/basecards/:id", BaseCardLive.Show, :show
+    live "/basecards/:id/show/edit", BaseCardLive.Show, :edit
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:game, :dev_routes) do
