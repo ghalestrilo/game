@@ -1,8 +1,8 @@
-defmodule Game.Repo.Migrations.CreateBasedecks do
+defmodule Game.Repo.Migrations.CreateBaseDecks do
   use Ecto.Migration
 
   def change do
-    create table(:basedecks) do
+    create table(:base_decks) do
       add :name, :string
 
       timestamps(type: :utc_datetime)
