@@ -112,8 +112,7 @@ defmodule Game.Fixtures do
       current_turn: %{
         starting_position: warrior.position,
         player: warrior,
-        card: nil,
-        hand: warrior.cards.hand
+        card: nil
       }
     }
   end

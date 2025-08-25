@@ -2,7 +2,7 @@ defmodule Game.BaseCards.BaseCard do
   use Ecto.Schema
   import Ecto.Changeset
 
-  schema "basecards" do
+  schema "base_cards" do
     field :name, :string
     field :effects, {:array, :map}
     field :ap, :integer
