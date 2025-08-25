@@ -141,44 +141,48 @@ defmodule GameWeb.GameLive do
 
   defp initialize_game() do
     {:ok, game_pid} = Game.start_link()
-    combat = Fixtures.basic_combat()
-    mage = Enum.find(combat.players, &(&1.class == :mage))
+    # Get characters from fixtures with their decks
+    warrior = Fixtures.warrior()
+    mage = Fixtures.mage()
 
-    mage_with_cards = %{
-      mage
-      | cards: %{
-          draw: [],
-          hand: [
-            %Game.Card{
-              id: 1,
-              name: "Fireball",
-              cost: 0,
-              effect: {:damage, 8},
-              range: 3,
-              targeting: :single
-            },
-            %Game.Card{
-              id: 2,
-              name: "Heal",
-              cost: 0,
-              effect: {:heal, 5},
-              range: 1,
-              targeting: :single
-            }
-          ],
-          discard: []
-        }
+    # Draw initial cards for both players
+    warrior_with_cards = Game.Character.draw_cards(warrior, 5)
+    mage_with_cards = Game.Character.draw_cards(mage, 5)
+
+    # Update players with new positions that work well in a hex grid
+    warrior_with_cards = %{warrior_with_cards | position: {0, 0, 0}}
+    mage_with_cards = %{mage_with_cards | position: {2, -1, -1}}
+    updated_players = [warrior_with_cards, mage_with_cards]
+
+    # Create a proper hex grid with radius 2 (creates a balanced grid)
+    grid = Game.Grid.new({2, 2, 2})
+
+    # Update the grid with our characters
+    grid = Game.Grid.update_character(grid, warrior_with_cards)
+    grid = Game.Grid.update_character(grid, mage_with_cards)
+
+    # Create combat struct with proper state
+    combat = %Game.Combat{
+      state: :running,
+      players: updated_players,
+      queue: updated_players,
+      grid: grid,
+      current_turn: %{
+        starting_position: warrior_with_cards.position,
+        player: warrior_with_cards,
+        card: nil
+      }
     }
 
-    updated_players =
-      Enum.map(combat.players, fn player ->
-        if player.id == mage_with_cards.id, do: mage_with_cards, else: player
-      end)
+    # Create the initial game state with our combat struct
+    game_state = %{
+      grid: grid,
+      characters: updated_players,
+      combat: combat
+    }
 
-    grid = Game.Grid.new({3, 3, 3})
-
-    {:ok, _combat} = Game.init_combat(game_pid, updated_players, grid)
-    game_state = Game.get_state(game_pid)
+    # Set the game state in the GenServer
+    :ok = GenServer.call(game_pid, {:set_state, game_state})
     {game_pid, game_state}
   end
 

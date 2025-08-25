@@ -414,12 +414,20 @@ defmodule Game.Combat do
   If draw pile doesn't have enough cards, reshuffles discard pile into draw pile first
   """
   def draw_cards_for_player(combat, player, count \\ 5) do
-    # Draw cards (Character.draw_cards now handles reshuffling if needed)
-    player = Character.draw_cards(player, count)
+    # First check if we need to reshuffle discard into draw
+    player_with_reshuffled_cards =
+      if length(player.cards.draw) < count && length(player.cards.discard) > 0 do
+        Character.shuffle_discard_into_draw(player)
+      else
+        player
+      end
+
+    # Draw cards (Character.draw_cards handles drawing from the reshuffled deck)
+    updated_player = Character.draw_cards(player_with_reshuffled_cards, count)
 
     # Update player in combat state
-    updated_players = update_player_in_list(combat.players, player)
-    updated_queue = TurnQueue.update_character(combat.queue, player)
+    updated_players = update_player_in_list(combat.players, updated_player)
+    updated_queue = TurnQueue.update_character(combat.queue, updated_player)
 
     %{
       combat

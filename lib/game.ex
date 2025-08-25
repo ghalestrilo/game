@@ -151,4 +151,8 @@ defmodule Game do
   def handle_call(:get_state, _from, state) do
     {:reply, state, state}
   end
+
+  def handle_call({:set_state, new_state}, _from, _state) do
+    {:reply, :ok, new_state}
+  end
 end

@@ -45,7 +45,7 @@ defmodule Game.Grid do
           s <- -z..z,
           q + r + s == 0,
           abs(q) <= x and abs(r) <= y and abs(s) <= z do
-        {{q, r, s}, %{terrain: :floor, occupied_by: nil}}
+        {{q, r, s}, %{terrain: :plain, occupied_by: nil}}
       end
       |> Map.new()
 
