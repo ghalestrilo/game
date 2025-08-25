@@ -102,15 +102,29 @@ defmodule Game.Character do
 
   @doc """
   Draws cards from draw pile to hand
+  If draw pile doesn't have enough cards, reshuffles discard pile into draw pile first
   """
   def draw_cards(character, count) do
-    {cards_to_draw, remaining_draw} = Enum.split(character.cards.draw, count)
+    # Check if we need to reshuffle discard into draw
+    character_with_reshuffled_cards =
+      if length(character.cards.draw) < count && length(character.cards.discard) > 0 do
+        shuffle_discard_into_draw(character)
+      else
+        character
+      end
+
+    # Calculate how many cards we can actually draw
+    available_cards = length(character_with_reshuffled_cards.cards.draw)
+    cards_to_draw_count = min(count, available_cards)
+
+    # Draw available cards
+    {cards_to_draw, remaining_draw} = Enum.split(character_with_reshuffled_cards.cards.draw, cards_to_draw_count)
 
     # Update character with new draw pile and hand
-    %{character | cards: %{
-      character.cards |
+    %{character_with_reshuffled_cards | cards: %{
+      character_with_reshuffled_cards.cards |
       draw: remaining_draw,
-      hand: character.cards.hand ++ cards_to_draw
+      hand: character_with_reshuffled_cards.cards.hand ++ cards_to_draw
     }}
   end
 

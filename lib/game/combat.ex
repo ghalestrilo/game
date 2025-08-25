@@ -363,17 +363,10 @@ defmodule Game.Combat do
 
   @doc """
   Draws cards for a player at the start of their turn
+  If draw pile doesn't have enough cards, reshuffles discard pile into draw pile first
   """
   def draw_cards_for_player(combat, player, count \\ 5) do
-    # If draw pile is empty, shuffle discard into draw
-    player =
-      if Enum.empty?(player.cards.draw) && !Enum.empty?(player.cards.discard) do
-        Character.shuffle_discard_into_draw(player)
-      else
-        player
-      end
-
-    # Draw cards
+    # Draw cards (Character.draw_cards now handles reshuffling if needed)
     player = Character.draw_cards(player, count)
 
     # Update player in combat state

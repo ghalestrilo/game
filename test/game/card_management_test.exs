@@ -114,6 +114,39 @@ defmodule Game.CardManagementTest do
       total_cards_after = length(updated_character.cards.draw) + length(updated_character.cards.hand) + length(updated_character.cards.discard)
       assert total_cards_before == total_cards_after
     end
+
+    test "drawing cards when draw pile doesn't have enough cards", %{character: character} do
+      # Move most cards to discard pile, leaving only 1 in draw
+      card1 = hd(character.cards.draw)
+      character_with_low_draw = %{character |
+        cards: %{
+          draw: [card1],
+          hand: [],
+          discard: tl(character.cards.draw) ++ character.cards.hand ++ character.cards.discard
+        }
+      }
+
+      # Count cards before drawing
+      discard_count_before = length(character_with_low_draw.cards.discard)
+      draw_count_before = length(character_with_low_draw.cards.draw)
+
+      # Try to draw 5 cards (default hand size) when only 1 is in draw pile
+      updated_character = Character.draw_cards(character_with_low_draw, 5)
+
+      # Should have drawn all 5 cards
+      assert length(updated_character.cards.hand) == 5
+
+      # Draw pile should now have discard pile shuffled in, minus the cards drawn
+      assert length(updated_character.cards.draw) == discard_count_before + draw_count_before - 5
+
+      # Discard should be empty now
+      assert length(updated_character.cards.discard) == 0
+
+      # The total number of cards should remain the same
+      total_cards_before = length(character_with_low_draw.cards.draw) + length(character_with_low_draw.cards.hand) + length(character_with_low_draw.cards.discard)
+      total_cards_after = length(updated_character.cards.draw) + length(updated_character.cards.hand) + length(updated_character.cards.discard)
+      assert total_cards_before == total_cards_after
+    end
   end
 
   describe "combat card management" do
@@ -254,6 +287,49 @@ defmodule Game.CardManagementTest do
 
       # The card that was in discard should now be in hand
       assert Enum.any?(updated_player.cards.hand, fn c -> c.id == first_card.id end)
+    end
+
+    test "drawing up to default hand size when draw pile doesn't have enough cards in combat", %{combat: combat, player: player, card1: card1, card2: card2, card3: card3} do
+      # Create a scenario where player has:
+      # - 1 card in draw
+      # - 2 cards in discard
+      # - 0 cards in hand
+      modified_player = %{player | cards: %{
+        draw: [card1],
+        hand: [],
+        discard: [card2, card3]
+      }}
+
+      # Update combat state with modified player
+      modified_combat = %{
+        combat |
+        players: [modified_player, Enum.at(combat.players, 1)],
+        queue: [modified_player, Enum.at(combat.queue, 1)]
+      }
+
+      # Draw up to default hand size of 5
+      # Since we only have 3 cards total, all should be drawn
+      updated_combat = Combat.draw_cards_for_player(modified_combat, modified_player, 5)
+
+      # Find updated player
+      updated_player = Enum.find(updated_combat.players, &(&1.id == player.id))
+
+      # Player should have drawn all available cards (3 total)
+      assert length(updated_player.cards.hand) == 3
+
+      # Draw and discard should both be empty now
+      assert length(updated_player.cards.draw) == 0
+      assert length(updated_player.cards.discard) == 0
+
+      # Check that all cards were moved to hand
+      card_ids_in_hand = Enum.map(updated_player.cards.hand, & &1.id) |> Enum.sort()
+      expected_card_ids = [card1.id, card2.id, card3.id] |> Enum.sort()
+      assert card_ids_in_hand == expected_card_ids
+
+      # The total number of cards should remain the same
+      total_cards_before = length(modified_player.cards.draw) + length(modified_player.cards.hand) + length(modified_player.cards.discard)
+      total_cards_after = length(updated_player.cards.draw) + length(updated_player.cards.hand) + length(updated_player.cards.discard)
+      assert total_cards_before == total_cards_after
     end
   end
 end
