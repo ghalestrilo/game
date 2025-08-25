@@ -243,12 +243,15 @@ defmodule GameWeb.GameLive do
     {:noreply, socket}
   end
 
-  def handle_event("skip_turn", _params, socket) do
-    current_player = socket.assigns.game_state.combat.current_turn.player
-
-    with {:ok, updated_combat} <-
-           process_game_action(socket, {:skip_turn, current_player}) do
-      {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: updated_combat})}
+  def handle_event(
+        "skip_turn",
+        _params,
+        %{
+          assigns: %{game_state: %{combat: %{current_turn: %{player: player}}}}
+        } = socket
+      ) do
+    with {:ok, combat} <- process_game_action(socket, {:skip_turn, player}) do
+      {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
     else
       {:error, error} ->
         socket =
