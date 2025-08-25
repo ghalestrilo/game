@@ -37,7 +37,7 @@ defmodule GameWeb.GameLive do
           Reset Game
         </button>
       </div>
-      
+
       <%= if @game_state do %>
         <div class="game-board">
           <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
@@ -73,9 +73,9 @@ defmodule GameWeb.GameLive do
                   <%= if character = find_character(@game_state.combat.players, {q, r, s}) do %>
                     <div class={character_class(character)} data-character-id={character.id}>
                       <div class="character-name">{character.name}</div>
-                      
+
                       <div class="character-hp text-gray-200">HP: {character.hp}</div>
-                      
+
                       <div class="character-ap text-gray-200">AP: {character.ap}</div>
                     </div>
                   <% end %>
@@ -84,7 +84,7 @@ defmodule GameWeb.GameLive do
             </div>
           <% end %>
         </div>
-        
+
         <div class="card-row">
           <%= for {card, index} <- Enum.with_index(@game_state.combat.current_turn.hand) do %>
             <div
@@ -99,7 +99,7 @@ defmodule GameWeb.GameLive do
               ]}
             >
               <div class="card-title">{card.name}</div>
-              
+
               <div class="card-effect">Cost: {card.cost} | {inspect(card.effect)}</div>
             </div>
           <% end %>
@@ -182,11 +182,8 @@ defmodule GameWeb.GameLive do
         updated_combat
       else
         {:error, error} ->
-          dbg(error)
           socket.assigns.game_state.combat
       end
-
-    dbg(combat)
 
     {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
   end
@@ -233,7 +230,6 @@ defmodule GameWeb.GameLive do
   end
 
   def handle_event("interact", params, socket) do
-    dbg(params)
     {:noreply, socket}
   end
 
@@ -246,7 +242,6 @@ defmodule GameWeb.GameLive do
       {:ok, updated_combat}
     else
       {:error, error} ->
-        dbg(error)
         {:error, error}
     end
   end

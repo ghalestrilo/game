@@ -1,13 +1,14 @@
 defmodule Game.CombatTest do
   use ExUnit.Case
   alias Game.Combat
+  alias Game.Fixtures
 
   setup do
-    {:ok, combat} = Combat.load_from_json()
-    {:ok, warrior} = Combat.load_character_from_json("warrior")
-    {:ok, mage} = Combat.load_character_from_json("mage")
-    {:ok, attack_card} = Combat.load_card_from_json("attack_card")
-    {:ok, heal_card} = Combat.load_card_from_json("heal_card")
+    combat = Fixtures.basic_combat()
+    warrior = Fixtures.warrior()
+    mage = Fixtures.mage()
+    attack_card = Fixtures.attack_card()
+    heal_card = Fixtures.heal_card()
 
     %{
       combat: combat,
@@ -103,7 +104,7 @@ defmodule Game.CombatTest do
       mage: mage
     } do
       # First pick the expensive card
-      {:ok, expensive_card} = Combat.load_card_from_json("expensive_card")
+      expensive_card = Fixtures.expensive_card()
 
       assert {:ok, card_selected_combat} =
                Combat.process_action(combat, {:pick_card, warrior, expensive_card})
@@ -153,7 +154,7 @@ defmodule Game.CombatTest do
       updated_combat = %{combat | queue: [warrior, Enum.at(combat.queue, 1)]}
 
       # First pick the self harm card
-      {:ok, self_harm_card} = Combat.load_card_from_json("self_harm_card")
+      self_harm_card = Fixtures.self_harm_card()
 
       assert {:ok, card_selected_combat} =
                Combat.process_action(
@@ -173,7 +174,7 @@ defmodule Game.CombatTest do
   describe "death and game over" do
     test "character dies when HP reaches 0", %{combat: combat, warrior: warrior, mage: mage} do
       # First pick the lethal card
-      {:ok, lethal_card} = Combat.load_card_from_json("lethal_card")
+      lethal_card = Fixtures.lethal_card()
 
       assert {:ok, card_selected_combat} =
                Combat.process_action(combat, {:pick_card, warrior, lethal_card})
@@ -191,7 +192,7 @@ defmodule Game.CombatTest do
 
     test "game ends when only one team remains", %{combat: combat, warrior: warrior, mage: mage} do
       # First pick the lethal card
-      {:ok, lethal_card} = Combat.load_card_from_json("lethal_card")
+      lethal_card = Fixtures.lethal_card()
 
       assert {:ok, card_selected_combat} =
                Combat.process_action(combat, {:pick_card, warrior, lethal_card})
@@ -220,7 +221,7 @@ defmodule Game.CombatTest do
       mage: mage
     } do
       # First pick the lethal card
-      {:ok, lethal_card} = Combat.load_card_from_json("lethal_card")
+      lethal_card = Fixtures.lethal_card()
 
       assert {:ok, card_selected_combat} =
                Combat.process_action(combat, {:pick_card, warrior, lethal_card})
@@ -247,7 +248,7 @@ defmodule Game.CombatTest do
 
     test "multiple characters on same team", %{combat: combat, warrior: warrior} do
       # Update grid and combat state
-      {:ok, warrior2} = Combat.load_character_from_json("warrior2")
+      warrior2 = Fixtures.warrior2()
 
       updated_grid = %{
         combat.grid
@@ -266,7 +267,7 @@ defmodule Game.CombatTest do
       }
 
       # First pick the lethal card
-      {:ok, lethal_card} = Combat.load_card_from_json("lethal_card")
+      lethal_card = Fixtures.lethal_card()
 
       assert {:ok, card_selected_combat} =
                Combat.process_action(
@@ -301,7 +302,7 @@ defmodule Game.CombatTest do
 
       # Test healing beyond max HP
       # First pick the max heal card
-      {:ok, max_heal_card} = Combat.load_card_from_json("max_heal_card")
+      max_heal_card = Fixtures.max_heal_card()
 
       assert {:ok, card_selected_combat} =
                Combat.process_action(
@@ -322,7 +323,7 @@ defmodule Game.CombatTest do
       updated_combat = %{updated_combat | queue: [warrior, mage]}
 
       # First pick the negative damage card
-      {:ok, negative_damage_card} = Combat.load_card_from_json("negative_damage_card")
+      negative_damage_card = Fixtures.negative_damage_card()
 
       assert {:ok, card_selected_combat} =
                Combat.process_action(
@@ -355,6 +356,71 @@ defmodule Game.CombatTest do
       # Check turn order is still correct
       [next_player | _] = updated_combat.queue
       assert next_player.id == warrior.id
+    end
+  end
+
+  describe "when a character plays a card" do
+    setup %{combat: combat, warrior: warrior, mage: mage, attack_card: attack_card} do
+      # First pick the card
+      {:ok, card_selected_combat} = Combat.process_action(combat, {:pick_card, warrior, attack_card})
+
+      # Then play the card
+      {:ok, updated_combat} = Combat.process_action(card_selected_combat, {:play_card, mage.position})
+
+      %{
+        initial_combat: combat,
+        card_selected_combat: card_selected_combat,
+        updated_combat: updated_combat,
+        warrior: warrior,
+        mage: mage,
+        attack_card: attack_card
+      }
+    end
+
+    test "card disappears from hand", %{warrior: warrior, updated_combat: updated_combat, attack_card: attack_card} do
+      updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
+      refute Enum.any?(updated_warrior.hand, fn card -> card.id == attack_card.id end)
+    end
+
+    test "only one card is removed if there are multiple copies", %{
+      initial_combat: combat,
+      warrior: warrior,
+      mage: mage,
+      attack_card: attack_card
+    } do
+      # Add a duplicate card to warrior's hand
+      duplicate_card = %{attack_card | id: "duplicate-#{attack_card.id}"}
+      warrior_with_duplicate = %{warrior | hand: [duplicate_card | warrior.hand]}
+
+      # Update combat state with warrior having duplicate cards
+      updated_combat = %{
+        combat
+        | players: [warrior_with_duplicate, Enum.at(combat.players, 1)],
+          queue: [warrior_with_duplicate, Enum.at(combat.queue, 1)]
+      }
+
+      # First pick the original card
+      {:ok, card_selected_combat} = Combat.process_action(updated_combat, {:pick_card, warrior_with_duplicate, attack_card})
+
+      # Then play the card
+      {:ok, after_play_combat} = Combat.process_action(card_selected_combat, {:play_card, mage.position})
+
+      # Find updated warrior
+      updated_warrior = Enum.find(after_play_combat.players, &(&1.id == warrior.id))
+
+      # The original card should be gone but the duplicate remains
+      refute Enum.any?(updated_warrior.hand, fn card -> card.id == attack_card.id end)
+      assert Enum.any?(updated_warrior.hand, fn card -> card.id == duplicate_card.id end)
+    end
+
+    test "card appears in discard pile", %{warrior: warrior, updated_combat: updated_combat, attack_card: attack_card} do
+      updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
+      assert Enum.any?(updated_warrior.discard, fn card -> card.id == attack_card.id end)
+    end
+
+    test "effects are applied to target", %{mage: mage, updated_combat: updated_combat, attack_card: attack_card} do
+      updated_mage = Enum.find(updated_combat.players, &(&1.id == mage.id))
+      assert updated_mage.hp == mage.hp - attack_card.damage
     end
   end
 end

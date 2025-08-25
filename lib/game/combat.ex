@@ -111,7 +111,6 @@ defmodule Game.Combat do
         {:play_card, target_position}
       ) do
     position = Grid.get_object(grid, target_position)
-    dbg(position)
 
     cond do
       not TurnQueue.is_players_turn?(queue, player) ->
@@ -213,8 +212,6 @@ defmodule Game.Combat do
 
   # Define a `:pick_card` action
   def process_action(%Combat{state: :running} = combat, {:pick_card, player, card}) do
-    dbg("Processing event: pick_card")
-
     cond do
       not TurnQueue.is_players_turn?(combat.queue, player) ->
         {:error, "Not player's turn"}
