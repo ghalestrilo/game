@@ -45,8 +45,45 @@ defmodule GameWeb.GameLive do
       </div>
 
       <%= if @game_state do %>
-        <div class="game-board">
-          <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
+        <div class="flex">
+          <!-- Card piles status panel -->
+          <div class="card-status-panel w-64 bg-gray-100 p-4 mr-4 rounded">
+            <h3 class="text-lg font-bold mb-2">Current Player</h3>
+            <div class="text-md mb-4">
+              <%= @game_state.combat.current_turn.player.name %> (<%= @game_state.combat.current_turn.player.class %>)
+            </div>
+
+            <div class="mb-3">
+              <h4 class="font-semibold">Draw Pile: <%= length(@game_state.combat.current_turn.player.cards.draw) %> cards</h4>
+              <div class="text-xs text-gray-500">
+                <%= for card <- @game_state.combat.current_turn.player.cards.draw do %>
+                  <div class="card-tiny"><%= card.name %></div>
+                <% end %>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <h4 class="font-semibold">Hand: <%= length(@game_state.combat.current_turn.player.cards.hand) %> cards</h4>
+              <div class="text-xs text-gray-500">
+                <%= for card <- @game_state.combat.current_turn.player.cards.hand do %>
+                  <div class="card-tiny"><%= card.name %> (Cost: <%= card.cost %>)</div>
+                <% end %>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <h4 class="font-semibold">Discard Pile: <%= length(@game_state.combat.current_turn.player.cards.discard) %> cards</h4>
+              <div class="text-xs text-gray-500">
+                <%= for card <- @game_state.combat.current_turn.player.cards.discard do %>
+                  <div class="card-tiny"><%= card.name %></div>
+                <% end %>
+              </div>
+            </div>
+          </div>
+
+          <!-- Game board -->
+          <div class="game-board flex-1">
+            <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
             <div class="flex flex-row justify-center gap-2">
               <%= for {q, r, s, _tile} <- row do %>
                 <div
@@ -89,9 +126,11 @@ defmodule GameWeb.GameLive do
               <% end %>
             </div>
           <% end %>
+          </div>
         </div>
 
-        <div class="card-row">
+
+        <div class="card-row mt-4">
           <%= for {card, index} <- Enum.with_index(@game_state.combat.current_turn.player.cards.hand) do %>
             <div
               phx-click="pick_card"
@@ -145,13 +184,15 @@ defmodule GameWeb.GameLive do
     warrior = Fixtures.warrior()
     mage = Fixtures.mage()
 
-    # Draw initial cards for both players
-    warrior_with_cards = Game.Character.draw_cards(warrior, 5)
-    mage_with_cards = Game.Character.draw_cards(mage, 5)
+    # Set positions that work well in a hex grid
+    warrior = %{warrior | position: {0, 0, 0}}
+    mage = %{mage | position: {2, -1, -1}}
 
-    # Update players with new positions that work well in a hex grid
-    warrior_with_cards = %{warrior_with_cards | position: {0, 0, 0}}
-    mage_with_cards = %{mage_with_cards | position: {2, -1, -1}}
+    # Draw initial cards for warrior only (first player)
+    # The mage will draw cards when their turn starts
+    warrior_with_cards = Game.Character.draw_cards(warrior, 5)
+    mage_with_cards = mage  # No cards initially for second player
+
     updated_players = [warrior_with_cards, mage_with_cards]
 
     # Create a proper hex grid with radius 2 (creates a balanced grid)
@@ -211,6 +252,10 @@ defmodule GameWeb.GameLive do
       ) do
     with {:ok, position} <- parse_target_position(params["target_position"]),
          {:ok, combat} <- process_game_action(socket, {:play_card, position}) do
+      # Get next player for debugging
+      [next_player | _] = combat.queue
+      IO.inspect(next_player.cards, label: "AFTER Play Card - Next Player Cards")
+
       {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
     else
       {:error, error} ->
@@ -254,7 +299,14 @@ defmodule GameWeb.GameLive do
           assigns: %{game_state: %{combat: %{current_turn: %{player: player}}}}
         } = socket
       ) do
+    # Print current player's card counts for debugging
+    IO.inspect(player.cards, label: "BEFORE Skip Turn - Player Cards")
+
     with {:ok, combat} <- process_game_action(socket, {:skip_turn, player}) do
+      # Get next player for debugging
+      [next_player | _] = combat.queue
+      IO.inspect(next_player.cards, label: "AFTER Skip Turn - Next Player Cards")
+
       {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
     else
       {:error, error} ->
