@@ -85,16 +85,34 @@ defmodule Game.CombatTest do
       mage: mage,
       attack_card: attack_card
     } do
+      # Move mage next to warrior for range
+      adjacent_mage = %{mage | position: {1, 0, -1}}
+      updated_grid = %{
+        combat.grid
+        | tiles: Map.put(
+            combat.grid.tiles,
+            adjacent_mage.position,
+            %{terrain: :plain, occupied_by: adjacent_mage}
+          )
+      }
+
+      updated_combat = %{
+        combat
+        | players: [warrior, adjacent_mage],
+          queue: [warrior, adjacent_mage],
+          grid: updated_grid
+      }
+
       # First pick the card
       assert {:ok, card_selected_combat} =
-               Combat.process_action(combat, {:pick_card, warrior, attack_card})
+               Combat.process_action(updated_combat, {:pick_card, warrior, attack_card})
 
       # Then play the card
       assert {:ok, updated_combat} =
-               Combat.process_action(card_selected_combat, {:play_card, mage.position})
+               Combat.process_action(card_selected_combat, {:play_card, adjacent_mage.position})
 
       # Find mage in updated players list
-      updated_mage = Enum.find(updated_combat.players, &(&1.id == mage.id))
+      updated_mage = Enum.find(updated_combat.players, &(&1.id == adjacent_mage.id))
       assert updated_mage.hp == mage.hp - 5
     end
 
@@ -297,8 +315,24 @@ defmodule Game.CombatTest do
     end
 
     test "card effect edge cases", %{combat: combat, warrior: warrior, mage: mage} do
-      # Ensure it's warrior's turn
-      updated_combat = %{combat | queue: [warrior, mage]}
+      # Ensure it's warrior's turn and mage is at a position warrior can target
+      # Update mage position to be adjacent to warrior for range issues
+      adjacent_mage = %{mage | position: {1, 0, -1}}
+      updated_grid = %{
+        combat.grid
+        | tiles: Map.put(
+            combat.grid.tiles,
+            adjacent_mage.position,
+            %{terrain: :plain, occupied_by: adjacent_mage}
+          )
+      }
+
+      updated_combat = %{
+        combat
+        | queue: [warrior, adjacent_mage],
+          players: [warrior, adjacent_mage],
+          grid: updated_grid
+      }
 
       # Test healing beyond max HP
       # First pick the max heal card
@@ -320,7 +354,13 @@ defmodule Game.CombatTest do
 
       # Test negative damage
       # Ensure it's still warrior's turn
-      updated_combat = %{updated_combat | queue: [warrior, mage]}
+      updated_combat = %{
+        updated_combat
+        | queue: [
+            updated_warrior,
+            Enum.find(updated_combat.players, &(&1.id == adjacent_mage.id))
+          ]
+      }
 
       # First pick the negative damage card
       negative_damage_card = Fixtures.negative_damage_card()
@@ -328,12 +368,12 @@ defmodule Game.CombatTest do
       assert {:ok, card_selected_combat} =
                Combat.process_action(
                  updated_combat,
-                 {:pick_card, warrior, negative_damage_card}
+                 {:pick_card, updated_warrior, negative_damage_card}
                )
 
-      # Then play the card on mage
+      # Then play the card on mage (who should be within range now)
       assert {:ok, updated_combat} =
-               Combat.process_action(card_selected_combat, {:play_card, mage.position})
+               Combat.process_action(card_selected_combat, {:play_card, adjacent_mage.position})
 
       updated_mage = Enum.find(updated_combat.players, &(&1.id == mage.id))
       # Negative damage should heal
@@ -360,67 +400,72 @@ defmodule Game.CombatTest do
   end
 
   describe "when a character plays a card" do
-    setup %{combat: combat, warrior: warrior, mage: mage, attack_card: attack_card} do
-      # First pick the card
-      {:ok, card_selected_combat} = Combat.process_action(combat, {:pick_card, warrior, attack_card})
+    setup %{combat: combat, warrior: warrior, heal_card: heal_card} do
+      # Ensure it's warrior's turn
+      updated_combat = %{combat | queue: [warrior | Enum.drop(combat.queue, 1)]}
 
-      # Then play the card
-      {:ok, updated_combat} = Combat.process_action(card_selected_combat, {:play_card, mage.position})
+      # First pick the card
+      {:ok, card_selected_combat} = Combat.process_action(updated_combat, {:pick_card, warrior, heal_card})
+
+      # Then play the card on self (avoiding range issues)
+      {:ok, updated_combat} = Combat.process_action(card_selected_combat, {:play_card, warrior.position})
 
       %{
-        initial_combat: combat,
+        initial_combat: updated_combat,
         card_selected_combat: card_selected_combat,
         updated_combat: updated_combat,
         warrior: warrior,
-        mage: mage,
-        attack_card: attack_card
+        played_card: heal_card
       }
     end
 
-    test "card disappears from hand", %{warrior: warrior, updated_combat: updated_combat, attack_card: attack_card} do
+    test "card disappears from hand", %{warrior: warrior, updated_combat: updated_combat, played_card: played_card} do
       updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-      refute Enum.any?(updated_warrior.hand, fn card -> card.id == attack_card.id end)
+      refute Enum.any?(updated_warrior.hand, fn card -> card.id == played_card.id end)
     end
 
     test "only one card is removed if there are multiple copies", %{
       initial_combat: combat,
       warrior: warrior,
-      mage: mage,
-      attack_card: attack_card
+      played_card: played_card
     } do
       # Add a duplicate card to warrior's hand
-      duplicate_card = %{attack_card | id: "duplicate-#{attack_card.id}"}
+      duplicate_card = %{played_card | id: "duplicate-#{played_card.id}"}
       warrior_with_duplicate = %{warrior | hand: [duplicate_card | warrior.hand]}
 
       # Update combat state with warrior having duplicate cards
       updated_combat = %{
         combat
-        | players: [warrior_with_duplicate, Enum.at(combat.players, 1)],
-          queue: [warrior_with_duplicate, Enum.at(combat.queue, 1)]
+        | players: Enum.map(combat.players, fn
+            p -> if p.id == warrior.id, do: warrior_with_duplicate, else: p
+          end),
+          queue: [warrior_with_duplicate | Enum.drop(combat.queue, 1)]
       }
 
       # First pick the original card
-      {:ok, card_selected_combat} = Combat.process_action(updated_combat, {:pick_card, warrior_with_duplicate, attack_card})
+      {:ok, card_selected_combat} = Combat.process_action(updated_combat, {:pick_card, warrior_with_duplicate, played_card})
 
-      # Then play the card
-      {:ok, after_play_combat} = Combat.process_action(card_selected_combat, {:play_card, mage.position})
+      # Then play the card on self
+      {:ok, after_play_combat} = Combat.process_action(card_selected_combat, {:play_card, warrior_with_duplicate.position})
 
       # Find updated warrior
       updated_warrior = Enum.find(after_play_combat.players, &(&1.id == warrior.id))
 
       # The original card should be gone but the duplicate remains
-      refute Enum.any?(updated_warrior.hand, fn card -> card.id == attack_card.id end)
+      refute Enum.any?(updated_warrior.hand, fn card -> card.id == played_card.id end)
       assert Enum.any?(updated_warrior.hand, fn card -> card.id == duplicate_card.id end)
     end
 
-    test "card appears in discard pile", %{warrior: warrior, updated_combat: updated_combat, attack_card: attack_card} do
+    test "card appears in discard pile", %{warrior: warrior, updated_combat: updated_combat, played_card: played_card} do
       updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-      assert Enum.any?(updated_warrior.discard, fn card -> card.id == attack_card.id end)
+      assert Enum.any?(updated_warrior.discard, fn card -> card.id == played_card.id end)
     end
 
-    test "effects are applied to target", %{mage: mage, updated_combat: updated_combat, attack_card: attack_card} do
-      updated_mage = Enum.find(updated_combat.players, &(&1.id == mage.id))
-      assert updated_mage.hp == mage.hp - attack_card.damage
+    test "effects are applied to target", %{warrior: warrior, updated_combat: updated_combat, played_card: played_card} do
+      # For a heal card, check that healing was applied to warrior
+      updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
+      {:heal, value} = played_card.effect
+      assert updated_warrior.hp == warrior.hp + value
     end
   end
 end
