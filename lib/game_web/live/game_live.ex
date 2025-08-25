@@ -29,12 +29,18 @@ defmodule GameWeb.GameLive do
   def render(assigns) do
     ~H"""
     <div class="container mx-auto p-4">
-      <div class="mb-4">
+      <div class="mb-4 flex gap-4">
         <button
           phx-click="reset"
           class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
         >
           Reset Game
+        </button>
+        <button
+          phx-click="skip_turn"
+          class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+        >
+          Skip Turn
         </button>
       </div>
 
@@ -146,7 +152,7 @@ defmodule GameWeb.GameLive do
             %Game.Card{
               id: 1,
               name: "Fireball",
-              cost: 2,
+              cost: 0,
               effect: {:damage, 8},
               range: 3,
               targeting: :single
@@ -154,7 +160,7 @@ defmodule GameWeb.GameLive do
             %Game.Card{
               id: 2,
               name: "Heal",
-              cost: 2,
+              cost: 0,
               effect: {:heal, 5},
               range: 1,
               targeting: :single
@@ -235,6 +241,22 @@ defmodule GameWeb.GameLive do
 
   def handle_event("interact", params, socket) do
     {:noreply, socket}
+  end
+
+  def handle_event("skip_turn", _params, socket) do
+    current_player = socket.assigns.game_state.combat.current_turn.player
+
+    with {:ok, updated_combat} <-
+           process_game_action(socket, {:skip_turn, current_player}) do
+      {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: updated_combat})}
+    else
+      {:error, error} ->
+        socket =
+          socket
+          |> put_flash(:error, "#{error}")
+
+        {:noreply, socket}
+    end
   end
 
   defp process_game_action(socket, action) do

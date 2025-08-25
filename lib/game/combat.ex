@@ -123,11 +123,14 @@ defmodule Game.Combat do
         updated_player = Character.apply_card_effect(player, card.effect)
         # Move the played card from hand to discard
         updated_player = Character.discard_card(updated_player, card)
+        # Discard the rest of the hand at end of turn
+        updated_player = discard_hand(updated_player)
         # Update the player's state in the queue and players list
         updated_queue = TurnQueue.rotate(queue, updated_player)
         updated_players = update_player_in_list(combat.players, updated_player)
         [next_player | _] = updated_queue
 
+        # Create updated combat state
         updated_combat = %{
           combat
           | queue: updated_queue,
@@ -139,6 +142,9 @@ defmodule Game.Combat do
               card: nil
             }
         }
+
+        # Draw cards for the next player
+        updated_combat = draw_cards_for_player(updated_combat, next_player)
 
         updated_combat = %{
           updated_combat
@@ -187,6 +193,8 @@ defmodule Game.Combat do
               # Apply effect to target
               # Move the played card from hand to discard
               updated_player = Character.discard_card(player, card)
+              # Discard the rest of the hand at end of turn
+              updated_player = discard_hand(updated_player)
               # Update queue - rotate after current player's action
               updated_queue = TurnQueue.rotate(queue, updated_player)
               [next_player | _] = updated_queue
@@ -204,6 +212,9 @@ defmodule Game.Combat do
                   }
               }
 
+              # Draw cards for the next player
+              updated_combat = draw_cards_for_player(updated_combat, next_player)
+
               # Update grid to reflect latest player state
               updated_combat = %{updated_combat | grid: Grid.update_character(updated_combat.grid, updated_player)}
               {:ok, updated_combat}
@@ -213,6 +224,42 @@ defmodule Game.Combat do
           true ->
             {:error, "Invalid target"}
         end
+    end
+  end
+
+  # Skip turn action - discard current player's hand and draw cards for the next player
+  def process_action(%Combat{state: :running} = combat, {:skip_turn, player}) do
+    cond do
+      not TurnQueue.is_players_turn?(combat.queue, player) ->
+        {:error, "Not player's turn"}
+
+      true ->
+        # First, discard the player's entire hand
+        updated_player = discard_hand(player)
+
+        # Update the queue to move to the next player
+        updated_queue = TurnQueue.rotate(combat.queue, updated_player)
+        [next_player | _] = updated_queue
+
+        # Update the players list
+        updated_players = update_player_in_list(combat.players, updated_player)
+
+        # Draw cards for the next player up to the default hand size (5)
+        updated_combat = %{combat |
+          players: updated_players,
+          queue: updated_queue,
+          state: :running,
+          current_turn: %{
+            starting_position: next_player.position,
+            player: next_player,
+            card: nil
+          }
+        }
+
+        # Draw cards for the next player
+        updated_combat = draw_cards_for_player(updated_combat, next_player)
+
+        {:ok, updated_combat}
     end
   end
 
@@ -362,21 +409,41 @@ defmodule Game.Combat do
   end
 
   @doc """
-  Draws cards for a player at the start of their turn
+  Draws cards for a player at the start of their turn up to the default hand size of 5
   If draw pile doesn't have enough cards, reshuffles discard pile into draw pile first
   """
   def draw_cards_for_player(combat, player, count \\ 5) do
-    # Draw cards (Character.draw_cards now handles reshuffling if needed)
-    player = Character.draw_cards(player, count)
+    # Calculate how many cards to draw to reach hand size (default 5)
+    cards_to_draw = max(0, count - length(player.cards.hand))
 
-    # Update player in combat state
-    updated_players = update_player_in_list(combat.players, player)
-    updated_queue = TurnQueue.update_character(combat.queue, player)
-
-    %{
+    # If no cards to draw, return combat unchanged
+    if cards_to_draw == 0 do
       combat
-      | players: updated_players,
-        queue: updated_queue
-    }
+    else
+      # Draw cards (Character.draw_cards now handles reshuffling if needed)
+      player = Character.draw_cards(player, cards_to_draw)
+
+      # Update player in combat state
+      updated_players = update_player_in_list(combat.players, player)
+      updated_queue = TurnQueue.update_character(combat.queue, player)
+
+      %{
+        combat
+        | players: updated_players,
+          queue: updated_queue
+      }
+    end
+  end
+
+  @doc """
+  Discards a player's entire hand into their discard pile
+  """
+  def discard_hand(player) do
+    # Move all cards from hand to discard
+    hand_cards = player.cards.hand
+    updated_discard = player.cards.discard ++ hand_cards
+
+    # Return updated player with empty hand and updated discard
+    %{player | cards: %{player.cards | hand: [], discard: updated_discard}}
   end
 end

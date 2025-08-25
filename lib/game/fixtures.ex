@@ -17,14 +17,16 @@ defmodule Game.Fixtures do
           attack_card(),
           attack_card(),
           attack_card(),
+          attack_card(),
+          attack_card(),
+          attack_card(),
+          attack_card(),
+          attack_card(),
           attack_card()
-        ],
+        ]
+        |> Enum.with_index()
+        |> Enum.map(fn {x, idx} -> %{ x | id: idx} end),
         hand: [
-          attack_card(),
-          attack_card(),
-          attack_card(),
-          attack_card(),
-          attack_card()
         ],
         discard: []
       }
@@ -47,14 +49,16 @@ defmodule Game.Fixtures do
           fireball_card(),
           fireball_card(),
           heal_card(),
-          heal_card()
-        ],
-        hand: [
+          heal_card(),
           heal_card(),
           heal_card(),
           heal_card(),
           fireball_card(),
           fireball_card()
+        ]
+        |> Enum.with_index()
+        |> Enum.map(fn {x, idx} -> %{ x | id: idx} end),
+        hand: [
         ],
         discard: []
       }
