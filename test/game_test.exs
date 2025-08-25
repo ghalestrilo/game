@@ -14,46 +14,54 @@ defmodule GameTest do
       # Create two characters with different classes and positions
       warrior = %{
         Fixtures.warrior()
-        | hand: [
-            %Card{
-              id: 1,
-              name: "Strike",
-              cost: 1,
-              effect: {:damage, 5},
-              range: 1,
-              targeting: :single
-            },
-            %Card{
-              id: 2,
-              name: "Power Strike",
-              cost: 3,
-              effect: {:damage, 10},
-              range: 1,
-              targeting: :single
-            }
-          ]
+        | cards: %{
+            draw: [],
+            hand: [
+              %Card{
+                id: 1,
+                name: "Strike",
+                cost: 1,
+                effect: {:damage, 5},
+                range: 1,
+                targeting: :single
+              },
+              %Card{
+                id: 2,
+                name: "Power Strike",
+                cost: 3,
+                effect: {:damage, 10},
+                range: 1,
+                targeting: :single
+              }
+            ],
+            discard: []
+          }
       }
 
       mage = %{
         Fixtures.mage()
-        | hand: [
-            %Card{
-              id: 3,
-              name: "Fireball",
-              cost: 2,
-              effect: {:damage, 8},
-              range: 3,
-              targeting: :single
-            },
-            %Card{
-              id: 4,
-              name: "Heal",
-              cost: 2,
-              effect: {:heal, 5},
-              range: 1,
-              targeting: :single
-            }
-          ]
+        | cards: %{
+            draw: [],
+            hand: [
+              %Card{
+                id: 3,
+                name: "Fireball",
+                cost: 2,
+                effect: {:damage, 8},
+                range: 3,
+                targeting: :single
+              },
+              %Card{
+                id: 4,
+                name: "Heal",
+                cost: 2,
+                effect: {:heal, 5},
+                range: 1,
+                targeting: :single
+              }
+            ],
+            discard: []
+          }
       }
 
       # Create a grid with the characters' initial positions
@@ -86,7 +94,7 @@ defmodule GameTest do
       warrior = Enum.find(combat.players, &(&1.id == warrior.id))
 
       # 2. Play a card
-      strike_card = Enum.find(warrior.hand, &(&1.id == 1))
+      strike_card = Enum.find(warrior.cards.hand, &(&1.id == 1))
       {:ok, combat} = Game.play_card(game_pid, warrior, strike_card, {2, 0, -2})
       updated_mage = Enum.find(combat.players, &(&1.id == mage.id))
       # 15 - 5 damage
@@ -105,7 +113,7 @@ defmodule GameTest do
       mage = Enum.find(combat.players, &(&1.id == mage.id))
 
       # 2. Play a healing card on self
-      heal_card = Enum.find(mage.hand, &(&1.id == 4))
+      heal_card = Enum.find(mage.cards.hand, &(&1.id == 4))
       {:ok, combat} = Game.play_card(game_pid, mage, heal_card, {3, 0, -3})
       updated_mage = Enum.find(combat.players, &(&1.id == mage.id))
       # 10 + 5 healing
@@ -124,7 +132,7 @@ defmodule GameTest do
       warrior = Enum.find(combat.players, &(&1.id == warrior.id))
 
       # 2. Play the powerful card
-      power_strike = Enum.find(warrior.hand, &(&1.id == 2))
+      power_strike = Enum.find(warrior.cards.hand, &(&1.id == 2))
       {:ok, combat} = Game.play_card(game_pid, warrior, power_strike, {3, 0, -3})
       updated_mage = Enum.find(combat.players, &(&1.id == mage.id))
       # 15 - 10 damage
@@ -139,7 +147,7 @@ defmodule GameTest do
       assert {:ok, combat} = Game.move_character(game_pid, mage, {4, 0, -4})
 
       # 2. Play fireball
-      fireball = Enum.find(mage.hand, &(&1.id == 3))
+      fireball = Enum.find(mage.cards.hand, &(&1.id == 3))
       {:ok, combat} = Game.play_card(game_pid, mage, fireball, {2, 0, -2})
       updated_warrior = Enum.find(combat.players, &(&1.id == warrior.id))
       # 20 - 8 damage
@@ -163,8 +171,8 @@ defmodule GameTest do
 
     test "handles invalid moves and actions", %{game_pid: game_pid} do
       # Create characters with empty hands
-      warrior = %{Fixtures.warrior() | hand: []}
-      mage = %{Fixtures.mage() | hand: []}
+      warrior = %{Fixtures.warrior() | cards: %{draw: [], hand: [], discard: []}}
+      mage = %{Fixtures.mage() | cards: %{draw: [], hand: [], discard: []}}
 
       # Create grid with a wall
       grid = %Grid{

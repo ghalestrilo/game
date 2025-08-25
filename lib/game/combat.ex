@@ -11,8 +11,7 @@ defmodule Game.Combat do
             current_turn: %{
               player: nil,
               starting_position: {0, 0, 0},
-              card: nil,
-              hand: []
+              card: nil
             }
 
   @type t() :: %__MODULE__{
@@ -23,8 +22,7 @@ defmodule Game.Combat do
           current_turn: %{
             player: Character.t() | nil,
             starting_position: {0, 0, 0},
-            card: Card.t() | nil,
-            hand: list(Card.t())
+            card: Card.t() | nil
           }
         }
 
@@ -121,7 +119,10 @@ defmodule Game.Combat do
 
       # Self-targeting (healing or damage)
       position == {:ok, nil} and player.position == target_position ->
+        # Apply card effect
         updated_player = Character.apply_card_effect(player, card.effect)
+        # Move the played card from hand to discard
+        updated_player = Character.discard_card(updated_player, card)
         # Update the player's state in the queue and players list
         updated_queue = TurnQueue.rotate(queue, updated_player)
         updated_players = update_player_in_list(combat.players, updated_player)
@@ -135,8 +136,7 @@ defmodule Game.Combat do
             current_turn: %{
               starting_position: next_player.position,
               player: next_player,
-              card: nil,
-              hand: Enum.take(next_player.deck, 5)
+              card: nil
             }
         }
 
@@ -184,22 +184,28 @@ defmodule Game.Combat do
                 | players: update_player_in_list(combat.players, updated_target)
               }
 
+              # Apply effect to target
+              # Move the played card from hand to discard
+              updated_player = Character.discard_card(player, card)
               # Update queue - rotate after current player's action
-              updated_queue = TurnQueue.rotate(queue, player)
+              updated_queue = TurnQueue.rotate(queue, updated_player)
               [next_player | _] = updated_queue
 
+              # First update with discard change to player
               updated_combat = %{
                 updated_combat
-                | queue: updated_queue,
+                | players: update_player_in_list(updated_combat.players, updated_player),
+                  queue: updated_queue,
                   state: :running,
                   current_turn: %{
                     starting_position: next_player.position,
                     player: next_player,
-                    card: nil,
-                    hand: Enum.take(next_player.deck, 5)
+                    card: nil
                   }
               }
 
+              # Update grid to reflect latest player state
+              updated_combat = %{updated_combat | grid: Grid.update_character(updated_combat.grid, updated_player)}
               {:ok, updated_combat}
             end
 
@@ -215,6 +221,9 @@ defmodule Game.Combat do
     cond do
       not TurnQueue.is_players_turn?(combat.queue, player) ->
         {:error, "Not player's turn"}
+
+      not Enum.any?(player.cards.hand, fn c -> c.id == card.id end) ->
+        {:error, "Card not in hand"}
 
       true ->
         {:ok,
@@ -350,5 +359,31 @@ defmodule Game.Combat do
       # Ensure we return to running state if game continues
       {:ok, %Combat{combat | state: :running}}
     end
+  end
+
+  @doc """
+  Draws cards for a player at the start of their turn
+  """
+  def draw_cards_for_player(combat, player, count \\ 5) do
+    # If draw pile is empty, shuffle discard into draw
+    player =
+      if Enum.empty?(player.cards.draw) && !Enum.empty?(player.cards.discard) do
+        Character.shuffle_discard_into_draw(player)
+      else
+        player
+      end
+
+    # Draw cards
+    player = Character.draw_cards(player, count)
+
+    # Update player in combat state
+    updated_players = update_player_in_list(combat.players, player)
+    updated_queue = TurnQueue.update_character(combat.queue, player)
+
+    %{
+      combat
+      | players: updated_players,
+        queue: updated_queue
+    }
   end
 end

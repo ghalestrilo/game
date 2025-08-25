@@ -91,8 +91,7 @@ defmodule Game do
       current_turn: %{
         starting_position: hd(characters).position,
         player: hd(characters),
-        card: nil,
-        hand: Enum.take(hd(characters).deck, 5)
+        card: nil
       }
     }
 
@@ -128,15 +127,20 @@ defmodule Game do
     if current_turn.id != current_character.id do
       {:reply, {:error, "Not player's turn"}, state}
     else
-      case Combat.process_action(
-             state.combat,
-             {:play_card, current_character, card, target_position}
-           ) do
-        {:ok, updated_combat} ->
-          current_character = Enum.find(updated_combat.players, &(&1.id == current_character.id))
-          # Update the character's state in the game state
-          updated_state = %{state | combat: updated_combat}
-          {:reply, {:ok, updated_combat}, updated_state}
+      # First pick the card
+      case Combat.process_action(state.combat, {:pick_card, current_character, card}) do
+        {:ok, card_selected_combat} ->
+          # Then play the card
+          case Combat.process_action(card_selected_combat, {:play_card, target_position}) do
+            {:ok, updated_combat} ->
+              current_character = Enum.find(updated_combat.players, &(&1.id == current_character.id))
+              # Update the character's state in the game state
+              updated_state = %{state | combat: updated_combat}
+              {:reply, {:ok, updated_combat}, updated_state}
+
+            {:error, reason} ->
+              {:reply, {:error, reason}, state}
+          end
 
         {:error, reason} ->
           {:reply, {:error, reason}, state}

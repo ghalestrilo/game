@@ -11,18 +11,23 @@ defmodule Game.Fixtures do
       position: {0, 0, 0},
       movement_range: 2,
       team: :team1,
-      deck: [
-        attack_card(),
-        attack_card(),
-        attack_card(),
-        attack_card(),
-        attack_card(),
-        attack_card(),
-        attack_card(),
-        attack_card(),
-        attack_card(),
-        attack_card()
-      ]
+      cards: %{
+        draw: [
+          attack_card(),
+          attack_card(),
+          attack_card(),
+          attack_card(),
+          attack_card()
+        ],
+        hand: [
+          attack_card(),
+          attack_card(),
+          attack_card(),
+          attack_card(),
+          attack_card()
+        ],
+        discard: []
+      }
     }
   end
 
@@ -36,18 +41,23 @@ defmodule Game.Fixtures do
       position: {2, 0, -2},
       movement_range: 1,
       team: :team2,
-      deck: [
-        fireball_card(),
-        fireball_card(),
-        fireball_card(),
-        heal_card(),
-        heal_card(),
-        heal_card(),
-        heal_card(),
-        heal_card(),
-        fireball_card(),
-        fireball_card()
-      ]
+      cards: %{
+        draw: [
+          fireball_card(),
+          fireball_card(),
+          fireball_card(),
+          heal_card(),
+          heal_card()
+        ],
+        hand: [
+          heal_card(),
+          heal_card(),
+          heal_card(),
+          fireball_card(),
+          fireball_card()
+        ],
+        discard: []
+      }
     }
   end
 
@@ -103,7 +113,7 @@ defmodule Game.Fixtures do
         starting_position: warrior.position,
         player: warrior,
         card: nil,
-        hand: Enum.take(warrior.deck, 5)
+        hand: warrior.cards.hand
       }
     }
   end
@@ -117,7 +127,12 @@ defmodule Game.Fixtures do
       hp: 20,
       position: {1, 0, -1},
       movement_range: 2,
-      team: :team1
+      team: :team1,
+      cards: %{
+        draw: [attack_card(), attack_card(), attack_card()],
+        hand: [attack_card(), attack_card()],
+        discard: []
+      }
     }
   end
 
