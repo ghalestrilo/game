@@ -13,8 +13,10 @@ defmodule GameWeb.GameLiveTest do
       assert view |> element(".card-status-panel") |> render() =~ "Hand: 5 cards"
 
       # Have the warrior attack himself
+      assert view |> render() =~ "HP: 20"
       pick_first_card(view)
       click_warrior(view)
+      assert view |> render() =~ "HP: 15" # (new hp)
 
       # Verify now mage is the current player
       assert view |> element(".card-status-panel") |> render() =~ "Mage"

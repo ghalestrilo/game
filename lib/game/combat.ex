@@ -143,6 +143,14 @@ defmodule Game.Combat do
             }
         }
 
+        # Initialize the next player's turn with proper card drawing
+        next_player_with_cards = draw_cards_for_player(updated_combat, next_player, 5)
+        updated_combat = %{next_player_with_cards |
+          current_turn: %{next_player_with_cards.current_turn |
+            player: Enum.find(next_player_with_cards.players, &(&1.id == next_player.id))
+          }
+        }
+
         updated_combat = %{
           updated_combat
           | grid: Grid.update_character(updated_combat.grid, updated_player)
@@ -209,8 +217,13 @@ defmodule Game.Combat do
                   }
               }
 
-              # Draw cards for the next player
-              updated_combat = draw_cards_for_player(updated_combat, next_player)
+              # Initialize the next player's turn with proper card drawing
+              next_player_with_cards = draw_cards_for_player(updated_combat, next_player, 5)
+              updated_combat = %{next_player_with_cards |
+                current_turn: %{next_player_with_cards.current_turn |
+                  player: Enum.find(next_player_with_cards.players, &(&1.id == next_player.id))
+                }
+              }
 
               # Update grid to reflect latest player state
               updated_combat = %{updated_combat | grid: Grid.update_character(updated_combat.grid, updated_player)}
@@ -298,8 +311,13 @@ defmodule Game.Combat do
             }
         }
 
-        # Draw cards for the next player
-        updated_combat = draw_cards_for_player(updated_combat, next_player)
+        # Initialize the next player's turn with proper card drawing
+        next_player_with_cards = draw_cards_for_player(updated_combat, next_player, 5)
+        updated_combat = %{next_player_with_cards |
+          current_turn: %{next_player_with_cards.current_turn |
+            player: Enum.find(next_player_with_cards.players, &(&1.id == next_player.id))
+          }
+        }
 
         {:ok, updated_combat}
     end
@@ -414,12 +432,15 @@ defmodule Game.Combat do
   If draw pile doesn't have enough cards, reshuffles discard pile into draw pile first
   """
   def draw_cards_for_player(combat, player, count \\ 5) do
-    # First check if we need to reshuffle discard into draw
+    # First ensure we discard any existing cards in hand
+    player_with_empty_hand = discard_hand(player)
+
+    # Then check if we need to reshuffle discard into draw
     player_with_reshuffled_cards =
-      if length(player.cards.draw) < count && length(player.cards.discard) > 0 do
-        Character.shuffle_discard_into_draw(player)
+      if length(player_with_empty_hand.cards.draw) < count && length(player_with_empty_hand.cards.discard) > 0 do
+        Character.shuffle_discard_into_draw(player_with_empty_hand)
       else
-        player
+        player_with_empty_hand
       end
 
     # Draw cards (Character.draw_cards handles drawing from the reshuffled deck)
@@ -447,4 +468,21 @@ defmodule Game.Combat do
     # Return updated player with empty hand and updated discard
     %{player | cards: %{player.cards | hand: [], discard: updated_discard}}
   end
+
+  @doc """
+  Initializes a player's turn by ensuring they have 5 cards in their hand.
+  Always draws up to 5 cards at the beginning of a turn.
+  If draw pile doesn't have enough cards, reshuffles discard pile into draw pile first.
+  Returns the updated combat state.
+  """
+  def initialize_turn(%Combat{current_turn: %{player: player}} = combat) when not is_nil(player) do
+    # Always draw up to 5 cards for the player at the start of their turn
+    combat_with_cards = draw_cards_for_player(combat, player, 5)
+
+    # Make sure the current_turn.player is also updated with the cards
+    updated_player = Enum.find(combat_with_cards.players, &(&1.id == player.id))
+    %{combat_with_cards | current_turn: %{combat_with_cards.current_turn | player: updated_player}}
+  end
+
+  def initialize_turn(combat), do: combat
 end
