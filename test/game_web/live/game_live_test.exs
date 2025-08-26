@@ -3,8 +3,8 @@ defmodule GameWeb.GameLiveTest do
 
   import Phoenix.LiveViewTest
 
-  describe "Bug reproduction - empty hands after turn transitions" do
-    test "skipping turn doesn't draw cards for next player", %{conn: conn} do
+  describe "Combat sandbox demo" do
+    test "Drawing a card changes turn to next character with a freshly drawn 5-card hand", %{conn: conn} do
       # Load the game page
       {:ok, view, _html} = live(conn, ~p"/game")
 
@@ -12,23 +12,21 @@ defmodule GameWeb.GameLiveTest do
       assert view |> element(".card-status-panel") |> render() =~ "Warrior"
       assert view |> element(".card-status-panel") |> render() =~ "Hand: 5 cards"
 
-      # Skip the warrior's turn
-      view
-      |> element("button", "Skip Turn")
-      |> render_click()
+      # Have the warrior attack himself
+      pick_first_card(view)
+      click_warrior(view)
 
       # Verify now mage is the current player
       assert view |> element(".card-status-panel") |> render() =~ "Mage"
 
-      # This reproduces the bug - Mage should have 5 cards but has 0
+      # Ensure mage has 5 cards in his hand
       hand_content = view |> element(".card-status-panel") |> render()
       assert hand_content =~ "Hand: 5 cards"
       refute hand_content =~ "Hand: 0 cards"
 
-      # Skip again to go back to warrior
-      view
-      |> element("button", "Skip Turn")
-      |> render_click()
+      # Have mage attack himself
+      pick_first_card(view)
+      click_warrior(view)
 
       # Verify warrior is now current player
       assert view |> element(".card-status-panel") |> render() =~ "Warrior"
@@ -38,5 +36,23 @@ defmodule GameWeb.GameLiveTest do
       assert hand_content =~ "Hand: 5 cards"
       refute hand_content =~ "Hand: 0 cards"
     end
+  end
+
+  defp pick_first_card(view) do
+    view
+    |> element("div.card:first-child()")
+    |> render_click()
+  end
+
+  defp click_warrior(view) do
+    view
+    |> element("[phx-value-target_position=\"0_0_0\"]")
+    |> render_click()
+  end
+
+  defp click_mage(view) do
+    view
+    |> element("[phx-value-target_position=\"0_-1_-1\"]")
+    |> render_click()
   end
 end
