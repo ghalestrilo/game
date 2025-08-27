@@ -54,8 +54,14 @@ defmodule Game.CardManagementTest do
       assert length(updated_character.cards.discard) == 2
 
       # The total number of cards should remain the same
-      total_cards_before = length(character.cards.draw) + length(character.cards.hand) + length(character.cards.discard)
-      total_cards_after = length(updated_character.cards.draw) + length(updated_character.cards.hand) + length(updated_character.cards.discard)
+      total_cards_before =
+        length(character.cards.draw) + length(character.cards.hand) +
+          length(character.cards.discard)
+
+      total_cards_after =
+        length(updated_character.cards.draw) + length(updated_character.cards.hand) +
+          length(updated_character.cards.discard)
+
       assert total_cards_before == total_cards_after
     end
 
@@ -71,8 +77,14 @@ defmodule Game.CardManagementTest do
       assert length(updated_character.cards.discard) == 1
 
       # The total number of cards should remain the same
-      total_cards_before = length(character.cards.draw) + length(character.cards.hand) + length(character.cards.discard)
-      total_cards_after = length(updated_character.cards.draw) + length(updated_character.cards.hand) + length(updated_character.cards.discard)
+      total_cards_before =
+        length(character.cards.draw) + length(character.cards.hand) +
+          length(character.cards.discard)
+
+      total_cards_after =
+        length(updated_character.cards.draw) + length(updated_character.cards.hand) +
+          length(updated_character.cards.discard)
+
       assert total_cards_before == total_cards_after
     end
 
@@ -93,8 +105,14 @@ defmodule Game.CardManagementTest do
       assert length(updated_character.cards.draw) == 3
 
       # The total number of cards should remain the same
-      total_cards_before = length(character.cards.draw) + length(character.cards.hand) + length(character.cards.discard)
-      total_cards_after = length(updated_character.cards.draw) + length(updated_character.cards.hand) + length(updated_character.cards.discard)
+      total_cards_before =
+        length(character.cards.draw) + length(character.cards.hand) +
+          length(character.cards.discard)
+
+      total_cards_after =
+        length(updated_character.cards.draw) + length(updated_character.cards.hand) +
+          length(updated_character.cards.discard)
+
       assert total_cards_before == total_cards_after
     end
 
@@ -110,20 +128,28 @@ defmodule Game.CardManagementTest do
       assert length(updated_character.cards.hand) == 2
 
       # The total number of cards should remain the same
-      total_cards_before = length(character.cards.draw) + length(character.cards.hand) + length(character.cards.discard)
-      total_cards_after = length(updated_character.cards.draw) + length(updated_character.cards.hand) + length(updated_character.cards.discard)
+      total_cards_before =
+        length(character.cards.draw) + length(character.cards.hand) +
+          length(character.cards.discard)
+
+      total_cards_after =
+        length(updated_character.cards.draw) + length(updated_character.cards.hand) +
+          length(updated_character.cards.discard)
+
       assert total_cards_before == total_cards_after
     end
 
     test "drawing cards when draw pile doesn't have enough cards", %{character: character} do
       # Move most cards to discard pile, leaving only 1 in draw
       card1 = hd(character.cards.draw)
-      character_with_low_draw = %{character |
-        cards: %{
-          draw: [card1],
-          hand: [],
-          discard: tl(character.cards.draw) ++ character.cards.hand ++ character.cards.discard
-        }
+
+      character_with_low_draw = %{
+        character
+        | cards: %{
+            draw: [card1],
+            hand: [],
+            discard: tl(character.cards.draw) ++ character.cards.hand ++ character.cards.discard
+          }
       }
 
       # Count cards before drawing
@@ -143,8 +169,14 @@ defmodule Game.CardManagementTest do
       assert length(updated_character.cards.discard) == 0
 
       # The total number of cards should remain the same
-      total_cards_before = length(character_with_low_draw.cards.draw) + length(character_with_low_draw.cards.hand) + length(character_with_low_draw.cards.discard)
-      total_cards_after = length(updated_character.cards.draw) + length(updated_character.cards.hand) + length(updated_character.cards.discard)
+      total_cards_before =
+        length(character_with_low_draw.cards.draw) + length(character_with_low_draw.cards.hand) +
+          length(character_with_low_draw.cards.discard)
+
+      total_cards_after =
+        length(updated_character.cards.draw) + length(updated_character.cards.hand) +
+          length(updated_character.cards.discard)
+
       assert total_cards_before == total_cards_after
     end
   end
@@ -199,7 +231,7 @@ defmodule Game.CardManagementTest do
       }
 
       # Create combat state
-      combat = %Combat{
+      combat = %CombatState{
         state: :running,
         players: [player, target],
         queue: [player, target],
@@ -221,30 +253,43 @@ defmodule Game.CardManagementTest do
       }
     end
 
-    test "playing a card moves it to discard pile", %{combat: combat, player: player, target: target, card1: card1} do
+    test "playing a card moves it to discard pile", %{
+      combat: combat,
+      player: player,
+      target: target,
+      card1: card1
+    } do
       # Add range to the card so it can hit the target
       card1_with_range = %{card1 | range: 1}
 
       # Create a clean player with just the ranged card in hand
-      player_with_ranged_card = %{player | cards: %{
-        draw: [],
-        hand: [card1_with_range],
-        discard: []
-      }}
+      player_with_ranged_card = %{
+        player
+        | cards: %{
+            draw: [],
+            hand: [card1_with_range],
+            discard: []
+          }
+      }
 
       # Update combat with the modified player
       updated_combat = %{
-        combat |
-        players: [player_with_ranged_card, Enum.at(combat.players, 1)],
-        queue: [player_with_ranged_card, Enum.at(combat.queue, 1)],
-        current_turn: %{combat.current_turn | player: player_with_ranged_card}
+        combat
+        | players: [player_with_ranged_card, Enum.at(combat.players, 1)],
+          queue: [player_with_ranged_card, Enum.at(combat.queue, 1)],
+          current_turn: %{combat.current_turn | player: player_with_ranged_card}
       }
 
       # First pick the card
-      assert {:ok, card_selected_combat} = Combat.process_action(updated_combat, {:pick_card, player_with_ranged_card, card1_with_range})
+      assert {:ok, card_selected_combat} =
+               Combat.process_action(
+                 updated_combat,
+                 {:pick_card, player_with_ranged_card, card1_with_range}
+               )
 
       # Then play the card on target
-      assert {:ok, updated_combat} = Combat.process_action(card_selected_combat, {:play_card, target.position})
+      assert {:ok, updated_combat} =
+               Combat.process_action(card_selected_combat, {:play_card, target.position})
 
       # Find updated player
       updated_player = Enum.find(updated_combat.players, &(&1.id == player.id))
@@ -256,12 +301,21 @@ defmodule Game.CardManagementTest do
       assert Enum.any?(updated_player.cards.discard, fn c -> c.id == card1_with_range.id end)
 
       # The total number of cards should remain the same
-      total_cards_before = length(player_with_ranged_card.cards.draw) + length(player_with_ranged_card.cards.hand) + length(player_with_ranged_card.cards.discard)
-      total_cards_after = length(updated_player.cards.draw) + length(updated_player.cards.hand) + length(updated_player.cards.discard)
+      total_cards_before =
+        length(player_with_ranged_card.cards.draw) + length(player_with_ranged_card.cards.hand) +
+          length(player_with_ranged_card.cards.discard)
+
+      total_cards_after =
+        length(updated_player.cards.draw) + length(updated_player.cards.hand) +
+          length(updated_player.cards.discard)
+
       assert total_cards_before == total_cards_after
     end
 
-    test "drawing cards when draw pile is empty shuffles discard", %{combat: combat, player: player} do
+    test "drawing cards when draw pile is empty shuffles discard", %{
+      combat: combat,
+      player: player
+    } do
       # Get first card from player's hand
       first_card = player.cards.hand |> hd
 
@@ -270,9 +324,9 @@ defmodule Game.CardManagementTest do
 
       # Update combat state with modified player
       combat = %{
-        combat |
-        players: [player, Enum.at(combat.players, 1)],
-        queue: [player, Enum.at(combat.queue, 1)]
+        combat
+        | players: [player, Enum.at(combat.players, 1)],
+          queue: [player, Enum.at(combat.queue, 1)]
       }
 
       # Draw cards
@@ -289,22 +343,31 @@ defmodule Game.CardManagementTest do
       assert Enum.any?(updated_player.cards.hand, fn c -> c.id == first_card.id end)
     end
 
-    test "drawing up to default hand size when draw pile doesn't have enough cards in combat", %{combat: combat, player: player, card1: card1, card2: card2, card3: card3} do
+    test "drawing up to default hand size when draw pile doesn't have enough cards in combat", %{
+      combat: combat,
+      player: player,
+      card1: card1,
+      card2: card2,
+      card3: card3
+    } do
       # Create a scenario where player has:
       # - 1 card in draw
       # - 2 cards in discard
       # - 0 cards in hand
-      modified_player = %{player | cards: %{
-        draw: [card1],
-        hand: [],
-        discard: [card2, card3]
-      }}
+      modified_player = %{
+        player
+        | cards: %{
+            draw: [card1],
+            hand: [],
+            discard: [card2, card3]
+          }
+      }
 
       # Update combat state with modified player
       modified_combat = %{
-        combat |
-        players: [modified_player, Enum.at(combat.players, 1)],
-        queue: [modified_player, Enum.at(combat.queue, 1)]
+        combat
+        | players: [modified_player, Enum.at(combat.players, 1)],
+          queue: [modified_player, Enum.at(combat.queue, 1)]
       }
 
       # Draw up to default hand size of 5
@@ -327,8 +390,14 @@ defmodule Game.CardManagementTest do
       assert card_ids_in_hand == expected_card_ids
 
       # The total number of cards should remain the same
-      total_cards_before = length(modified_player.cards.draw) + length(modified_player.cards.hand) + length(modified_player.cards.discard)
-      total_cards_after = length(updated_player.cards.draw) + length(updated_player.cards.hand) + length(updated_player.cards.discard)
+      total_cards_before =
+        length(modified_player.cards.draw) + length(modified_player.cards.hand) +
+          length(modified_player.cards.discard)
+
+      total_cards_after =
+        length(updated_player.cards.draw) + length(updated_player.cards.hand) +
+          length(updated_player.cards.discard)
+
       assert total_cards_before == total_cards_after
     end
   end

@@ -1,5 +1,5 @@
 defmodule Game.Fixtures do
-  alias Game.{Character, Card, Grid, Combat}
+  alias Game.{Character, Card, Grid, Combat, CombatState}
 
   def warrior do
     %Character{
@@ -12,22 +12,22 @@ defmodule Game.Fixtures do
       movement_range: 2,
       team: :team1,
       cards: %{
-        draw: [
-          attack_card(),
-          attack_card(),
-          attack_card(),
-          attack_card(),
-          attack_card(),
-          attack_card(),
-          attack_card(),
-          attack_card(),
-          attack_card(),
-          attack_card()
-        ]
-        |> Enum.with_index()
-        |> Enum.map(fn {x, idx} -> %{ x | id: idx} end),
-        hand: [
-        ],
+        draw:
+          [
+            attack_card(),
+            attack_card(),
+            attack_card(),
+            attack_card(),
+            attack_card(),
+            attack_card(),
+            attack_card(),
+            attack_card(),
+            attack_card(),
+            attack_card()
+          ]
+          |> Enum.with_index()
+          |> Enum.map(fn {x, idx} -> %{x | id: idx} end),
+        hand: [],
         discard: []
       }
     }
@@ -44,22 +44,22 @@ defmodule Game.Fixtures do
       movement_range: 1,
       team: :team2,
       cards: %{
-        draw: [
-          fireball_card(),
-          fireball_card(),
-          fireball_card(),
-          heal_card(),
-          heal_card(),
-          heal_card(),
-          heal_card(),
-          heal_card(),
-          fireball_card(),
-          fireball_card()
-        ]
-        |> Enum.with_index()
-        |> Enum.map(fn {x, idx} -> %{ x | id: idx} end),
-        hand: [
-        ],
+        draw:
+          [
+            fireball_card(),
+            fireball_card(),
+            fireball_card(),
+            heal_card(),
+            heal_card(),
+            heal_card(),
+            heal_card(),
+            heal_card(),
+            fireball_card(),
+            fireball_card()
+          ]
+          |> Enum.with_index()
+          |> Enum.map(fn {x, idx} -> %{x | id: idx} end),
+        hand: [],
         discard: []
       }
     }
@@ -108,7 +108,7 @@ defmodule Game.Fixtures do
     warrior = warrior()
     mage = mage()
 
-    %Combat{
+    %CombatState{
       state: :running,
       players: [warrior, mage],
       queue: [warrior, mage],

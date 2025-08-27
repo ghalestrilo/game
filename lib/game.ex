@@ -1,6 +1,6 @@
 defmodule Game do
   alias __MODULE__
-  alias Game.Combat
+  alias Game.CombatState
 
   require Logger
 
@@ -11,7 +11,7 @@ defmodule Game do
       %Game.Character{},
       %Game.Character{}
     ],
-    combat: %Game.Combat{}
+    combat: %Game.CombatState{}
   }
 
   @doc """
@@ -83,7 +83,7 @@ defmodule Game do
         end)
       end)
 
-    combat = %Combat{
+    combat = %CombatState{
       state: :running,
       players: characters,
       queue: characters,
@@ -133,7 +133,9 @@ defmodule Game do
           # Then play the card
           case Combat.process_action(card_selected_combat, {:play_card, target_position}) do
             {:ok, updated_combat} ->
-              current_character = Enum.find(updated_combat.players, &(&1.id == current_character.id))
+              current_character =
+                Enum.find(updated_combat.players, &(&1.id == current_character.id))
+
               # Update the character's state in the game state
               updated_state = %{state | combat: updated_combat}
               {:reply, {:ok, updated_combat}, updated_state}

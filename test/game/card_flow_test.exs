@@ -72,7 +72,7 @@ defmodule Game.CardFlowTest do
       }
 
       # Create combat with warrior as current player
-      combat = %Combat{
+      combat = %CombatState{
         state: :running,
         players: [warrior, mage],
         queue: [warrior, mage],
@@ -100,7 +100,8 @@ defmodule Game.CardFlowTest do
       assert length(current_player.cards.hand) == 2
     end
 
-    test "when skipping turn, all cards in hand go to discard pile and next player draws 5 cards", %{combat: combat} do
+    test "when skipping turn, all cards in hand go to discard pile and next player draws 5 cards",
+         %{combat: combat} do
       # Skip warrior's turn
       {:ok, updated_combat} = Combat.process_action(combat, {:skip_turn, hd(combat.queue)})
 
@@ -129,7 +130,10 @@ defmodule Game.CardFlowTest do
       assert length(updated_mage.cards.discard) == 0
     end
 
-    test "when playing a card, it's moved from hand to discard and next player draws 5 cards", %{combat: combat, warrior: warrior} do
+    test "when playing a card, it's moved from hand to discard and next player draws 5 cards", %{
+      combat: combat,
+      warrior: warrior
+    } do
       # Get a card from warrior's hand
       [card | _] = warrior.cards.hand
 
@@ -137,7 +141,8 @@ defmodule Game.CardFlowTest do
       {:ok, card_selected_combat} = Combat.process_action(combat, {:pick_card, warrior, card})
 
       # Then play it on mage's position
-      {:ok, updated_combat} = Combat.process_action(card_selected_combat, {:play_card, {1, 0, -1}})
+      {:ok, updated_combat} =
+        Combat.process_action(card_selected_combat, {:play_card, {1, 0, -1}})
 
       # Find warrior in updated player list
       updated_warrior = Enum.find(updated_combat.players, &(&1.id == 1))
@@ -146,7 +151,8 @@ defmodule Game.CardFlowTest do
       assert length(updated_warrior.cards.hand) == 0
 
       # Warrior's discard pile should have the card that was played plus the rest of the hand
-      assert length(updated_warrior.cards.discard) == 6 # 4 original + 2 from hand
+      # 4 original + 2 from hand
+      assert length(updated_warrior.cards.discard) == 6
 
       # Find mage in updated player list (should be current player now)
       updated_mage = Enum.find(updated_combat.players, &(&1.id == 2))
@@ -161,28 +167,36 @@ defmodule Game.CardFlowTest do
       assert length(updated_mage.cards.discard) == 0
     end
 
-    test "when a player has not enough cards in draw and discard combined, they draw as many as possible", %{combat: combat} do
+    test "when a player has not enough cards in draw and discard combined, they draw as many as possible",
+         %{combat: combat} do
       # Modify mage to have very few cards total (3 cards)
       mage = Enum.find(combat.players, &(&1.id == 2))
-      mage_with_few_cards = %{mage |
-        cards: %{
-          draw: [%Card{id: "single_draw", name: "Single Draw", cost: 1, effect: {:damage, 1}}],
-          hand: [],
-          discard: [
-            %Card{id: "single_discard1", name: "Discard 1", cost: 1, effect: {:heal, 1}},
-            %Card{id: "single_discard2", name: "Discard 2", cost: 1, effect: {:heal, 1}}
-          ]
-        }
+
+      mage_with_few_cards = %{
+        mage
+        | cards: %{
+            draw: [%Card{id: "single_draw", name: "Single Draw", cost: 1, effect: {:damage, 1}}],
+            hand: [],
+            discard: [
+              %Card{id: "single_discard1", name: "Discard 1", cost: 1, effect: {:heal, 1}},
+              %Card{id: "single_discard2", name: "Discard 2", cost: 1, effect: {:heal, 1}}
+            ]
+          }
       }
 
       # Update combat with our modified mage
-      combat_with_few_cards = %{combat |
-        players: [hd(combat.players), mage_with_few_cards],
-        queue: [hd(combat.queue), mage_with_few_cards]
+      combat_with_few_cards = %{
+        combat
+        | players: [hd(combat.players), mage_with_few_cards],
+          queue: [hd(combat.queue), mage_with_few_cards]
       }
 
       # Skip warrior's turn to move to mage
-      {:ok, updated_combat} = Combat.process_action(combat_with_few_cards, {:skip_turn, hd(combat_with_few_cards.queue)})
+      {:ok, updated_combat} =
+        Combat.process_action(
+          combat_with_few_cards,
+          {:skip_turn, hd(combat_with_few_cards.queue)}
+        )
 
       # Find mage in updated players
       updated_mage = Enum.find(updated_combat.players, &(&1.id == 2))
