@@ -147,4 +147,11 @@ defmodule Game.Character do
       discard: []
     }}
   end
+
+  @doc """
+  Spends AP for a given cost
+  """
+  def spend_ap(character, cost) do
+    %{character | ap: max(0, character.ap - cost)}
+  end
 end

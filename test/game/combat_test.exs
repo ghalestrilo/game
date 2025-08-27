@@ -221,6 +221,67 @@ defmodule Game.CombatTest do
       updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
       assert updated_warrior.hp == warrior.hp - 5
     end
+
+    test "playing a card deducts AP but doesn't end turn", %{
+      combat: combat,
+      warrior: warrior,
+      mage: mage,
+      attack_card: attack_card
+    } do
+      # Move mage next to warrior for range
+      adjacent_mage = %{mage | position: {1, 0, -1}}
+      updated_grid = %{
+        combat.grid
+        | tiles: Map.put(
+            combat.grid.tiles,
+            adjacent_mage.position,
+            %{terrain: :plain, occupied_by: adjacent_mage}
+          )
+      }
+
+      # Setup combat with warriors turn and sufficient AP
+      warrior_with_ap = %{warrior | ap: 10}
+      updated_combat = %{
+        combat
+        | players: [warrior_with_ap, adjacent_mage],
+          queue: [warrior_with_ap, adjacent_mage],
+          grid: updated_grid
+      }
+
+      # Add attack card to warrior's hand
+      warrior_with_card = %{warrior_with_ap | cards: %{warrior_with_ap.cards | hand: [attack_card | warrior_with_ap.cards.hand]}}
+      updated_combat = %{updated_combat |
+        players: [warrior_with_card, adjacent_mage],
+        queue: [warrior_with_card, adjacent_mage]
+      }
+
+      # First pick the card
+      assert {:ok, card_selected_combat} =
+               Combat.process_action(updated_combat, {:pick_card, warrior_with_card, attack_card})
+
+      # Then play the card
+      assert {:ok, updated_combat} =
+               Combat.process_action(card_selected_combat, {:play_card, adjacent_mage.position})
+
+      # Verify that AP was deducted
+      current_player = hd(updated_combat.queue)
+      assert current_player.id == warrior_with_card.id
+      assert current_player.ap == warrior_with_card.ap - attack_card.cost
+
+      # Verify that turn has NOT rotated - warrior should still be the current player
+      assert current_player.id == warrior_with_card.id
+
+      # Verify that the mage took damage
+      updated_mage = Enum.find(updated_combat.players, &(&1.id == adjacent_mage.id))
+      assert updated_mage.hp == adjacent_mage.hp - attack_card.effect.damage
+
+      # Now skip turn explicitly
+      assert {:ok, turn_skipped_combat} =
+               Combat.process_action(updated_combat, {:skip_turn, current_player})
+
+      # Verify turn has rotated to the mage
+      assert hd(turn_skipped_combat.queue).id == mage.id
+    end
   end
 
   describe "death and game over" do

@@ -103,9 +103,6 @@ defmodule Game.Combat do
         result = combat
                 |> apply_card_effect_to_player(player, card.effect)
                 |> discard_selected_card(card)
-                |> discard_player_hand()
-                |> rotate_queue()
-                |> setup_next_player_turn()
                 |> update_grid_with_player()
                 |> check_player_death()
 
@@ -128,10 +125,8 @@ defmodule Game.Combat do
                     |> apply_card_effect_to_target(target, card.effect)
                     |> check_target_death()
                     |> update_current_player(player, card)
-                    |> setup_next_turn()
                     |> update_grid_for_player()
                     |> check_game_over()
-                    |> initialize_turn()
 
             {:ok, result}
 
@@ -506,9 +501,11 @@ defmodule Game.Combat do
   defp update_current_player(combat, player, card) do
     # Discard only the played card, not the entire hand
     # For test compatibility, also apply the card effect here
+    # Deduct AP cost but keep the turn
     updated_player = player
                     |> Character.apply_card_effect(card.effect)
                     |> Character.discard_card(card)
+                    |> Character.spend_ap(card.cost)
 
     Map.put(combat, :current_player, updated_player)
   end
