@@ -4,8 +4,20 @@ defmodule GameWeb.BaseCardLiveTest do
   import Phoenix.LiveViewTest
   import Game.BaseCardsFixtures
 
-  @create_attrs %{name: "some name", effects: [], ap: "some ap", headline: "some headline", rarity: :common}
-  @update_attrs %{name: "some updated name", effects: [], ap: "some updated ap", headline: "some updated headline", rarity: :uncommon}
+  @create_attrs %{
+    name: "some name",
+    effects: [],
+    ap: "some ap",
+    headline: "some headline",
+    rarity: :common
+  }
+  @update_attrs %{
+    name: "some updated name",
+    effects: [],
+    ap: "some updated ap",
+    headline: "some updated headline",
+    rarity: :uncommon
+  }
   @invalid_attrs %{name: nil, effects: [], ap: nil, headline: nil, rarity: nil}
 
   defp create_base_card(_) do
@@ -24,7 +36,7 @@ defmodule GameWeb.BaseCardLiveTest do
     end
 
     test "saves new base_card", %{conn: conn} do
-      {:ok, index_live, _html} = live(conn, ~p"/basecards")
+      {:ok, index_live, _html} = live(conn, ~p"/admin/basecards")
 
       assert index_live |> element("a", "New Base card") |> render_click() =~
                "New Base card"
@@ -103,7 +115,7 @@ defmodule GameWeb.BaseCardLiveTest do
              |> form("#base_card-form", base_card: @update_attrs)
              |> render_submit()
 
-      assert_patch(show_live, ~p"/basecards/#{base_card}")
+      assert_patch(show_live, ~p"/admin/basecards/#{base_card}")
 
       html = render(show_live)
       assert html =~ "Base card updated successfully"

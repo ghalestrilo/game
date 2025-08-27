@@ -2,7 +2,7 @@
   Base card {@base_card.id}
   <:subtitle>This is a base_card record from your database.</:subtitle>
   <:actions>
-    <.link patch={~p"/basecards/#{@base_card}/show/edit"} phx-click={JS.push_focus()}>
+    <.link patch={~p"/admin/basecards/#{@base_card}/show/edit"} phx-click={JS.push_focus()}>
       <.button>Edit base_card</.button>
     </.link>
   </:actions>
@@ -16,15 +16,20 @@
   <:item title="Rarity">{@base_card.rarity}</:item>
 </.list>
 
-<.back navigate={~p"/basecards"}>Back to basecards</.back>
+<.back navigate={~p"/admin/basecards"}>Back to basecards</.back>
 
-<.modal :if={@live_action == :edit} id="base_card-modal" show on_cancel={JS.patch(~p"/basecards/#{@base_card}")}>
+<.modal
+  :if={@live_action == :edit}
+  id="base_card-modal"
+  show
+  on_cancel={JS.patch(~p"/admin/basecards/#{@base_card}")}
+>
   <.live_component
     module={GameWeb.BaseCardLive.FormComponent}
     id={@base_card.id}
     title={@page_title}
     action={@live_action}
     base_card={@base_card}
-    patch={~p"/basecards/#{@base_card}"}
+    patch={~p"/admin/basecards/#{@base_card}"}
   />
 </.modal>

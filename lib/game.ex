@@ -1,6 +1,7 @@
 defmodule Game do
   alias __MODULE__
   alias Game.CombatState
+  alias Game.Combat
 
   require Logger
 
