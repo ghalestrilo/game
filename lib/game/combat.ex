@@ -67,31 +67,11 @@ defmodule Game.Combat do
         {:error, "Tile is blocked"}
 
       true ->
-        # Update player position
-        moved_player = Character.move(player, target_position)
-
-        # Update grid and combat state
-        updated_grid = Grid.update_position(grid, moved_player, player.position, target_position)
-
-        updated_players =
-          Enum.map(combat.players, fn p -> if p.id == player.id, do: moved_player, else: p end)
-
-        updated_queue =
-          Enum.map(queue, fn p -> if p.id == player.id, do: moved_player, else: p end)
-
-        # Update current_turn with the new position and updated player
-        updated_combat = %{
-          combat
-          | grid: updated_grid,
-            players: updated_players,
-            queue: updated_queue,
-            current_turn: %{
-              combat.current_turn
-              | player: moved_player
-            }
-        }
-
-        {:ok, updated_combat}
+        combat
+        |> update_player_position(player, target_position)
+        |> update_grid_position(player, target_position)
+        |> update_players_and_queue()
+        |> then(&{:ok, &1})
     end
   end
 
@@ -119,50 +99,15 @@ defmodule Game.Combat do
 
       # Self-targeting (healing or damage)
       position == {:ok, nil} and player.position == target_position ->
-        # Apply card effect
-        updated_player = Character.apply_card_effect(player, card.effect)
-        # Move the played card from hand to discard
-        updated_player = Character.discard_card(updated_player, card)
-        # Discard the rest of the hand at end of turn
-        updated_player = discard_hand(updated_player)
-        # Update the player's state in the queue and players list
-        updated_queue = TurnQueue.rotate(queue, updated_player)
-        updated_players = update_player_in_list(combat.players, updated_player)
-        [next_player | _] = updated_queue
-
-        # Create updated combat state
-        updated_combat = %{
-          combat
-          | queue: updated_queue,
-            players: updated_players,
-            state: :running,
-            current_turn: %{
-              starting_position: next_player.position,
-              player: next_player,
-              card: nil
-            }
-        }
-
-        # Initialize the next player's turn with proper card drawing
-        next_player_with_cards = draw_cards_for_player(updated_combat, next_player, 5)
-        updated_combat = %{next_player_with_cards |
-          current_turn: %{next_player_with_cards.current_turn |
-            player: Enum.find(next_player_with_cards.players, &(&1.id == next_player.id))
-          }
-        }
-
-        updated_combat = %{
-          updated_combat
-          | grid: Grid.update_character(updated_combat.grid, updated_player)
-        }
-
-        # Check for death after self-targeting
-        if Character.is_dead?(updated_player) do
-          updated_combat = remove_player(updated_combat, updated_player)
-          check_game_over(updated_combat)
-        else
-          {:ok, updated_combat}
-        end
+        combat
+        |> apply_card_effect_to_player(player, card)
+        |> discard_selected_card(card)
+        |> discard_player_hand()
+        |> rotate_queue()
+        |> setup_next_player_turn()
+        |> update_grid_with_player()
+        |> check_player_death()
+        |> then(&{:ok, &1})
 
       is_nil(position) ->
         {:error, "There's nothing targetable in this tile"}
@@ -177,58 +122,13 @@ defmodule Game.Combat do
             {:error, "Out of range"}
 
           target != nil ->
-            updated_target = Character.apply_card_effect(target, card.effect)
-
-            # Check for death
-            if Character.is_dead?(updated_target) do
-              updated_combat = remove_player(combat, updated_target)
-              check_game_over(updated_combat)
-            else
-              # Update combat state with the target's new state
-              updated_combat = %{
-                combat
-                | grid: Grid.update_character(combat.grid, updated_target)
-              }
-
-              updated_combat = %{
-                updated_combat
-                | players: update_player_in_list(combat.players, updated_target)
-              }
-
-              # Apply effect to target
-              # Move the played card from hand to discard
-              updated_player = Character.discard_card(player, card)
-              # Discard the rest of the hand at end of turn
-              updated_player = discard_hand(updated_player)
-              # Update queue - rotate after current player's action
-              updated_queue = TurnQueue.rotate(queue, updated_player)
-              [next_player | _] = updated_queue
-
-              # First update with discard change to player
-              updated_combat = %{
-                updated_combat
-                | players: update_player_in_list(updated_combat.players, updated_player),
-                  queue: updated_queue,
-                  state: :running,
-                  current_turn: %{
-                    starting_position: next_player.position,
-                    player: next_player,
-                    card: nil
-                  }
-              }
-
-              # Initialize the next player's turn with proper card drawing
-              next_player_with_cards = draw_cards_for_player(updated_combat, next_player, 5)
-              updated_combat = %{next_player_with_cards |
-                current_turn: %{next_player_with_cards.current_turn |
-                  player: Enum.find(next_player_with_cards.players, &(&1.id == next_player.id))
-                }
-              }
-
-              # Update grid to reflect latest player state
-              updated_combat = %{updated_combat | grid: Grid.update_character(updated_combat.grid, updated_player)}
-              {:ok, updated_combat}
-            end
+            combat
+            |> apply_card_effect_to_target(target, card.effect)
+            |> check_target_death()
+            |> update_current_player(player, card)
+            |> setup_next_turn()
+            |> update_grid_for_player()
+            |> then(&{:ok, &1})
 
           # Invalid target (empty tile)
           true ->
@@ -288,38 +188,12 @@ defmodule Game.Combat do
         {:error, "Not player's turn"}
 
       true ->
-        # Discard the player's hand
-        updated_player = discard_hand(player)
-
-        # Update queue - rotate after current player's turn is skipped
-        updated_queue = TurnQueue.rotate(queue, updated_player)
-        [next_player | _] = updated_queue
-
-        # Update player in players list
-        updated_players = update_player_in_list(combat.players, updated_player)
-
-        # Setup next player's turn
-        updated_combat = %{
-          combat
-          | players: updated_players,
-            queue: updated_queue,
-            state: :running,
-            current_turn: %{
-              starting_position: next_player.position,
-              player: next_player,
-              card: nil
-            }
-        }
-
-        # Initialize the next player's turn with proper card drawing
-        next_player_with_cards = draw_cards_for_player(updated_combat, next_player, 5)
-        updated_combat = %{next_player_with_cards |
-          current_turn: %{next_player_with_cards.current_turn |
-            player: Enum.find(next_player_with_cards.players, &(&1.id == next_player.id))
-          }
-        }
-
-        {:ok, updated_combat}
+        combat
+        |> store_player(player)
+        |> discard_player_hand()
+        |> rotate_queue()
+        |> setup_next_player_turn()
+        |> then(&{:ok, &1})
     end
   end
 
@@ -413,17 +287,13 @@ defmodule Game.Combat do
   end
 
   defp check_game_over(%Combat{players: players} = combat) do
-    remaining_teams =
-      players
-      |> Enum.map(& &1.team)
-      |> Enum.uniq()
-      |> length()
-
-    if remaining_teams <= 1 do
-      {:ok, %Combat{combat | state: :game_over}}
-    else
-      # Ensure we return to running state if game continues
-      {:ok, %Combat{combat | state: :running}}
+    players
+    |> Enum.map(& &1.team)
+    |> Enum.uniq()
+    |> length()
+    |> case do
+      n when n <= 1 -> {:ok, %Combat{combat | state: :game_over}}
+      _ -> {:ok, %Combat{combat | state: :running}}
     end
   end
 
@@ -432,41 +302,43 @@ defmodule Game.Combat do
   If draw pile doesn't have enough cards, reshuffles discard pile into draw pile first
   """
   def draw_cards_for_player(combat, player, count \\ 5) do
-    # First ensure we discard any existing cards in hand
-    player_with_empty_hand = discard_hand(player)
+    player
+    |> discard_hand()
+    |> maybe_reshuffle_discard(count)
+    |> draw_cards(count)
+    |> update_player_in_combat(combat)
+  end
 
-    # Then check if we need to reshuffle discard into draw
-    player_with_reshuffled_cards =
-      if length(player_with_empty_hand.cards.draw) < count && length(player_with_empty_hand.cards.discard) > 0 do
-        Character.shuffle_discard_into_draw(player_with_empty_hand)
-      else
-        player_with_empty_hand
-      end
+  defp maybe_reshuffle_discard(player, count) do
+    if length(player.cards.draw) < count && length(player.cards.discard) > 0 do
+      Character.shuffle_discard_into_draw(player)
+    else
+      player
+    end
+  end
 
-    # Draw cards (Character.draw_cards handles drawing from the reshuffled deck)
-    updated_player = Character.draw_cards(player_with_reshuffled_cards, count)
+  defp draw_cards(player, count) do
+    Character.draw_cards(player, count)
+  end
 
-    # Update player in combat state
+  defp update_player_in_combat(updated_player, combat) do
     updated_players = update_player_in_list(combat.players, updated_player)
     updated_queue = TurnQueue.update_character(combat.queue, updated_player)
 
-    %{
-      combat
-      | players: updated_players,
-        queue: updated_queue
-    }
+    %{combat | players: updated_players, queue: updated_queue}
   end
 
   @doc """
   Discards a player's entire hand into their discard pile
   """
   def discard_hand(player) do
-    # Move all cards from hand to discard
-    hand_cards = player.cards.hand
-    updated_discard = player.cards.discard ++ hand_cards
-
-    # Return updated player with empty hand and updated discard
-    %{player | cards: %{player.cards | hand: [], discard: updated_discard}}
+    %{player |
+      cards: %{
+        player.cards |
+        hand: [],
+        discard: player.cards.discard ++ player.cards.hand
+      }
+    }
   end
 
   @doc """
@@ -476,13 +348,165 @@ defmodule Game.Combat do
   Returns the updated combat state.
   """
   def initialize_turn(%Combat{current_turn: %{player: player}} = combat) when not is_nil(player) do
-    # Always draw up to 5 cards for the player at the start of their turn
-    combat_with_cards = draw_cards_for_player(combat, player, 5)
+    combat
+    |> draw_cards_for_player(player, 5)
+    |> update_current_turn_player()
+  end
 
-    # Make sure the current_turn.player is also updated with the cards
-    updated_player = Enum.find(combat_with_cards.players, &(&1.id == player.id))
-    %{combat_with_cards | current_turn: %{combat_with_cards.current_turn | player: updated_player}}
+  defp update_current_turn_player(%Combat{current_turn: %{player: player}} = combat) do
+    updated_player = Enum.find(combat.players, &(&1.id == player.id))
+    %{combat | current_turn: %{combat.current_turn | player: updated_player}}
   end
 
   def initialize_turn(combat), do: combat
+  # Helper functions for refactored code
+
+  # Move action helpers
+  defp update_player_position(combat, player, target_position) do
+    moved_player = Character.move(player, target_position)
+    Map.put(combat, :current_player, moved_player) # Store temporarily for later use
+  end
+
+  defp update_grid_position(%{current_player: moved_player, grid: grid} = combat, player, target_position) do
+    updated_grid = Grid.update_position(grid, moved_player, player.position, target_position)
+    %{combat | grid: updated_grid}
+  end
+
+  defp update_players_and_queue(%{current_player: moved_player} = combat) do
+    updated_players = update_player_in_list(combat.players, moved_player)
+    updated_queue = Enum.map(combat.queue, fn p -> if p.id == moved_player.id, do: moved_player, else: p end)
+
+    # Create the final combat state and remove the temporary moved_player key
+    combat
+    |> Map.drop([:current_player])
+    |> Map.put(:players, updated_players)
+    |> Map.put(:queue, updated_queue)
+    |> Map.put(:current_turn, %{combat.current_turn | player: moved_player})
+  end
+
+  # Card action helpers
+  defp store_player(combat, player) do
+    Map.put(combat, :current_player, player)
+  end
+
+  defp apply_card_effect_to_player(combat, player, card) do
+    updated_player = Character.apply_card_effect(player, card.effect)
+    Map.put(combat, :current_player, updated_player)
+  end
+
+  defp discard_selected_card(%{current_player: player} = combat, card) do
+    updated_player = Character.discard_card(player, card)
+    Map.put(combat, :current_player, updated_player)
+  end
+
+  defp discard_player_hand(%{current_player: player} = combat) do
+    updated_player = discard_hand(player)
+    Map.put(combat, :current_player, updated_player)
+  end
+
+  defp rotate_queue(%{current_player: player, queue: queue} = combat) do
+    updated_queue = TurnQueue.rotate(queue, player)
+    [next_player | _] = updated_queue
+
+    combat
+    |> Map.put(:queue, updated_queue)
+    |> Map.put(:next_player, next_player)
+    |> Map.put(:players, update_player_in_list(combat.players, player))
+  end
+
+  defp setup_next_player_turn(%{next_player: next_player} = combat) do
+    combat = %{
+      combat
+      | state: :running,
+        current_turn: %{
+          starting_position: next_player.position,
+          player: next_player,
+          card: nil
+        }
+    }
+
+    # Draw cards for next player
+    combat_with_cards = draw_cards_for_player(combat, next_player, 5)
+    updated_next_player = Enum.find(combat_with_cards.players, &(&1.id == next_player.id))
+
+    %{
+      combat_with_cards
+      | current_turn: %{
+          combat_with_cards.current_turn
+          | player: updated_next_player
+        }
+    }
+  end
+
+  defp update_grid_with_player(%{current_player: player} = combat) do
+    %{combat | grid: Grid.update_character(combat.grid, player)}
+  end
+
+  defp check_player_death(%{current_player: player} = combat) do
+    if Character.is_dead?(player) do
+      combat
+      |> remove_player(player)
+      |> Map.drop([:current_player, :next_player]) # Clean up temp keys
+      |> check_game_over()
+    else
+      Map.drop(combat, [:current_player, :next_player]) # Clean up temp keys
+    end
+  end
+
+  # Target interaction helpers
+  defp apply_card_effect_to_target(combat, target, effect) do
+    updated_target = Character.apply_card_effect(target, effect)
+    Map.put(combat, :updated_target, updated_target)
+  end
+
+  defp check_target_death(%{updated_target: target} = combat) do
+    if Character.is_dead?(target) do
+      combat
+      |> remove_player(target)
+      |> Map.drop([:updated_target]) # Remove temp key
+      |> check_game_over()
+    else
+      # Update combat with the new target state
+      combat
+      |> Map.put(:grid, Grid.update_character(combat.grid, target))
+      |> Map.put(:players, update_player_in_list(combat.players, target))
+    end
+  end
+
+  defp update_current_player(combat, player, card) do
+    # Discard the played card and rest of hand
+    updated_player = player
+                    |> Character.discard_card(card)
+                    |> discard_hand()
+
+    Map.put(combat, :current_player, updated_player)
+  end
+
+  defp setup_next_turn(%{current_player: player, queue: queue} = combat) do
+    updated_queue = TurnQueue.rotate(queue, player)
+    [next_player | _] = updated_queue
+
+    # Update with player discard changes
+    updated_combat = %{
+      combat
+      | players: update_player_in_list(combat.players, player),
+        queue: updated_queue,
+        state: :running,
+        current_turn: %{
+          starting_position: next_player.position,
+          player: next_player,
+          card: nil
+        }
+    }
+
+    # Draw cards for next player
+    draw_cards_for_player(updated_combat, next_player, 5)
+    |> update_current_turn_player()
+  end
+
+  defp update_grid_for_player(%{current_player: player} = combat) do
+    combat
+    |> Map.drop([:current_player]) # Remove temp key
+    |> Map.put(:grid, Grid.update_character(combat.grid, player))
+  end
 end
