@@ -85,8 +85,7 @@ defmodule Game.CombatState do
     }
   end
 
-  # Card action helpers
-  def store_player(combat, player) do
+  def set_current_player(combat, player) do
     %{combat | current_turn: %{combat.current_turn | player: player}}
   end
 
