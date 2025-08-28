@@ -113,11 +113,11 @@ defmodule Game.CombatTest do
 
       # First pick the card
       {:ok, updated_combat} =
-        Combat.process_action(combat_state, {:pick_card, fighter, test_card})
+        Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
 
       result = Combat.process_action(updated_combat, {:play_card, {2, 0, -2}})
 
-      {:ok, result: result, fighter: fighter, original_mage: mage, test_card: test_card}
+      {:ok, result: result, fighter: fighter, original_mage: mage, test_card: @cards.attack}
     end
 
     test "returns ok tuple", %{result: result} do
@@ -164,11 +164,11 @@ defmodule Game.CombatTest do
       }
 
       {:ok, updated_combat} =
-        Combat.process_action(combat_state, {:pick_card, fighter_with_low_hp, heal_card})
+        Combat.process_action(combat_state, {:pick_card, fighter_with_low_hp, @cards.heal})
 
       result = Combat.process_action(updated_combat, {:play_card, {0, 0, 0}})
 
-      {:ok, result: result, heal_card: heal_card, original_hp: 10}
+      {:ok, result: result, heal_card: @cards.heal, original_hp: 10}
     end
 
     test "increases target HP by heal amount", %{
@@ -311,7 +311,7 @@ defmodule Game.CombatTest do
       }
 
       {:ok, updated_combat} =
-        Combat.process_action(combat_state, {:pick_card, fighter, lethal_card})
+        Combat.process_action(combat_state, {:pick_card, fighter, @cards.lethal})
 
       result = Combat.process_action(updated_combat, {:play_card, {2, 0, -2}})
 
