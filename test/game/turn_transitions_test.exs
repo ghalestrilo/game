@@ -17,21 +17,23 @@ defmodule Game.TurnTransitionsTest do
     combat = Fixtures.basic_combat()
 
     # Warrior with 2 cards in hand and 6 in draw
-    warrior_with_cards = %{warrior |
-      cards: %{
-        draw: [card1, card2, card3, card4, card5, card6],
-        hand: [card4, card5],
-        discard: []
-      }
+    warrior_with_cards = %{
+      warrior
+      | cards: %{
+          draw: [card1, card2, card3, card4, card5, card6],
+          hand: [card4, card5],
+          discard: []
+        }
     }
 
     # Mage with 5 cards in draw and empty hand
-    mage_with_cards = %{mage |
-      cards: %{
-        draw: [card1, card2, card3, card4, card5],
-        hand: [],
-        discard: []
-      }
+    mage_with_cards = %{
+      mage
+      | cards: %{
+          draw: [card1, card2, card3, card4, card5],
+          hand: [],
+          discard: []
+        }
     }
 
     # Update combat state with our custom characters
@@ -52,7 +54,11 @@ defmodule Game.TurnTransitionsTest do
   end
 
   describe "skip turn action" do
-    test "skipping turn transitions to the next player", %{combat: combat, warrior: warrior, mage: mage} do
+    test "skipping turn transitions to the next player", %{
+      combat: combat,
+      warrior: warrior,
+      mage: mage
+    } do
       # Skip the warrior's turn
       assert {:ok, updated_combat} = Combat.process_action(combat, {:skip_turn, warrior})
 
@@ -89,7 +95,11 @@ defmodule Game.TurnTransitionsTest do
   end
 
   describe "start-of-turn card management" do
-    test "next player draws cards at start of turn", %{combat: combat, warrior: warrior, mage: mage} do
+    test "next player draws cards at start of turn", %{
+      combat: combat,
+      warrior: warrior,
+      mage: mage
+    } do
       # Mage starts with empty hand
       assert length(mage.cards.hand) == 0
 
@@ -103,14 +113,26 @@ defmodule Game.TurnTransitionsTest do
       assert length(updated_mage.cards.hand) == 5
     end
 
-    test "only draws cards up to default hand size of 5", %{combat: combat, warrior: warrior, mage: mage, cards: cards} do
+    test "only draws cards up to default hand size of 5", %{
+      combat: combat,
+      warrior: warrior,
+      mage: mage,
+      cards: cards
+    } do
       # Give mage 3 cards in hand
-      mage_with_hand = %{mage |
-        cards: %{
-          draw: [Enum.at(cards, 0), Enum.at(cards, 1), Enum.at(cards, 2), Enum.at(cards, 3), Enum.at(cards, 4)],
-          hand: [Enum.at(cards, 0), Enum.at(cards, 1), Enum.at(cards, 2)],
-          discard: []
-        }
+      mage_with_hand = %{
+        mage
+        | cards: %{
+            draw: [
+              Enum.at(cards, 0),
+              Enum.at(cards, 1),
+              Enum.at(cards, 2),
+              Enum.at(cards, 3),
+              Enum.at(cards, 4)
+            ],
+            hand: [Enum.at(cards, 0), Enum.at(cards, 1), Enum.at(cards, 2)],
+            discard: []
+          }
       }
 
       # Update combat
@@ -120,7 +142,8 @@ defmodule Game.TurnTransitionsTest do
       }
 
       # Skip warrior's turn
-      assert {:ok, updated_combat} = Combat.process_action(combat_with_mage, {:skip_turn, warrior})
+      assert {:ok, updated_combat} =
+               Combat.process_action(combat_with_mage, {:skip_turn, warrior})
 
       # Find the updated mage
       updated_mage = Enum.find(updated_combat.players, &(&1.id == mage.id))
@@ -131,7 +154,11 @@ defmodule Game.TurnTransitionsTest do
   end
 
   describe "full turn transition sequence" do
-    test "turn transition correctly handles discard then draw sequence", %{combat: combat, warrior: warrior, mage: mage} do
+    test "turn transition correctly handles discard then draw sequence", %{
+      combat: combat,
+      warrior: warrior,
+      mage: mage
+    } do
       # Warrior starts with 2 cards in hand, mage starts with 0
       assert length(warrior.cards.hand) == 2
       assert length(mage.cards.hand) == 0
@@ -149,14 +176,20 @@ defmodule Game.TurnTransitionsTest do
       assert length(updated_mage.cards.hand) == 5
     end
 
-    test "cards are reshuffled when draw pile doesn't have enough cards", %{combat: combat, warrior: warrior, mage: mage, cards: cards} do
+    test "cards are reshuffled when draw pile doesn't have enough cards", %{
+      combat: combat,
+      warrior: warrior,
+      mage: mage,
+      cards: cards
+    } do
       # Set up mage with 0 cards in hand, 2 in draw, 3 in discard
-      mage_with_low_draw = %{mage |
-        cards: %{
-          draw: [Enum.at(cards, 0), Enum.at(cards, 1)],
-          hand: [],
-          discard: [Enum.at(cards, 2), Enum.at(cards, 3), Enum.at(cards, 4)]
-        }
+      mage_with_low_draw = %{
+        mage
+        | cards: %{
+            draw: [Enum.at(cards, 0), Enum.at(cards, 1)],
+            hand: [],
+            discard: [Enum.at(cards, 2), Enum.at(cards, 3), Enum.at(cards, 4)]
+          }
       }
 
       # Update combat
@@ -166,7 +199,8 @@ defmodule Game.TurnTransitionsTest do
       }
 
       # Skip warrior's turn
-      assert {:ok, updated_combat} = Combat.process_action(combat_with_mage, {:skip_turn, warrior})
+      assert {:ok, updated_combat} =
+               Combat.process_action(combat_with_mage, {:skip_turn, warrior})
 
       # Find the updated mage
       updated_mage = Enum.find(updated_combat.players, &(&1.id == mage.id))

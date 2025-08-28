@@ -20,9 +20,8 @@ defmodule Game.CombatState do
               # the default character state and set AP appropriately
               players: []
             },
-            # `players` is a constant meant to store the characters' initial states,
-            # allowing procedures like `restore_max_ap` to retrieve information about
-            # the default character state and set AP appropriately
+            # `queue` is the transient value that processes current player state
+            # as well as their turn order
             queue: [],
             grid: %Grid{},
             current_turn: %{
@@ -142,9 +141,12 @@ defmodule Game.CombatState do
       combat
       |> put_in([:state], :running)
       |> put_in([:current_turn], new_turn(next_player))
+      # Restore AP using constants after creating turn
+      |> restore_max_ap(next_player.id)
       |> draw_cards_for_player(next_player, 5)
 
-    updated_next_player = Enum.find(combat.players, &(&1.id == next_player.id))
+    # Find the player in queue, not in constants
+    updated_next_player = Enum.find(updated_combat.queue, &(&1.id == next_player.id))
 
     %{
       updated_combat
@@ -313,6 +315,7 @@ defmodule Game.CombatState do
   end
 
   def update_player_in_combat(updated_player, combat) do
+    # Only update the queue, never update the constants
     updated_queue = TurnQueue.update_character(combat.queue, updated_player)
 
     %{combat | queue: updated_queue}
@@ -333,11 +336,59 @@ defmodule Game.CombatState do
     }
   end
 
-  def new_turn(%Character{position: position} = player) do
+  def new_turn(%Character{position: position, id: _id} = player) do
     %{
       starting_position: position,
-      player: %{player | ap: Character.get_max_ap(player)},
+      player: player,
       card: nil
     }
+  end
+
+  @doc """
+  Gets original player data from the constants
+  """
+  def get_original_player_data(%CombatState{__constants__: %{players: players}}, player_id) do
+    Enum.find(players, &(&1.id == player_id))
+  end
+
+  @doc """
+  Restores a player's max AP from the original player data in __constants__
+  """
+  def restore_max_ap(
+        %CombatState{__constants__: %{players: players}, queue: queue, current_turn: current_turn} =
+          combat,
+        player_id
+      ) do
+    # Find the original player data from constants
+    original_player = Enum.find(players, &(&1.id == player_id))
+    # Find the current player in the queue
+    current_player = Enum.find(queue, &(&1.id == player_id))
+    # Check if current_turn.player is the player we want to update
+    is_current_turn_player = current_turn.player && current_turn.player.id == player_id
+
+    cond do
+      # If we found the original player and it's the current turn player
+      original_player && is_current_turn_player ->
+        max_ap = Character.get_max_ap(original_player)
+        updated_player = %{current_turn.player | ap: max_ap}
+
+        # Update both the current turn player and the queue
+        updated_queue = update_player_in_list(queue, updated_player)
+        updated_turn = %{current_turn | player: updated_player}
+
+        %{combat | queue: updated_queue, current_turn: updated_turn}
+
+      # If we found both original and current player in the queue
+      original_player && current_player ->
+        max_ap = Character.get_max_ap(original_player)
+        updated_player = %{current_player | ap: max_ap}
+        updated_queue = update_player_in_list(queue, updated_player)
+
+        %{combat | queue: updated_queue}
+
+      # Return unchanged if player not found
+      true ->
+        combat
+    end
   end
 end
