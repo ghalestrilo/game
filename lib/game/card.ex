@@ -6,7 +6,7 @@ defmodule Game.Card do
     # AP cost to play
     :cost,
     # Function reference or data structure representing effect
-    :effect,
+    :effects,
     # Range of effect in hex tiles
     :range,
     # Type of targeting (self, single, AoE, etc.)
@@ -27,11 +27,13 @@ defmodule Game.Card do
     :scaling
   ]
 
+  @type card_effect() :: {:damage, integer()} | {:heal, integer()}
+
   @type t() :: %__MODULE__{
           id: integer(),
           name: String.t(),
           description: String.t(),
           cost: integer(),
-          effect: function()
+          effects: list(card_effect())
         }
 end

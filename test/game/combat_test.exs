@@ -3,7 +3,7 @@ defmodule Game.CombatTest do
   alias Game.{Combat, Character, Fixtures, Grid, CombatState}
 
   @cards %{
-    attack: %{Fixtures.attack_card() | id: 1, effect: {:damage, 5}},
+    attack: %{Fixtures.attack_card() | id: 1, effects: [{:damage, 5}]},
     fireball: %{Fixtures.fireball_card() | id: 2},
     heal: %{Fixtures.heal_card() | id: 3},
     range_limited: %{Fixtures.attack_card() | id: 4, range: 1},
@@ -130,7 +130,7 @@ defmodule Game.CombatTest do
       test_card: test_card
     } do
       updated_mage = Enum.find(updated_combat.queue, &(&1.id == original_mage.id))
-      {:damage, damage_amount} = test_card.effect
+      [{:damage, damage_amount}] = test_card.effects
       assert updated_mage.hp == original_mage.hp - damage_amount
     end
 
@@ -177,7 +177,7 @@ defmodule Game.CombatTest do
       heal_card: heal_card
     } do
       updated_fighter = updated_combat.current_turn.player
-      {:heal, heal_amount} = heal_card.effect
+      [{:heal, heal_amount}] = heal_card.effects
       assert updated_fighter.hp == original_hp + heal_amount
     end
 

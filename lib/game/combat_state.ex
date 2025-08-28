@@ -185,7 +185,7 @@ defmodule Game.CombatState do
 
     [updated_player | updated_queue] =
       Enum.map(all_characters, fn
-        ^target -> Character.apply_card_effect(target, card.effect)
+        ^target -> apply_card_effects(target, card.effects)
         not_target -> not_target
       end)
 
@@ -198,6 +198,18 @@ defmodule Game.CombatState do
     combat
     |> put_in([:current_turn, :player], updated_player)
     |> put_in([:queue], updated_queue)
+  end
+
+  # Helper function to apply multiple card effects
+  defp apply_card_effects(character, effects) when is_list(effects) do
+    Enum.reduce(effects, character, fn effect, char ->
+      Character.apply_card_effect(char, effect)
+    end)
+  end
+
+  # Fallback for backward compatibility with single effect cards
+  defp apply_card_effects(character, effect) do
+    Character.apply_card_effect(character, effect)
   end
 
   def setup_next_turn(%{current_turn: %{player: player}, queue: queue} = combat) do
@@ -328,8 +340,9 @@ defmodule Game.CombatState do
   @doc """
   Restores a player's max AP from the original player data in __constants__
   """
-  def restore_max_ap(%CombatState{} = combat, player_id) do
+  def restore_max_ap(%CombatState{current_turn: %{player: player}} = combat, player_id) do
     current_player_initial_data = get_original_player_data(combat, player_id)
-    put_in(combat, [:current_turn, :player, :ap], current_player_initial_data.ap)
+    updated_player = %{player | ap: current_player_initial_data.ap}
+    %{combat | current_turn: %{combat.current_turn | player: updated_player}}
   end
 end
