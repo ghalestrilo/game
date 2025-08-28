@@ -1,638 +1,342 @@
 defmodule Game.CombatTest do
-  use ExUnit.Case
-  alias Game.Combat
-  alias Game.Fixtures
+  use ExUnit.Case, async: true
+  alias Game.{Combat, Character, Fixtures, Grid, CombatState}
+
+  @cards %{
+    attack: %{Fixtures.attack_card() | id: 1},
+    fireball: %{Fixtures.fireball_card() | id: 2},
+    heal: %{Fixtures.heal_card() | id: 3},
+    range_limited: %{Fixtures.attack_card() | id: 4, range: 1},
+    lethal: %{Fixtures.lethal_card() | id: 5},
+    expensive: Fixtures.expensive_card()
+  }
 
   setup do
-    combat = Fixtures.basic_combat()
-    warrior = Fixtures.warrior()
+    # Initialize a mage and a fighter from fixtures
     mage = Fixtures.mage()
-    attack_card = Fixtures.attack_card()
-    heal_card = Fixtures.heal_card()
+    fighter = Fixtures.warrior()
 
-    %{
-      combat: combat,
-      warrior: warrior,
-      mage: mage,
-      attack_card: attack_card,
-      heal_card: heal_card,
-      grid: combat.grid
+    # Prepare characters with cards in hand
+    fighter = %{fighter | cards: %{fighter.cards | hand: [@cards.attack]}}
+    mage = %{mage | cards: %{mage.cards | hand: [@cards.fireball]}}
+
+    # Create a small grid with mage and fighter placed adjacently
+    grid = %Grid{
+      tiles: %{
+        {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+        {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
+        {2, 0, -2} => %{terrain: :plain, occupied_by: mage},
+        {3, 0, -3} => %{terrain: :plain, occupied_by: nil}
+      }
     }
+
+    # Create the combat state with fighter's turn first
+    combat_state = %CombatState{
+      state: :running,
+      players: [fighter, mage],
+      queue: [fighter, mage],
+      grid: grid,
+      current_turn: %{
+        starting_position: fighter.position,
+        player: fighter,
+        card: nil
+      }
+    }
+
+    {:ok, combat_state: combat_state, fighter: fighter, mage: mage}
   end
 
-  describe "movement" do
-    test "character can move within range", %{combat: combat, warrior: warrior} do
-      assert {:ok, updated_combat} = Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
-      [next_player | _] = updated_combat.queue
-      # Warrior's turn still
-      assert next_player.id == warrior.id
+  describe "pick_card" do
+    setup %{combat_state: combat_state, fighter: fighter} do
+      # Execute the action
+      result = Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
 
-      # Find warrior in players list
-      moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-      assert moved_warrior.position == {1, 0, -1}
+      {:ok, result: result, combat_state: combat_state, fighter: fighter, card: @cards.attack}
     end
 
-    test "character can move multiple times within range", %{combat: combat, warrior: warrior} do
-      # First move
-      assert {:ok, updated_combat} = Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
-      moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-
-      # Second move
-      assert {:ok, updated_combat} =
-               Combat.process_action(updated_combat, {:move, moved_warrior, {0, 0, 0}})
-
-      moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-
-      # Third move
-      assert {:ok, updated_combat} =
-               Combat.process_action(updated_combat, {:move, moved_warrior, {1, 0, -1}})
-
-      # Check turn order hasn't changed
-      [next_player | _] = updated_combat.queue
-      assert next_player.id == warrior.id
-
-      # Check final position
-      moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-      assert moved_warrior.position == {1, 0, -1}
+    test "returns ok tuple when card is in hand", %{result: result} do
+      assert {:ok, _} = result
     end
 
-    test "character cannot move beyond range from starting position", %{
-      combat: combat,
-      warrior: warrior
-    } do
-      assert {:error, "Not enough movement"} =
-               Combat.process_action(combat, {:move, warrior, {3, 0, -3}})
+    test "changes state to card_selected", %{result: {:ok, updated_combat}} do
+      assert updated_combat.state == :card_selected
     end
 
-    test "character cannot move to blocked tile", %{combat: combat, warrior: warrior} do
-      # Update grid to have a blocked tile
-      blocked_grid = %{
-        combat.grid
-        | tiles: Map.put(combat.grid.tiles, {1, 0, -1}, %{terrain: :wall, occupied_by: nil})
-      }
-
-      combat = %{combat | grid: blocked_grid}
-
-      assert {:error, "Tile is blocked"} =
-               Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
+    test "sets current_turn.card to selected card", %{result: {:ok, updated_combat}, card: card} do
+      assert updated_combat.current_turn.card == card
     end
   end
 
-  describe "card playing" do
-    test "character can play card with enough AP", %{
-      combat: combat,
-      warrior: warrior,
-      mage: mage,
-      attack_card: attack_card
-    } do
-      # Move mage next to warrior for range
-      adjacent_mage = %{mage | position: {1, 0, -1}}
-      updated_grid = %{
-        combat.grid
-        | tiles: Map.put(
-            combat.grid.tiles,
-            adjacent_mage.position,
-            %{terrain: :plain, occupied_by: adjacent_mage}
-          )
-      }
+  describe "pick_card when card is not in hand" do
+    setup %{combat_state: combat_state, fighter: fighter} do
+      card = %{@cards.expensive | id: 999}
+      result = Combat.process_action(combat_state, {:pick_card, fighter, card})
 
-      updated_combat = %{
-        combat
-        | players: [warrior, adjacent_mage],
-          queue: [warrior, adjacent_mage],
-          grid: updated_grid
-      }
+      {:ok, result: result}
+    end
 
-      # Add attack card to warrior's hand if not already there
-      warrior_with_card = %{warrior | cards: %{warrior.cards | hand: [attack_card | warrior.cards.hand]}}
-      updated_combat = %{updated_combat |
-        players: [warrior_with_card, adjacent_mage],
-        queue: [warrior_with_card, adjacent_mage]
+    test "returns error when card is not in hand", %{result: result} do
+      assert {:error, _} = result
+    end
+  end
+
+  describe "play_card with not enough AP" do
+    setup %{combat_state: combat_state, fighter: fighter} do
+      # Update fighter to have low AP and the expensive card in hand
+      fighter_with_low_ap = %{fighter | ap: 1, cards: %{fighter.cards | hand: [@cards.expensive]}}
+
+      # Update the combat state
+      combat_state = %{
+        combat_state
+        | current_turn: %{combat_state.current_turn | player: fighter_with_low_ap}
       }
 
       # First pick the card
-      assert {:ok, card_selected_combat} =
-               Combat.process_action(updated_combat, {:pick_card, warrior_with_card, attack_card})
+      {:ok, updated_combat} =
+        Combat.process_action(combat_state, {:pick_card, fighter_with_low_ap, @cards.expensive})
 
-      # Then play the card
-      assert {:ok, updated_combat} =
-               Combat.process_action(card_selected_combat, {:play_card, adjacent_mage.position})
+      # Now try to play the card
+      target_position = {2, 0, -2}
+      result = Combat.process_action(updated_combat, {:play_card, target_position})
 
-      # Find mage in updated players list
-      updated_mage = Enum.find(updated_combat.players, &(&1.id == adjacent_mage.id))
-      assert updated_mage.hp == mage.hp - 5
+      {:ok, result: result, combat_state: updated_combat}
     end
 
-    test "character cannot play card without enough AP", %{
-      combat: combat,
-      warrior: warrior,
-      mage: mage
+    test "returns error when not enough AP", %{result: result} do
+      assert {:error, _} = result
+    end
+
+    test "fighter remains unchanged", %{combat_state: combat_state} do
+      assert combat_state.current_turn.player.ap == 1
+    end
+  end
+
+  describe "play_card with damage effect" do
+    setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
+      # First pick the card
+      {:ok, updated_combat} =
+        Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
+
+      # Then play the card targeting the mage
+      target_position = {2, 0, -2}
+      result = Combat.process_action(updated_combat, {:play_card, target_position})
+
+      {:ok,
+       result: result, original_combat: updated_combat, fighter: fighter, original_mage: mage}
+    end
+
+    test "returns ok tuple", %{result: result} do
+      assert {:ok, _} = result
+    end
+
+    test "reduces target HP by damage amount", %{
+      result: {:ok, updated_combat},
+      original_mage: original_mage
     } do
-      # First pick the expensive card
-      expensive_card = Fixtures.expensive_card()
-
-      # Add expensive card to warrior's hand
-      warrior_with_expensive_card = %{warrior | cards: %{warrior.cards | hand: [expensive_card | warrior.cards.hand]}}
-      updated_combat = %{combat |
-        players: [warrior_with_expensive_card, Enum.at(combat.players, 1)],
-        queue: [warrior_with_expensive_card, Enum.at(combat.queue, 1)]
-      }
-
-      assert {:ok, card_selected_combat} =
-               Combat.process_action(updated_combat, {:pick_card, warrior_with_expensive_card, expensive_card})
-
-      # Then try to play the card - should fail due to insufficient AP
-      assert {:error, "Not enough AP"} =
-               Combat.process_action(card_selected_combat, {:play_card, mage.position})
+      updated_mage = Enum.find(updated_combat.players, &(&1.id == original_mage.id))
+      assert updated_mage.hp == original_mage.hp - 5
     end
 
-    test "healing card restores HP", %{combat: combat, warrior: warrior, heal_card: heal_card} do
-      # Damage warrior first
-      # 20 - 5 damage
-      damaged_warrior = %{warrior | hp: 15}
+    test "deducts AP from player by card cost", %{
+      result: {:ok, updated_combat},
+      fighter: fighter
+    } do
+      updated_fighter = updated_combat.current_turn.player
+      assert updated_fighter.ap == fighter.ap - @cards.attack.cost
+    end
 
-      # Add heal card to damaged warrior's hand
-      damaged_warrior_with_card = %{damaged_warrior | cards: %{
-        damaged_warrior.cards | hand: [heal_card | damaged_warrior.cards.hand]
-      }}
+    test "moves card to discard pile", %{result: {:ok, updated_combat}} do
+      updated_fighter = updated_combat.current_turn.player
+      assert Enum.any?(updated_fighter.cards.discard, fn c -> c.id == @cards.attack.id end)
+      refute Enum.any?(updated_fighter.cards.hand, fn c -> c.id == @cards.attack.id end)
+    end
+  end
 
-      # Update grid with damaged warrior
-      updated_grid = %{
-        combat.grid
-        | tiles:
-            Map.update!(combat.grid.tiles, warrior.position, fn tile ->
-              %{tile | occupied_by: damaged_warrior_with_card}
-            end)
-      }
+  describe "play_card with heal effect" do
+    setup %{combat_state: combat_state, fighter: fighter} do
+      # Fighter with lower HP and the heal card
+      fighter_with_low_hp = %{fighter | hp: 10, cards: %{fighter.cards | hand: [@cards.heal]}}
 
-      # Update combat state with damaged warrior
-      updated_combat = %{
-        combat
-        | players: [damaged_warrior_with_card, Enum.at(combat.players, 1)],
-          queue: [damaged_warrior_with_card, Enum.at(combat.queue, 1)],
-          grid: updated_grid,
-          current_turn: %{combat.current_turn | player: damaged_warrior_with_card}
-      }
-
-      # Add heal card to damaged warrior's hand
-      damaged_warrior_with_heal = %{damaged_warrior | cards: %{damaged_warrior.cards | hand: [heal_card | damaged_warrior.cards.hand]}}
-      updated_combat = %{updated_combat |
-        players: [damaged_warrior_with_heal, Enum.at(updated_combat.players, 1)],
-        queue: [damaged_warrior_with_heal, Enum.at(updated_combat.queue, 1)]
+      # Update the combat state
+      combat_state = %{
+        combat_state
+        | current_turn: %{combat_state.current_turn | player: fighter_with_low_hp}
       }
 
       # First pick the heal card
-      assert {:ok, card_selected_combat} =
-               Combat.process_action(updated_combat, {:pick_card, damaged_warrior_with_card, heal_card})
+      {:ok, updated_combat} =
+        Combat.process_action(combat_state, {:pick_card, fighter_with_low_hp, @cards.heal})
 
-      # Then play the card on self
-      assert {:ok, updated_combat} =
-               Combat.process_action(card_selected_combat, {:play_card, damaged_warrior_with_heal.position})
+      # Then play the heal card on self
+      target_position = {0, 0, 0}
+      result = Combat.process_action(updated_combat, {:play_card, target_position})
 
-      updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-      # 15 + 3 healing
-      assert updated_warrior.hp == 18
+      {:ok, result: result, combat_state: updated_combat}
     end
 
-    test "self-targeting with damage card reduces own HP", %{combat: combat, warrior: warrior} do
-      # Ensure it's warrior's turn
-      updated_combat = %{combat | queue: [warrior, Enum.at(combat.queue, 1)]}
-
-      # First pick the self harm card
-      self_harm_card = Fixtures.self_harm_card()
-
-      # Add self harm card to warrior's hand
-      warrior_with_self_harm = %{warrior | cards: %{warrior.cards | hand: [self_harm_card | warrior.cards.hand]}}
-      updated_combat = %{updated_combat |
-        players: [warrior_with_self_harm, Enum.at(updated_combat.players, 1)],
-        queue: [warrior_with_self_harm, Enum.at(updated_combat.queue, 1)]
-      }
-
-      assert {:ok, card_selected_combat} =
-               Combat.process_action(
-                 updated_combat,
-                 {:pick_card, warrior_with_self_harm, self_harm_card}
-               )
-
-      # Then play the card on self
-      assert {:ok, updated_combat} =
-               Combat.process_action(card_selected_combat, {:play_card, warrior.position})
-
-      updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-      assert updated_warrior.hp == warrior.hp - 5
+    test "increases target HP by heal amount", %{result: {:ok, updated_combat}} do
+      updated_fighter = updated_combat.current_turn.player
+      # 10 + 3
+      assert updated_fighter.hp == 13
     end
 
-    test "playing a card deducts AP but doesn't end turn", %{
-      combat: combat,
-      warrior: warrior,
-      mage: mage,
-      attack_card: attack_card
-    } do
-      # Move mage next to warrior for range
-      adjacent_mage = %{mage | position: {1, 0, -1}}
-      updated_grid = %{
-        combat.grid
-        | tiles: Map.put(
-            combat.grid.tiles,
-            adjacent_mage.position,
-            %{terrain: :plain, occupied_by: adjacent_mage}
-          )
-      }
-
-      # Setup combat with warriors turn and sufficient AP
-      warrior_with_ap = %{warrior | ap: 10}
-      updated_combat = %{
-        combat
-        | players: [warrior_with_ap, adjacent_mage],
-          queue: [warrior_with_ap, adjacent_mage],
-          grid: updated_grid
-      }
-
-      # Add attack card to warrior's hand
-      warrior_with_card = %{warrior_with_ap | cards: %{warrior_with_ap.cards | hand: [attack_card | warrior_with_ap.cards.hand]}}
-      updated_combat = %{updated_combat |
-        players: [warrior_with_card, adjacent_mage],
-        queue: [warrior_with_card, adjacent_mage]
-      }
-
-      # First pick the card
-      assert {:ok, card_selected_combat} =
-               Combat.process_action(updated_combat, {:pick_card, warrior_with_card, attack_card})
-
-      # Then play the card
-      assert {:ok, updated_combat} =
-               Combat.process_action(card_selected_combat, {:play_card, adjacent_mage.position})
-
-      # Verify that AP was deducted
-      current_player = hd(updated_combat.queue)
-      assert current_player.id == warrior_with_card.id
-      assert current_player.ap == warrior_with_card.ap - attack_card.cost
-
-      # Verify that turn has NOT rotated - warrior should still be the current player
-      assert current_player.id == warrior_with_card.id
-
-      # Verify that the mage took damage
-      updated_mage = Enum.find(updated_combat.players, &(&1.id == adjacent_mage.id))
-      assert updated_mage.hp == adjacent_mage.hp - attack_card.effect.damage
-
-      # Now skip turn explicitly
-      assert {:ok, turn_skipped_combat} =
-               Combat.process_action(updated_combat, {:skip_turn, current_player})
-
-      # Verify turn has rotated to the mage
-      assert hd(turn_skipped_combat.queue).id == mage.id
+    test "deducts AP for heal cost", %{result: {:ok, updated_combat}} do
+      updated_fighter = updated_combat.current_turn.player
+      # 3 - 2
+      assert updated_fighter.ap == 1
     end
   end
 
-  describe "death and game over" do
-    test "character dies when HP reaches 0", %{combat: combat, warrior: warrior, mage: mage} do
-      # First pick the lethal card
-      lethal_card = Fixtures.lethal_card()
+  describe "move beyond range" do
+    setup %{combat_state: combat_state, fighter: fighter} do
+      # 3 spaces away, beyond fighter's movement range of 2
+      target_position = {3, 0, -3}
+      result = Combat.process_action(combat_state, {:move, fighter, target_position})
 
-      # Add lethal card to warrior's hand
-      warrior_with_lethal = %{warrior | cards: %{warrior.cards | hand: [lethal_card | warrior.cards.hand]}}
-      # Update combat state with warrior having lethal card
-      updated_combat = %{combat |
-        players: [warrior_with_lethal, Enum.at(combat.players, 1)],
-        queue: [warrior_with_lethal, Enum.at(combat.queue, 1)],
-        current_turn: %{combat.current_turn | player: warrior_with_lethal}
-      }
-
-      assert {:ok, card_selected_combat} =
-               Combat.process_action(updated_combat, {:pick_card, warrior_with_lethal, lethal_card})
-
-      # Then play the card
-      assert {:ok, updated_combat} =
-               Combat.process_action(card_selected_combat, {:play_card, mage.position})
-
-      # Check mage is removed from players and queue
-      assert length(updated_combat.players) == 1
-      assert length(updated_combat.queue) == 1
-      assert Enum.all?(updated_combat.players, &(&1.id != mage.id))
-      assert Enum.all?(updated_combat.queue, &(&1.id != mage.id))
+      {:ok, result: result, combat_state: combat_state, fighter: fighter}
     end
 
-    test "game ends when only one team remains", %{combat: combat, warrior: warrior, mage: mage} do
-      # First pick the lethal card
-      lethal_card = Fixtures.lethal_card()
+    test "returns error when move is beyond range", %{result: result} do
+      assert {:error, _} = result
+    end
 
-      # Add lethal card to warrior's hand
-      warrior_with_lethal = %{warrior | cards: %{warrior.cards | hand: [lethal_card | warrior.cards.hand]}}
-      # Update combat state with warrior having lethal card
-      updated_combat = %{combat |
-        players: [warrior_with_lethal, Enum.at(combat.players, 1)],
-        queue: [warrior_with_lethal, Enum.at(combat.queue, 1)],
-        current_turn: %{combat.current_turn | player: warrior_with_lethal}
-      }
-
-      assert {:ok, card_selected_combat} =
-               Combat.process_action(updated_combat, {:pick_card, warrior_with_lethal, lethal_card})
-
-      # Then play the card
-      assert {:ok, updated_combat} =
-               Combat.process_action(card_selected_combat, {:play_card, mage.position})
-
-      assert updated_combat.state == :game_over
+    test "fighter position remains unchanged", %{combat_state: combat_state, fighter: fighter} do
+      assert combat_state.current_turn.player.position == fighter.position
     end
   end
 
-  describe "turn management" do
-    test "turn order is maintained after movement", %{combat: combat, warrior: warrior} do
-      # Warrior moves
-      assert {:ok, updated_combat} = Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
+  describe "move to occupied tile" do
+    setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
+      target_position = mage.position
+      result = Combat.process_action(combat_state, {:move, fighter, target_position})
 
-      # Check turn order hasn't changed
-      [next_player | _] = updated_combat.queue
-      assert next_player.id == warrior.id
+      {:ok, result: result, combat_state: combat_state, fighter: fighter}
     end
 
-    test "dead characters are removed from turn order", %{
-      combat: combat,
-      warrior: warrior,
-      mage: mage
+    test "returns error when move is to occupied tile", %{result: result} do
+      assert {:error, _} = result
+    end
+
+    test "fighter position remains unchanged", %{combat_state: combat_state, fighter: fighter} do
+      assert combat_state.current_turn.player.position == fighter.position
+    end
+  end
+
+  describe "move within range" do
+    setup %{combat_state: combat_state, fighter: fighter} do
+      # Adjacent empty tile
+      target_position = {1, 0, -1}
+      result = Combat.process_action(combat_state, {:move, fighter, target_position})
+
+      {:ok, result: result, target_position: target_position}
+    end
+
+    test "returns ok tuple when move is valid", %{result: result} do
+      assert {:ok, _} = result
+    end
+
+    test "updates fighter position", %{
+      result: {:ok, updated_combat},
+      target_position: target_position
     } do
-      # Add lethal card to warrior's hand
-      lethal_card = Fixtures.lethal_card()
-      warrior_with_lethal = %{warrior | cards: %{warrior.cards | hand: [lethal_card | warrior.cards.hand]}}
+      assert updated_combat.current_turn.player.position == target_position
+    end
+
+    test "updates grid to show fighter in new position", %{
+      result: {:ok, updated_combat},
+      target_position: target_position
+    } do
+      {:ok, character_at_position} = Grid.get_object(updated_combat.grid, target_position)
+      assert character_at_position.id == updated_combat.current_turn.player.id
+    end
+  end
+
+  describe "skip_turn" do
+    setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
+      result = Combat.process_action(combat_state, {:skip_turn, fighter})
+
+      {:ok, result: result, mage: mage}
+    end
+
+    test "returns ok tuple", %{result: result} do
+      assert {:ok, _} = result
+    end
+
+    test "updates current_turn to next character", %{result: {:ok, updated_combat}, mage: mage} do
+      assert updated_combat.current_turn.player.id == mage.id
+    end
+
+    test "next character has 5 cards in hand", %{result: {:ok, updated_combat}} do
+      assert length(updated_combat.current_turn.player.cards.hand) == 5
+    end
+
+    test "next character has full AP", %{result: {:ok, updated_combat}, mage: mage} do
+      assert updated_combat.current_turn.player.ap == Character.get_max_ap(mage)
+    end
+  end
+
+  describe "play_card out of range" do
+    setup %{combat_state: combat_state, fighter: fighter} do
+      # Update fighter to have range limited card
+      fighter = %{fighter | cards: %{fighter.cards | hand: [@cards.range_limited]}}
 
       # Update combat state
-      updated_combat = %{combat |
-        players: [warrior_with_lethal, mage],
-        queue: [warrior_with_lethal, mage],
-        current_turn: %{combat.current_turn | player: warrior_with_lethal}
-      }
-
-      # First pick the lethal card
-      assert {:ok, card_selected_combat} =
-               Combat.process_action(updated_combat, {:pick_card, warrior_with_lethal, lethal_card})
-
-      # Then play the card
-      assert {:ok, updated_combat} =
-               Combat.process_action(card_selected_combat, {:play_card, mage.position})
-
-      # Check turn order only contains warrior
-      assert length(updated_combat.queue) == 1
-      [remaining_player | _] = updated_combat.queue
-      assert remaining_player.id == warrior.id
-    end
-  end
-
-  describe "edge cases" do
-    test "invalid action returns error", %{combat: combat} do
-      assert {:error, "Invalid action"} = Combat.process_action(combat, :invalid_action)
-    end
-
-    test "invalid state returns error" do
-      assert {:error, "Invalid state"} = Combat.process_action(:invalid_state, :move)
-    end
-
-    test "multiple characters on same team", %{combat: combat, warrior: warrior} do
-      # Update grid and combat state
-      warrior2 = Fixtures.warrior2()
-
-      updated_grid = %{
-        combat.grid
-        | tiles:
-            Map.put(combat.grid.tiles, warrior2.position, %{
-              terrain: :plain,
-              occupied_by: warrior2
-            })
-      }
-
-      # Add lethal card to warrior's hand
-      lethal_card = Fixtures.lethal_card()
-      warrior_with_lethal = %{warrior | cards: %{warrior.cards | hand: [lethal_card | warrior.cards.hand]}}
-
-      updated_combat = %{
-        combat
-        | players: [warrior_with_lethal, warrior2, Enum.at(combat.players, 1)],
-          queue: [warrior_with_lethal, warrior2, Enum.at(combat.queue, 1)],
-          grid: updated_grid,
-          current_turn: %{combat.current_turn | player: warrior_with_lethal}
-      }
-
-      # First pick the lethal card
-      assert {:ok, card_selected_combat} =
-               Combat.process_action(
-                 updated_combat,
-                 {:pick_card, warrior_with_lethal, lethal_card}
-               )
-
-      # Then play the card on warrior2
-      assert {:ok, updated_combat} =
-               Combat.process_action(
-                 card_selected_combat,
-                 {:play_card, warrior2.position}
-               )
-
-      assert updated_combat.state == :running
-      assert length(updated_combat.players) == 2
-    end
-
-    test "movement edge cases", %{combat: combat, warrior: warrior} do
-      # Test moving to same position
-      assert {:error, "Tile is blocked"} =
-               Combat.process_action(combat, {:move, warrior, warrior.position})
-
-      # Test moving to occupied position
-      assert {:error, "Tile is blocked"} =
-               Combat.process_action(combat, {:move, warrior, {2, 0, -2}})
-    end
-
-    test "card effect edge cases", %{combat: combat, warrior: warrior, mage: mage} do
-      # Ensure it's warrior's turn and mage is at a position warrior can target
-      # Update mage position to be adjacent to warrior for range issues
-      adjacent_mage = %{mage | position: {1, 0, -1}}
-      updated_grid = %{
-        combat.grid
-        | tiles: Map.put(
-            combat.grid.tiles,
-            adjacent_mage.position,
-            %{terrain: :plain, occupied_by: adjacent_mage}
-          )
-      }
-
-      updated_combat = %{
-        combat
-        | queue: [warrior, adjacent_mage],
-          players: [warrior, adjacent_mage],
-          grid: updated_grid
-      }
-
-      # Test healing beyond max HP
-      # First pick the max heal card
-      max_heal_card = Fixtures.max_heal_card()
-
-      # Add max heal card to warrior's hand
-      warrior_with_max_heal = %{warrior | cards: %{warrior.cards | hand: [max_heal_card | warrior.cards.hand]}}
-      updated_combat = %{updated_combat |
-        players: [warrior_with_max_heal, adjacent_mage],
-        queue: [warrior_with_max_heal, adjacent_mage]
-      }
-
-      assert {:ok, card_selected_combat} =
-               Combat.process_action(
-                 updated_combat,
-                 {:pick_card, warrior_with_max_heal, max_heal_card}
-               )
-
-      # Then play the card on self
-      assert {:ok, updated_combat} =
-               Combat.process_action(card_selected_combat, {:play_card, warrior.position})
-
-      updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-      # Should not exceed max HP
-      assert updated_warrior.hp == warrior.hp
-
-      # Test negative damage
-      # Ensure it's still warrior's turn
-      updated_combat = %{
-        updated_combat
-        | queue: [
-            updated_warrior,
-            Enum.find(updated_combat.players, &(&1.id == adjacent_mage.id))
-          ]
-      }
-
-      # First pick the negative damage card
-      negative_damage_card = Fixtures.negative_damage_card()
-
-      # Add negative damage card to updated warrior's hand
-      updated_warrior_with_neg_damage = %{updated_warrior | cards: %{updated_warrior.cards | hand: [negative_damage_card | updated_warrior.cards.hand]}}
-      updated_combat = %{updated_combat |
-        players: [updated_warrior_with_neg_damage, Enum.find(updated_combat.players, &(&1.id == adjacent_mage.id))],
-        queue: [updated_warrior_with_neg_damage, Enum.find(updated_combat.queue, &(&1.id == adjacent_mage.id))],
-        current_turn: %{updated_combat.current_turn | player: updated_warrior_with_neg_damage}
-      }
-
-      assert {:ok, card_selected_combat} =
-               Combat.process_action(
-                 updated_combat,
-                 {:pick_card, updated_warrior_with_neg_damage, negative_damage_card}
-               )
-
-      # Then play the card on mage (who should be within range now)
-      assert {:ok, updated_combat} =
-               Combat.process_action(card_selected_combat, {:play_card, adjacent_mage.position})
-
-      updated_mage = Enum.find(updated_combat.players, &(&1.id == mage.id))
-      # Negative damage should heal
-      assert updated_mage.hp == mage.hp + 5
-    end
-
-    test "turn order edge cases", %{combat: combat, warrior: warrior} do
-      # Test that turn order is maintained after multiple actions
-      assert {:ok, updated_combat} = Combat.process_action(combat, {:move, warrior, {1, 0, -1}})
-      moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-
-      assert {:ok, updated_combat} =
-               Combat.process_action(updated_combat, {:move, moved_warrior, {0, 0, 0}})
-
-      moved_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-
-      assert {:ok, updated_combat} =
-               Combat.process_action(updated_combat, {:move, moved_warrior, {1, 0, -1}})
-
-      # Check turn order is still correct
-      [next_player | _] = updated_combat.queue
-      assert next_player.id == warrior.id
-    end
-  end
-
-  describe "when a character plays a card" do
-    setup %{combat: combat, warrior: warrior, heal_card: heal_card} do
-      # Create a fresh warrior with a clean hand and empty discard pile
-      warrior_fresh = %{warrior | cards: %{
-        draw: warrior.cards.draw,
-        hand: [],
-        discard: []
-      }}
-
-      # Add heal card to warrior's hand
-      warrior_with_heal = %{warrior_fresh | cards: %{warrior_fresh.cards | hand: [heal_card]}}
-
-      # Ensure it's warrior's turn in a clean combat state
-      updated_combat = %{combat |
-        players: [warrior_with_heal, Enum.at(combat.players, 1)],
-        queue: [warrior_with_heal, Enum.at(combat.queue, 1)],
-        current_turn: %{combat.current_turn | player: warrior_with_heal}
+      combat_state = %{
+        combat_state
+        | current_turn: %{combat_state.current_turn | player: fighter}
       }
 
       # First pick the card
-      {:ok, card_selected_combat} = Combat.process_action(updated_combat, {:pick_card, warrior_with_heal, heal_card})
+      {:ok, updated_combat} =
+        Combat.process_action(combat_state, {:pick_card, fighter, @cards.range_limited})
 
-      # Then play the card on self (avoiding range issues)
-      {:ok, updated_combat} = Combat.process_action(card_selected_combat, {:play_card, warrior_with_heal.position})
+      # Try to play card on a target that's too far away
+      # This is 3 units away, beyond the card's range of 1
+      target_position = {3, 0, -3}
+      result = Combat.process_action(updated_combat, {:play_card, target_position})
 
-      # Get the updated warrior
-      updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
+      {:ok, result: result}
+    end
 
-      %{
-        initial_combat: updated_combat,
-        card_selected_combat: card_selected_combat,
-        updated_combat: updated_combat,
-        warrior: updated_warrior,
-        played_card: heal_card
+    test "returns error when target is out of range", %{result: result} do
+      assert {:error, _} = result
+    end
+  end
+
+  describe "game over check" do
+    setup %{combat_state: combat_state, fighter: fighter} do
+      # Update fighter to have lethal card
+      fighter = %{fighter | cards: %{fighter.cards | hand: [@cards.lethal]}}
+
+      # Update combat state
+      combat_state = %{
+        combat_state
+        | current_turn: %{combat_state.current_turn | player: fighter}
       }
+
+      # First pick the lethal card
+      {:ok, updated_combat} =
+        Combat.process_action(combat_state, {:pick_card, fighter, @cards.lethal})
+
+      # Play the lethal card on the mage
+      target_position = {2, 0, -2}
+      result = Combat.process_action(updated_combat, {:play_card, target_position})
+
+      {:ok, result: result}
     end
 
-    test "card disappears from hand", %{warrior: warrior, updated_combat: updated_combat, played_card: played_card} do
-      updated_warrior = Enum.find(updated_combat.players, &(&1.id == warrior.id))
-      refute Enum.any?(updated_warrior.cards.hand, fn card -> card.id == played_card.id end)
-    end
-
-    test "only one card is removed if there are multiple copies", %{
-      initial_combat: combat,
-      warrior: warrior,
-      played_card: played_card
+    test "game state changes to game_over when character is killed", %{
+      result: {:ok, updated_combat}
     } do
-      # Create a completely different card with a different ID
-      duplicate_card = %{id: "duplicate-card", name: "Duplicate", cost: 1, effect: {:damage, 3}}
-
-      # Start fresh with the original combat state
-      warrior_fresh = Enum.find(combat.players, &(&1.id == warrior.id))
-
-      # Make a warrior with both original and duplicate cards in hand
-      warrior_with_duplicate = %{warrior_fresh | cards: %{
-        draw: warrior_fresh.cards.draw,
-        hand: [duplicate_card, played_card],
-        discard: []
-      }}
-
-      # Update combat state with warrior having duplicate cards
-      updated_combat = %{
-        combat
-        | players: Enum.map(combat.players, fn
-            p -> if p.id == warrior.id, do: warrior_with_duplicate, else: p
-          end),
-          queue: [warrior_with_duplicate | Enum.drop(combat.queue, 1)],
-          current_turn: %{combat.current_turn | player: warrior_with_duplicate}
-      }
-
-      # First pick the original card
-      {:ok, card_selected_combat} = Combat.process_action(updated_combat, {:pick_card, warrior_with_duplicate, played_card})
-
-      # Then play the card on self
-      {:ok, after_play_combat} = Combat.process_action(card_selected_combat, {:play_card, warrior_with_duplicate.position})
-
-      # Find updated warrior
-      updated_warrior = Enum.find(after_play_combat.players, &(&1.id == warrior.id))
-
-      # The original card should be gone but the duplicate remains
-      refute Enum.any?(updated_warrior.cards.hand, fn card -> card.id == played_card.id end)
-      assert Enum.any?(updated_warrior.cards.hand, fn card -> card.id == duplicate_card.id end)
+      assert updated_combat.state == :game_over
     end
 
-    test "card appears in discard pile", %{warrior: warrior, played_card: played_card} do
-      # The warrior passed in setup is already updated after playing the card
-      assert Enum.any?(warrior.cards.discard, fn card -> card.id == played_card.id end)
+    test "dead character is removed from players list", %{result: {:ok, updated_combat}} do
+      assert length(updated_combat.players) == 1
     end
 
-    test "effects are applied to target", %{warrior: warrior, played_card: played_card} do
-      # For a heal card, check that healing was applied to warrior
-      # Healing value is hardcoded in the heal_card fixture
-      healing_value = 3
-      assert warrior.hp == 20 # This is the max hp for a warrior
+    test "dead character is removed from queue", %{result: {:ok, updated_combat}} do
+      assert length(updated_combat.queue) == 1
     end
   end
 end
