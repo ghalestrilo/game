@@ -3,12 +3,13 @@ defmodule Game.CombatTest do
   alias Game.{Combat, Character, Fixtures, Grid, CombatState}
 
   @cards %{
-    attack: %{Fixtures.attack_card() | id: 1},
+    attack: %{Fixtures.attack_card() | id: 1, effect: {:damage, 5}},
     fireball: %{Fixtures.fireball_card() | id: 2},
     heal: %{Fixtures.heal_card() | id: 3},
     range_limited: %{Fixtures.attack_card() | id: 4, range: 1},
     lethal: %{Fixtures.lethal_card() | id: 5},
-    expensive: Fixtures.expensive_card()
+    expensive: Fixtures.expensive_card(),
+    long_range: Fixtures.long_range_card()
   }
 
   setup do
@@ -16,9 +17,9 @@ defmodule Game.CombatTest do
     mage = Fixtures.mage()
     fighter = Fixtures.warrior()
 
-    # Prepare characters with cards in hand
-    fighter = %{fighter | cards: %{fighter.cards | hand: [@cards.attack]}}
-    mage = %{mage | cards: %{mage.cards | hand: [@cards.fireball]}}
+    # Prepare characters with cards in hand - mage should have empty hand for tests
+    fighter = %{fighter | cards: %{fighter.cards | hand: Map.keys(@cards)}}
+    mage = %{mage | cards: %{mage.cards | hand: Map.keys(@cards)}}
 
     # Create a small grid with mage and fighter placed adjacently
     grid = %Grid{
@@ -51,7 +52,7 @@ defmodule Game.CombatTest do
       # Execute the action
       result = Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
 
-      {:ok, result: result, combat_state: combat_state, fighter: fighter, card: @cards.attack}
+      {:ok, result: result, combat_state: combat_state, fighter: fighter}
     end
 
     test "returns ok tuple when card is in hand", %{result: result} do
@@ -62,15 +63,14 @@ defmodule Game.CombatTest do
       assert updated_combat.state == :card_selected
     end
 
-    test "sets current_turn.card to selected card", %{result: {:ok, updated_combat}, card: card} do
-      assert updated_combat.current_turn.card == card
+    test "sets current_turn.card to selected card", %{result: {:ok, updated_combat}} do
+      assert updated_combat.current_turn.card == @cards.attack
     end
   end
 
   describe "pick_card when card is not in hand" do
     setup %{combat_state: combat_state, fighter: fighter} do
-      card = %{@cards.expensive | id: 999}
-      result = Combat.process_action(combat_state, {:pick_card, fighter, card})
+      result = Combat.process_action(combat_state, {:pick_card, fighter, @cards.expensive})
 
       {:ok, result: result}
     end
@@ -82,22 +82,10 @@ defmodule Game.CombatTest do
 
   describe "play_card with not enough AP" do
     setup %{combat_state: combat_state, fighter: fighter} do
-      # Update fighter to have low AP and the expensive card in hand
-      fighter_with_low_ap = %{fighter | ap: 1, cards: %{fighter.cards | hand: [@cards.expensive]}}
-
-      # Update the combat state
-      combat_state = %{
-        combat_state
-        | current_turn: %{combat_state.current_turn | player: fighter_with_low_ap}
-      }
-
-      # First pick the card
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter_with_low_ap, @cards.expensive})
 
-      # Now try to play the card
-      target_position = {2, 0, -2}
-      result = Combat.process_action(updated_combat, {:play_card, target_position})
+      result = Combat.process_action(updated_combat, {:play_card, {2, 0, -2}})
 
       {:ok, result: result, combat_state: updated_combat}
     end
@@ -113,16 +101,21 @@ defmodule Game.CombatTest do
 
   describe "play_card with damage effect" do
     setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: mage}
+        }
+      }
+
       # First pick the card
       {:ok, updated_combat} =
-        Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
+        Combat.process_action(combat_state, {:pick_card, fighter, test_card})
 
-      # Then play the card targeting the mage
-      target_position = {2, 0, -2}
-      result = Combat.process_action(updated_combat, {:play_card, target_position})
+      result = Combat.process_action(updated_combat, {:play_card, {2, 0, -2}})
 
-      {:ok,
-       result: result, original_combat: updated_combat, fighter: fighter, original_mage: mage}
+      {:ok, result: result, fighter: fighter, original_mage: mage, test_card: test_card}
     end
 
     test "returns ok tuple", %{result: result} do
@@ -131,59 +124,64 @@ defmodule Game.CombatTest do
 
     test "reduces target HP by damage amount", %{
       result: {:ok, updated_combat},
-      original_mage: original_mage
+      original_mage: original_mage,
+      test_card: test_card
     } do
       updated_mage = Enum.find(updated_combat.players, &(&1.id == original_mage.id))
-      assert updated_mage.hp == original_mage.hp - 5
+      {:damage, damage_amount} = test_card.effect
+      assert updated_mage.hp == original_mage.hp - damage_amount
     end
 
     test "deducts AP from player by card cost", %{
       result: {:ok, updated_combat},
-      fighter: fighter
+      fighter: fighter,
+      test_card: test_card
     } do
       updated_fighter = updated_combat.current_turn.player
-      assert updated_fighter.ap == fighter.ap - @cards.attack.cost
+      assert updated_fighter.ap == fighter.ap - test_card.cost
     end
 
-    test "moves card to discard pile", %{result: {:ok, updated_combat}} do
+    test "moves card to discard pile", %{
+      result: {:ok, updated_combat},
+      test_card: test_card
+    } do
       updated_fighter = updated_combat.current_turn.player
-      assert Enum.any?(updated_fighter.cards.discard, fn c -> c.id == @cards.attack.id end)
-      refute Enum.any?(updated_fighter.cards.hand, fn c -> c.id == @cards.attack.id end)
+      assert Enum.any?(updated_fighter.cards.discard, fn c -> c.id == test_card.id end)
+      refute Enum.any?(updated_fighter.cards.hand, fn c -> c.id == test_card.id end)
     end
   end
 
   describe "play_card with heal effect" do
     setup %{combat_state: combat_state, fighter: fighter} do
-      # Fighter with lower HP and the heal card
-      fighter_with_low_hp = %{fighter | hp: 10, cards: %{fighter.cards | hand: [@cards.heal]}}
-
-      # Update the combat state
-      combat_state = %{
-        combat_state
-        | current_turn: %{combat_state.current_turn | player: fighter_with_low_hp}
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter_with_low_hp},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
+        }
       }
 
-      # First pick the heal card
       {:ok, updated_combat} =
-        Combat.process_action(combat_state, {:pick_card, fighter_with_low_hp, @cards.heal})
+        Combat.process_action(combat_state, {:pick_card, fighter_with_low_hp, heal_card})
 
-      # Then play the heal card on self
-      target_position = {0, 0, 0}
-      result = Combat.process_action(updated_combat, {:play_card, target_position})
+      result = Combat.process_action(updated_combat, {:play_card, {0, 0, 0}})
 
-      {:ok, result: result, combat_state: updated_combat}
+      {:ok, result: result, heal_card: heal_card, original_hp: 10}
     end
 
-    test "increases target HP by heal amount", %{result: {:ok, updated_combat}} do
+    test "increases target HP by heal amount", %{
+      result: {:ok, updated_combat},
+      original_hp: original_hp,
+      heal_card: heal_card
+    } do
       updated_fighter = updated_combat.current_turn.player
-      # 10 + 3
-      assert updated_fighter.hp == 13
+      {:heal, heal_amount} = heal_card.effect
+      assert updated_fighter.hp == original_hp + heal_amount
     end
 
-    test "deducts AP for heal cost", %{result: {:ok, updated_combat}} do
+    test "deducts AP for heal cost", %{result: {:ok, updated_combat}, heal_card: heal_card} do
       updated_fighter = updated_combat.current_turn.player
-      # 3 - 2
-      assert updated_fighter.ap == 1
+      assert updated_fighter.ap == 3 - heal_card.cost
     end
   end
 
@@ -276,24 +274,20 @@ defmodule Game.CombatTest do
   end
 
   describe "play_card out of range" do
-    setup %{combat_state: combat_state, fighter: fighter} do
-      # Update fighter to have range limited card
-      fighter = %{fighter | cards: %{fighter.cards | hand: [@cards.range_limited]}}
-
-      # Update combat state
-      combat_state = %{
-        combat_state
-        | current_turn: %{combat_state.current_turn | player: fighter}
+    setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: nil},
+          {3, 0, -3} => %{terrain: :plain, occupied_by: mage}
+        }
       }
 
-      # First pick the card
       {:ok, updated_combat} =
-        Combat.process_action(combat_state, {:pick_card, fighter, @cards.range_limited})
+        Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
 
-      # Try to play card on a target that's too far away
-      # This is 3 units away, beyond the card's range of 1
-      target_position = {3, 0, -3}
-      result = Combat.process_action(updated_combat, {:play_card, target_position})
+      result = Combat.process_action(updated_combat, {:play_card, {3, 0, -3}})
 
       {:ok, result: result}
     end
@@ -304,23 +298,20 @@ defmodule Game.CombatTest do
   end
 
   describe "game over check" do
-    setup %{combat_state: combat_state, fighter: fighter} do
-      # Update fighter to have lethal card
-      fighter = %{fighter | cards: %{fighter.cards | hand: [@cards.lethal]}}
-
-      # Update combat state
-      combat_state = %{
-        combat_state
-        | current_turn: %{combat_state.current_turn | player: fighter}
+    setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
+      # Make sure the grid has characters at correct positions
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: mage}
+        }
       }
 
-      # First pick the lethal card
       {:ok, updated_combat} =
-        Combat.process_action(combat_state, {:pick_card, fighter, @cards.lethal})
+        Combat.process_action(combat_state, {:pick_card, fighter, lethal_card})
 
-      # Play the lethal card on the mage
-      target_position = {2, 0, -2}
-      result = Combat.process_action(updated_combat, {:play_card, target_position})
+      result = Combat.process_action(updated_combat, {:play_card, {2, 0, -2}})
 
       {:ok, result: result}
     end

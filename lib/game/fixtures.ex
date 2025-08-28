@@ -183,4 +183,14 @@ defmodule Game.Fixtures do
       effect: {:damage, 10}
     }
   end
+
+  def long_range() do
+    %Card{
+      id: 10,
+      name: "Fireball",
+      cost: 1,
+      range: 3,
+      effect: {:damage, 10}
+    }
+  end
 end

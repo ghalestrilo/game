@@ -14,6 +14,9 @@ defmodule Game.CombatState do
   alias __MODULE__
 
   defstruct state: :initialized,
+            # `players` is a constant meant to store the characters' initial states,
+            # allowing procedures like `restore_max_ap` to retrieve information about
+            # the default character state and set AP appropriately
             players: [],
             queue: [],
             grid: %Grid{},
