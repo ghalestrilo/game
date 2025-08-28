@@ -1,4 +1,4 @@
-<div class="container mx-auto p-4">
+<div class=" mx-auto max-w-full p-4">
   <div class="mb-4 flex gap-4">
     <button
       phx-click="reset"
@@ -16,59 +16,65 @@
 
   <%= if @game_state do %>
     <!-- Combat State Panel -->
-    <div class="mb-4 bg-gray-100 p-4 rounded shadow inline-block">
-      <h3 class="text-lg font-bold mb-2">Combat State</h3>
-      <div class="text-md">
-        <span class="font-semibold">State:</span>
-        <span class="px-2 py-1 bg-blue-100 rounded text-blue-800 font-medium">
-          {@game_state.combat.state}
-        </span>
-      </div>
-    </div>
+    <div class="w-full flex flex-row gap-8">
+      <div class="mb-4 min-w-[300px] bg-gray-100 p-4 rounded shadow inline-block">
+        <h3 class="text-lg font-bold mb-2">Combat State</h3>
+        <div class="text-md">
+          <span class="font-semibold">State:</span>
+          <span class="px-2 py-1 bg-blue-100 rounded text-blue-800 font-medium">
+            {@game_state.combat.state}
+          </span>
+        </div>
 
-    <div class="flex gap-4">
-      <!-- Card piles status panel -->
-      <div class="card-status-panel w-64 bg-gray-100 p-4 rounded">
         <h3 class="text-lg font-bold mb-2">Current Player</h3>
         <div class="text-md mb-4">
           {@game_state.combat.current_turn.player.name} ({@game_state.combat.current_turn.player.class})
         </div>
+      </div>
 
-        <div class="mb-3">
-          <h4 class="font-semibold">
-            Draw Pile: {length(@game_state.combat.current_turn.player.cards.draw)} cards
-          </h4>
-          <div class="text-xs text-gray-500">
-            <%= for card <- @game_state.combat.current_turn.player.cards.draw do %>
-              <div class="card-tiny">{card.name}</div>
-            <% end %>
-          </div>
-        </div>
+      <div class="flex gap-4 w-full flex-row justify-between">
+        <!-- Card piles status panel -->
+        <div class="card-status-panel w-full bg-gray-100 p-4 rounded">
+          <div class="flex gap-4 flex-row justify-between items-stretch flex-1">
+            <div class="mb-3">
+              <h4 class="font-semibold">
+                Draw Pile: {length(@game_state.combat.current_turn.player.cards.draw)} cards
+              </h4>
+              <div class="text-xs text-gray-500">
+                <%= for card <- @game_state.combat.current_turn.player.cards.draw do %>
+                  <div class="card-tiny">{card.name}</div>
+                <% end %>
+              </div>
+            </div>
 
-        <div class="mb-3">
-          <h4 class="font-semibold">
-            Hand: {length(@game_state.combat.current_turn.player.cards.hand)} cards
-          </h4>
-          <div class="text-xs text-gray-500">
-            <%= for card <- @game_state.combat.current_turn.player.cards.hand do %>
-              <div class="card-tiny">{card.name} (Cost: {card.cost})</div>
-            <% end %>
-          </div>
-        </div>
+            <div class="mb-3">
+              <h4 class="font-semibold">
+                Hand: {length(@game_state.combat.current_turn.player.cards.hand)} cards
+              </h4>
+              <div class="text-xs text-gray-500">
+                <%= for card <- @game_state.combat.current_turn.player.cards.hand do %>
+                  <div class="card-tiny">{card.name} (Cost: {card.cost})</div>
+                <% end %>
+              </div>
+            </div>
 
-        <div class="mb-3">
-          <h4 class="font-semibold">
-            Discard Pile: {length(@game_state.combat.current_turn.player.cards.discard)} cards
-          </h4>
-          <div class="text-xs text-gray-500">
-            <%= for card <- @game_state.combat.current_turn.player.cards.discard do %>
-              <div class="card-tiny">{card.name}</div>
-            <% end %>
+            <div class="mb-3">
+              <h4 class="font-semibold">
+                Discard Pile: {length(@game_state.combat.current_turn.player.cards.discard)} cards
+              </h4>
+              <div class="text-xs text-gray-500">
+                <%= for card <- @game_state.combat.current_turn.player.cards.discard do %>
+                  <div class="card-tiny">{card.name}</div>
+                <% end %>
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      
+    </div>
+    
 <!-- Game board -->
+    <div class="flex gap-8">
       <div class="game-board flex-1">
         <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
           <div class="flex flex-row justify-center gap-2">
@@ -114,16 +120,19 @@
           </div>
         <% end %>
       </div>
-    </div>
-    
+      
 <!-- Action log panel -->
-    <div class="action-log bg-gray-100 p-4 mt-4 rounded overflow-auto" style="max-height: 200px;">
-      <h3 class="text-lg font-bold mb-2">Action Log</h3>
-      <ul class="list-disc pl-5">
-        <%= for action <- @action_log do %>
-          <li class="text-sm mb-1">{action}</li>
-        <% end %>
-      </ul>
+      <div
+        class="action-log bg-gray-100 p-4 mt-8 rounded overflow-auto flex-1"
+        style="max-height: 200px;"
+      >
+        <h3 class="text-lg font-bold mb-2">Action Log</h3>
+        <ul class="list-disc pl-5">
+          <%= for action <- @action_log do %>
+            <li class="text-sm mb-1">{action}</li>
+          <% end %>
+        </ul>
+      </div>
     </div>
 
     <div class="card-row mt-4">
