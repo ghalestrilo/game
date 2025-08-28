@@ -95,9 +95,9 @@ defmodule Game.Combat do
           target != nil ->
             result =
               combat
-              |> CombatState.apply_card_effect_to_target(target, card.effect)
+              |> CombatState.apply_card_effect_to_target(target, card)
               |> CombatState.check_target_death(target)
-              |> CombatState.update_current_player(player, card)
+              # |> CombatState.update_current_player(player, card)
               |> CombatState.update_grid_for_player()
               |> CombatState.check_game_over()
 
@@ -136,7 +136,6 @@ defmodule Game.Combat do
         } = combat,
         {:pick_card, _player, card}
       ) do
-    Logger.info("Picked same card, unpicking")
     {:ok, %{combat | state: :running, current_turn: %{current_turn | card: nil}}}
   end
 
@@ -147,7 +146,6 @@ defmodule Game.Combat do
         } = combat,
         {:pick_card, _player, card}
       ) do
-    Logger.info("Picked different card, updating")
     {:ok, %{combat | current_turn: %{current_turn | card: card}}}
   end
 

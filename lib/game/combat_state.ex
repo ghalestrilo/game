@@ -89,11 +89,6 @@ defmodule Game.CombatState do
     %{combat | current_turn: %{combat.current_turn | player: player}}
   end
 
-  def apply_card_effect_to_player(combat, player, effect) do
-    updated_player = Character.apply_card_effect(player, effect)
-    %{combat | current_turn: %{combat.current_turn | player: updated_player}}
-  end
-
   # Handle the case when player is in current_turn.player
   # Handle any combat state with a card
   def discard_selected_card(combat, card) do
@@ -178,18 +173,6 @@ defmodule Game.CombatState do
     end
   end
 
-  # Target interaction helpers
-  def apply_card_effect_to_target(combat, target, effect) do
-    updated_target = Character.apply_card_effect(target, effect)
-
-    # Update target in combat state directly
-    %{
-      combat
-      | players: update_player_in_list(combat.players, updated_target),
-        grid: Grid.update_character(combat.grid, updated_target)
-    }
-  end
-
   def check_target_death(combat, target) do
     if Character.is_dead?(target) do
       # Remove player and check for game over condition
@@ -210,13 +193,22 @@ defmodule Game.CombatState do
     end
   end
 
-  def update_current_player(combat, player, card) do
+  def apply_card_effect_to_target(combat, target, card) do
     # Discard only the played card, not the entire hand
     # For test compatibility, also apply the card effect here
     # Deduct AP cost but keep the turn
+
+    all_characters = [combat.current_turn.player] ++ combat.queue
+
+    [updated_player | updated_queue] =
+      all_characters
+      |> Enum.map(fn
+        ^target -> Character.apply_card_effect(target, card.effect)
+        not_target -> not_target
+      end)
+
     updated_player =
-      player
-      |> Character.apply_card_effect(card.effect)
+      updated_player
       |> Character.discard_card(card)
       |> Character.spend_ap(card.cost)
 
@@ -244,29 +236,6 @@ defmodule Game.CombatState do
           card: nil
         }
     }
-  end
-
-  def update_grid_for_player(%{current_turn: %{player: player}} = combat) do
-    %{combat | grid: Grid.update_character(combat.grid, player)}
-  end
-
-  def handle_card_effect(combat, player, target) do
-    # Apply card effect to target
-    updated_combat = apply_card_effect_to_target(combat, target, player.card_effect)
-
-    # Find the updated target in the combat state
-    updated_target = Enum.find(updated_combat.players, &(&1.id == target.id))
-
-    # Check if target died from the effect
-    check_result = check_target_death(updated_combat, updated_target)
-
-    if check_result.state == :game_over do
-      # Game is over
-      {:game_over, check_result}
-    else
-      # Game continues
-      {:ok, check_result}
-    end
   end
 
   def remove_player(%CombatState{grid: grid, players: players, queue: queue} = combat, player) do
