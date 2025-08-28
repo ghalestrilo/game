@@ -14,10 +14,16 @@ defmodule Game.CombatState do
   alias __MODULE__
 
   defstruct state: :initialized,
+            # __constants__ is a readonly protected field
+            __constants__: %{
+              # `players` is a constant meant to store the characters' initial states,
+              # allowing procedures like `restore_max_ap` to retrieve information about
+              # the default character state and set AP appropriately
+              players: []
+            },
             # `players` is a constant meant to store the characters' initial states,
             # allowing procedures like `restore_max_ap` to retrieve information about
             # the default character state and set AP appropriately
-            players: [],
             queue: [],
             grid: %Grid{},
             current_turn: %{
@@ -28,7 +34,7 @@ defmodule Game.CombatState do
 
   @type t() :: %__MODULE__{
           state: atom(),
-          players: list(any()),
+          __constants__: %{players: list(any())},
           queue: list(any()),
           grid: Grid.t(),
           current_turn: %{
