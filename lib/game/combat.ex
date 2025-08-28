@@ -52,7 +52,7 @@ defmodule Game.Combat do
         result =
           combat
           |> CombatState.update_player_position(player, target_position)
-          |> CombatState.update_grid_position(player, target_position)
+          |> CombatState.refresh_grid()
           |> CombatState.update_players_and_queue()
 
         {:ok, result}
@@ -97,8 +97,7 @@ defmodule Game.Combat do
               combat
               |> CombatState.apply_card_effect_to_target(target, card)
               |> CombatState.check_target_death(target)
-              # |> CombatState.update_current_player(player, card)
-              |> CombatState.update_grid_for_player()
+              |> CombatState.refresh_grid()
               |> CombatState.check_game_over()
 
             {:ok, result}
@@ -183,8 +182,9 @@ defmodule Game.Combat do
   def process_action(%CombatState{} = combat, action) do
     Logger.error("""
     Invalid action-state:
-    state: #{inspect(combat)}
     action: #{inspect(action)}
+    ------------------------------------
+    state: #{inspect(combat)}
     """)
 
     {:error, "Invalid action"}
@@ -194,8 +194,9 @@ defmodule Game.Combat do
   def process_action(state, action) do
     Logger.error("""
     Invalid state:
-    state: #{inspect(state)}
     action: #{inspect(action)}
+    ------------------------------------
+    state: #{inspect(state)}
     """)
 
     {:error, "Invalid state"}

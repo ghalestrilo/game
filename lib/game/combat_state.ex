@@ -1,4 +1,6 @@
 defmodule Game.CombatState do
+  use StructAccess
+
   @moduledoc """
   This module is responsible for implementing pure methods that modify combat state.
   These receive
@@ -57,9 +59,7 @@ defmodule Game.CombatState do
 
   # Move action helpers
   def update_player_position(combat, player, target_position) do
-    moved_player = Character.move(player, target_position)
-    # Update the current turn player
-    %{combat | current_turn: %{combat.current_turn | player: moved_player}}
+    put_in(combat, [:current_turn, :player], Character.move(player, target_position))
   end
 
   def update_grid_position(
@@ -68,6 +68,17 @@ defmodule Game.CombatState do
         target_position
       ) do
     updated_grid = Grid.update_position(grid, moved_player, player.position, target_position)
+    %{combat | grid: updated_grid}
+  end
+
+  def refresh_grid(
+        %{current_turn: %{player: current_player}, grid: grid, players: players} = combat
+      ) do
+    updated_grid =
+      Enum.reduce([current_player] ++ players, grid, fn player, grid ->
+        Grid.update_position(grid, player, player.position, player.position)
+      end)
+
     %{combat | grid: updated_grid}
   end
 
@@ -125,33 +136,24 @@ defmodule Game.CombatState do
   end
 
   def setup_next_player_turn(%{current_turn: %{player: next_player}} = combat) do
-    combat = %{
+    updated_combat =
       combat
-      | state: :running,
-        current_turn: %{
-          starting_position: next_player.position,
-          player: %{
-            next_player
-            | ap: Character.get_max_ap(next_player)
-          },
-          card: nil
-        }
-    }
+      |> put_in([:state], :running)
+      |> put_in([:current_turn], new_turn(next_player))
+      |> draw_cards_for_player(next_player, 5)
 
-    # Draw cards for next player
-    combat_with_cards = draw_cards_for_player(combat, next_player, 5)
-    updated_next_player = Enum.find(combat_with_cards.players, &(&1.id == next_player.id))
+    updated_next_player = Enum.find(combat.players, &(&1.id == next_player.id))
 
     %{
-      combat_with_cards
+      updated_combat
       | current_turn: %{
-          combat_with_cards.current_turn
+          updated_combat.current_turn
           | player: updated_next_player
         }
     }
   end
 
-  def update_grid_with_player(%{current_turn: %{player: player}} = combat) do
+  def update_grid_for_player(%{current_turn: %{player: player}} = combat) do
     %{combat | grid: Grid.update_character(combat.grid, player)}
   end
 
@@ -230,11 +232,7 @@ defmodule Game.CombatState do
       combat
       | queue: updated_queue,
         state: :running,
-        current_turn: %{
-          starting_position: next_player.position,
-          player: next_player,
-          card: nil
-        }
+        current_turn: new_turn(next_player)
     }
   end
 
@@ -338,6 +336,14 @@ defmodule Game.CombatState do
           | hand: [],
             discard: player.cards.discard ++ player.cards.hand
         }
+    }
+  end
+
+  def new_turn(%Character{position: position} = player) do
+    %{
+      starting_position: position,
+      player: %{player | ap: Character.get_max_ap(player)},
+      card: nil
     }
   end
 end

@@ -1,0 +1,149 @@
+<div class="container mx-auto p-4">
+  <div class="mb-4 flex gap-4">
+    <button
+      phx-click="reset"
+      class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+    >
+      Reset Game
+    </button>
+    <button
+      phx-click="skip_turn"
+      class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+    >
+      Skip Turn
+    </button>
+  </div>
+
+  <%= if @game_state do %>
+    <!-- Combat State Panel -->
+    <div class="mb-4 bg-gray-100 p-4 rounded shadow inline-block">
+      <h3 class="text-lg font-bold mb-2">Combat State</h3>
+      <div class="text-md">
+        <span class="font-semibold">State:</span>
+        <span class="px-2 py-1 bg-blue-100 rounded text-blue-800 font-medium">
+          {@game_state.combat.state}
+        </span>
+      </div>
+    </div>
+
+    <div class="flex gap-4">
+      <!-- Card piles status panel -->
+      <div class="card-status-panel w-64 bg-gray-100 p-4 rounded">
+        <h3 class="text-lg font-bold mb-2">Current Player</h3>
+        <div class="text-md mb-4">
+          {@game_state.combat.current_turn.player.name} ({@game_state.combat.current_turn.player.class})
+        </div>
+
+        <div class="mb-3">
+          <h4 class="font-semibold">
+            Draw Pile: {length(@game_state.combat.current_turn.player.cards.draw)} cards
+          </h4>
+          <div class="text-xs text-gray-500">
+            <%= for card <- @game_state.combat.current_turn.player.cards.draw do %>
+              <div class="card-tiny">{card.name}</div>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <h4 class="font-semibold">
+            Hand: {length(@game_state.combat.current_turn.player.cards.hand)} cards
+          </h4>
+          <div class="text-xs text-gray-500">
+            <%= for card <- @game_state.combat.current_turn.player.cards.hand do %>
+              <div class="card-tiny">{card.name} (Cost: {card.cost})</div>
+            <% end %>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <h4 class="font-semibold">
+            Discard Pile: {length(@game_state.combat.current_turn.player.cards.discard)} cards
+          </h4>
+          <div class="text-xs text-gray-500">
+            <%= for card <- @game_state.combat.current_turn.player.cards.discard do %>
+              <div class="card-tiny">{card.name}</div>
+            <% end %>
+          </div>
+        </div>
+      </div>
+      
+<!-- Game board -->
+      <div class="game-board flex-1">
+        <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
+          <div class="flex flex-row justify-center gap-2">
+            <%= for {q, r, s, _tile} <- row do %>
+              <div
+                phx-click="interact"
+                phx-value-target_position={"#{q}_#{r}_#{s}"}
+                class={
+                  [
+                    "hex-cell border border-gray-300 w-16 h-16 flex items-center justify-center m-1 bg-white",
+                    # If distance from `:starting_position` is within `:movement_range` highlight the hex cell
+                    if(
+                      Grid.distance(
+                        @game_state.combat.grid,
+                        {q, r, s},
+                        @game_state.combat.current_turn.starting_position
+                      ) <=
+                        @game_state.combat.current_turn.player.movement_range,
+                      do: "bg-yellow-50",
+                      else: ""
+                    ),
+                    # If it's the current turn, highlight the hex cell
+                    if(
+                      find_character(@game_state.combat.players, {q, r, s}) ==
+                        @game_state.combat.current_turn.player,
+                      do: "!bg-green-200",
+                      else: ""
+                    )
+                  ]
+                }
+              >
+                <%= if character = find_character(@game_state.combat.players, {q, r, s}) do %>
+                  <div class={character_class(character)} data-character-id={character.id}>
+                    <div class="character-name">{character.name}</div>
+
+                    <div class="character-hp text-gray-200">HP: {character.hp}</div>
+
+                    <div class="character-ap text-gray-200">AP: {character.ap}</div>
+                  </div>
+                <% end %>
+              </div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+    
+<!-- Action log panel -->
+    <div class="action-log bg-gray-100 p-4 mt-4 rounded overflow-auto" style="max-height: 200px;">
+      <h3 class="text-lg font-bold mb-2">Action Log</h3>
+      <ul class="list-disc pl-5">
+        <%= for action <- @action_log do %>
+          <li class="text-sm mb-1">{action}</li>
+        <% end %>
+      </ul>
+    </div>
+
+    <div class="card-row mt-4">
+      <%= for {card, index} <- Enum.with_index(@game_state.combat.current_turn.player.cards.hand) do %>
+        <div
+          phx-click="pick_card"
+          phx-value-card_index={index}
+          class={[
+            "card",
+            if(card == Map.get(@game_state.combat.current_turn, :card, nil),
+              do: "!bg-yellow-50",
+              else: ""
+            )
+          ]}
+        >
+          <div class="card-title">{card.name}</div>
+
+          <div class="card-effect">Cost: {card.cost} | {inspect(card.effect)}</div>
+        </div>
+      <% end %>
+    </div>
+  <% end %>
+</div>

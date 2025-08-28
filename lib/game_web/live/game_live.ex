@@ -8,9 +8,9 @@ defmodule GameWeb.GameLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       {game_pid, game_state} = initialize_game()
-      {:ok, assign(socket, game_pid: game_pid, game_state: game_state)}
+      {:ok, assign(socket, game_pid: game_pid, game_state: game_state, action_log: [])}
     else
-      {:ok, assign(socket, game_pid: nil, game_state: nil)}
+      {:ok, assign(socket, game_pid: nil, game_state: nil, action_log: [])}
     end
   end
 
@@ -22,141 +22,7 @@ defmodule GameWeb.GameLive do
   @impl true
   def handle_event("reset", _params, socket) do
     {game_pid, game_state} = initialize_game()
-    {:noreply, assign(socket, game_pid: game_pid, game_state: game_state)}
-  end
-
-  @impl true
-  def render(assigns) do
-    ~H"""
-    <div class="container mx-auto p-4">
-      <div class="mb-4 flex gap-4">
-        <button
-          phx-click="reset"
-          class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Reset Game
-        </button>
-        <button
-          phx-click="skip_turn"
-          class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Skip Turn
-        </button>
-      </div>
-
-      <%= if @game_state do %>
-        <div class="flex">
-          <!-- Card piles status panel -->
-          <div class="card-status-panel w-64 bg-gray-100 p-4 mr-4 rounded">
-            <h3 class="text-lg font-bold mb-2">Current Player</h3>
-            <div class="text-md mb-4">
-              {@game_state.combat.current_turn.player.name} ({@game_state.combat.current_turn.player.class})
-            </div>
-
-            <div class="mb-3">
-              <h4 class="font-semibold">
-                Draw Pile: {length(@game_state.combat.current_turn.player.cards.draw)} cards
-              </h4>
-              <div class="text-xs text-gray-500">
-                <%= for card <- @game_state.combat.current_turn.player.cards.draw do %>
-                  <div class="card-tiny">{card.name}</div>
-                <% end %>
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <h4 class="font-semibold">
-                Hand: {length(@game_state.combat.current_turn.player.cards.hand)} cards
-              </h4>
-              <div class="text-xs text-gray-500">
-                <%= for card <- @game_state.combat.current_turn.player.cards.hand do %>
-                  <div class="card-tiny">{card.name} (Cost: {card.cost})</div>
-                <% end %>
-              </div>
-            </div>
-
-            <div class="mb-3">
-              <h4 class="font-semibold">
-                Discard Pile: {length(@game_state.combat.current_turn.player.cards.discard)} cards
-              </h4>
-              <div class="text-xs text-gray-500">
-                <%= for card <- @game_state.combat.current_turn.player.cards.discard do %>
-                  <div class="card-tiny">{card.name}</div>
-                <% end %>
-              </div>
-            </div>
-          </div>
-          
-    <!-- Game board -->
-          <div class="game-board flex-1">
-            <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
-              <div class="flex flex-row justify-center gap-2">
-                <%= for {q, r, s, _tile} <- row do %>
-                  <div
-                    phx-click="interact"
-                    phx-value-target_position={"#{q}_#{r}_#{s}"}
-                    class={
-                      [
-                        "hex-cell border border-gray-300 w-16 h-16 flex items-center justify-center m-1 bg-white",
-                        # If distance from `:starting_position` is within `:movement_range` highlight the hex cell
-                        if(
-                          Grid.distance(
-                            @game_state.combat.grid,
-                            {q, r, s},
-                            @game_state.combat.current_turn.starting_position
-                          ) <=
-                            @game_state.combat.current_turn.player.movement_range,
-                          do: "bg-yellow-50",
-                          else: ""
-                        ),
-                        # If it's the current turn, highlight the hex cell
-                        if(
-                          find_character(@game_state.combat.players, {q, r, s}) ==
-                            @game_state.combat.current_turn.player,
-                          do: "!bg-green-200",
-                          else: ""
-                        )
-                      ]
-                    }
-                  >
-                    <%= if character = find_character(@game_state.combat.players, {q, r, s}) do %>
-                      <div class={character_class(character)} data-character-id={character.id}>
-                        <div class="character-name">{character.name}</div>
-
-                        <div class="character-hp text-gray-200">HP: {character.hp}</div>
-
-                        <div class="character-ap text-gray-200">AP: {character.ap}</div>
-                      </div>
-                    <% end %>
-                  </div>
-                <% end %>
-              </div>
-            <% end %>
-          </div>
-        </div>
-
-        <div class="card-row mt-4">
-          <%= for {card, index} <- Enum.with_index(@game_state.combat.current_turn.player.cards.hand) do %>
-            <div
-              phx-click="pick_card"
-              phx-value-card_index={index}
-              class={[
-                "card",
-                if(card == Map.get(@game_state.combat.current_turn, :card, nil),
-                  do: "!bg-yellow-50",
-                  else: ""
-                )
-              ]}
-            >
-              <div class="card-title">{card.name}</div>
-
-              <div class="card-effect">Cost: {card.cost} | {inspect(card.effect)}</div>
-            </div>
-          <% end %>
-        </div>
-      <% end %>
-    </div>
-    """
+    {:noreply, assign(socket, game_pid: game_pid, game_state: game_state, action_log: [])}
   end
 
   defp find_character(characters, position) do
@@ -246,7 +112,14 @@ defmodule GameWeb.GameLive do
           socket.assigns.game_state.combat
       end
 
-    {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
+    action = "#{current_turn.player.name} selected card: #{card.name}"
+    updated_log = [action | socket.assigns.action_log]
+
+    {:noreply,
+     assign(socket,
+       game_state: %{socket.assigns.game_state | combat: combat},
+       action_log: updated_log
+     )}
   end
 
   def handle_event(
@@ -262,7 +135,16 @@ defmodule GameWeb.GameLive do
       [next_player | _] = combat.queue
       IO.inspect(next_player.cards, label: "AFTER Play Card - Next Player Cards")
 
-      {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
+      action =
+        "#{socket.assigns.game_state.combat.current_turn.player.name} played card: #{card.name}"
+
+      updated_log = [action | socket.assigns.action_log]
+
+      {:noreply,
+       assign(socket,
+         game_state: %{socket.assigns.game_state | combat: combat},
+         action_log: updated_log
+       )}
     else
       {:error, error} ->
         socket =
@@ -283,7 +165,14 @@ defmodule GameWeb.GameLive do
     {:ok, position} = parse_target_position(target_position)
 
     with {:ok, combat} <- process_game_action(socket, {:move, player, position}) do
-      {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
+      action = "#{player.name} moved to position #{inspect(position)}"
+      updated_log = [action | socket.assigns.action_log]
+
+      {:noreply,
+       assign(socket,
+         game_state: %{socket.assigns.game_state | combat: combat},
+         action_log: updated_log
+       )}
     else
       {:error, error} ->
         socket =
@@ -313,7 +202,14 @@ defmodule GameWeb.GameLive do
       [next_player | _] = combat.queue
       IO.inspect(next_player.cards, label: "AFTER Skip Turn - Next Player Cards")
 
-      {:noreply, assign(socket, game_state: %{socket.assigns.game_state | combat: combat})}
+      action = "#{player.name} skipped their turn"
+      updated_log = [action | socket.assigns.action_log]
+
+      {:noreply,
+       assign(socket,
+         game_state: %{socket.assigns.game_state | combat: combat},
+         action_log: updated_log
+       )}
     else
       {:error, error} ->
         socket =
