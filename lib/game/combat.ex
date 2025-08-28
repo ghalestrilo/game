@@ -155,7 +155,8 @@ defmodule Game.Combat do
   # - Check if it's the player's turn
   # - Discard their hand
   # - Move to the next player's turn
-  def process_action(%CombatState{state: :running, queue: queue} = combat, {:skip_turn, player}) do
+  def process_action(%CombatState{state: state, queue: queue} = combat, {:skip_turn, player})
+      when state != :game_over do
     cond do
       not TurnQueue.is_players_turn?(queue, player) ->
         {:error, "Not player's turn"}
