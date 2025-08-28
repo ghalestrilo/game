@@ -30,6 +30,20 @@
         <div class="text-md mb-4">
           {@game_state.combat.current_turn.player.name} ({@game_state.combat.current_turn.player.class})
         </div>
+        
+<!-- Turn Queue Panel -->
+        <div class="mt-4">
+          <h3 class="text-lg font-bold mb-2">Turn Queue</h3>
+          <div class="bg-white rounded p-2 border border-gray-200">
+            <ul class="text-sm">
+              <%= for character <- @game_state.combat.queue do %>
+                <li class="py-1 border-b border-gray-100 last:border-0">
+                  {inspect(character)}
+                </li>
+              <% end %>
+            </ul>
+          </div>
+        </div>
       </div>
 
       <div class="flex gap-4 w-full flex-row justify-between">

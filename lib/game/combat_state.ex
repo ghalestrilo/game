@@ -110,11 +110,6 @@ defmodule Game.CombatState do
     %{combat | current_turn: %{combat.current_turn | player: updated_player}}
   end
 
-  # Special case for tuple format that might be used in some contexts
-  def discard_selected_card({combat, card}, _any) do
-    discard_selected_card(combat, card)
-  end
-
   def discard_player_hand(%{current_turn: %{player: player}} = combat) do
     # In original tests, hands weren't discarded after every card play
     # So for test compatibility, we'll keep the hand
@@ -161,24 +156,6 @@ defmodule Game.CombatState do
     %{combat | grid: Grid.update_character(combat.grid, player)}
   end
 
-  def check_player_death(%{current_turn: %{player: player}} = combat) do
-    if Character.is_dead?(player) do
-      combat_without_player = remove_player(combat, player)
-
-      # Check if game is over but preserve result format for tests
-      remaining_teams =
-        Enum.map(combat_without_player.queue, & &1.team) |> Enum.uniq() |> length()
-
-      if remaining_teams <= 1 do
-        %CombatState{combat_without_player | state: :game_over}
-      else
-        combat_without_player
-      end
-    else
-      combat
-    end
-  end
-
   def check_target_death(combat, target) do
     if Character.is_dead?(target) do
       # Remove player and check for game over condition
@@ -221,19 +198,17 @@ defmodule Game.CombatState do
       |> Character.spend_ap(card.cost)
 
     # Update player in all places
-    combat = %{combat | current_turn: %{combat.current_turn | player: updated_player}}
-    %{combat | queue: update_player_in_list(combat.queue, updated_player)}
+    put_in(combat, [:current_turn, :player], updated_player)
   end
 
   def setup_next_turn(%{current_turn: %{player: player}, queue: queue} = combat) do
-    # Then rotate the queue
-    updated_queue = TurnQueue.rotate(queue, player)
-    [next_player | _] = updated_queue
+    # Then rotate the queue and pop the current player
+    [next_player | remaining_queue] = queue ++ [player]
 
     # Update combat state with the next player
     %{
       combat
-      | queue: updated_queue,
+      | queue: remaining_queue,
         state: :running,
         current_turn: new_turn(next_player)
     }
