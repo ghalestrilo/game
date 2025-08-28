@@ -183,14 +183,11 @@ defmodule Game.CombatState do
 
     all_characters = [combat.current_turn.player] ++ combat.queue
 
-    updated_characters =
-      all_characters
-      |> Enum.map(fn
+    [updated_player | updated_queue] =
+      Enum.map(all_characters, fn
         ^target -> Character.apply_card_effect(target, card.effect)
         not_target -> not_target
       end)
-
-    [updated_player | _updated_queue] = updated_characters
 
     updated_player =
       updated_player
@@ -198,7 +195,9 @@ defmodule Game.CombatState do
       |> Character.spend_ap(card.cost)
 
     # Update player in all places
-    put_in(combat, [:current_turn, :player], updated_player)
+    combat
+    |> put_in([:current_turn, :player], updated_player)
+    |> put_in([:queue], updated_queue)
   end
 
   def setup_next_turn(%{current_turn: %{player: player}, queue: queue} = combat) do
@@ -329,41 +328,8 @@ defmodule Game.CombatState do
   @doc """
   Restores a player's max AP from the original player data in __constants__
   """
-  def restore_max_ap(
-        %CombatState{__constants__: %{players: players}, queue: queue, current_turn: current_turn} =
-          combat,
-        player_id
-      ) do
-    # Find the original player data from constants
-    original_player = Enum.find(players, &(&1.id == player_id))
-    # Find the current player in the queue
-    current_player = Enum.find(queue, &(&1.id == player_id))
-    # Check if current_turn.player is the player we want to update
-    is_current_turn_player = current_turn.player && current_turn.player.id == player_id
-
-    cond do
-      # If we found the original player and it's the current turn player
-      original_player && is_current_turn_player ->
-        max_ap = Character.get_max_ap(original_player)
-        updated_player = %{current_turn.player | ap: max_ap}
-
-        # Update both the current turn player and the queue
-        updated_queue = update_player_in_list(queue, updated_player)
-        updated_turn = %{current_turn | player: updated_player}
-
-        %{combat | queue: updated_queue, current_turn: updated_turn}
-
-      # If we found both original and current player in the queue
-      original_player && current_player ->
-        max_ap = Character.get_max_ap(original_player)
-        updated_player = %{current_player | ap: max_ap}
-        updated_queue = update_player_in_list(queue, updated_player)
-
-        %{combat | queue: updated_queue}
-
-      # Return unchanged if player not found
-      true ->
-        combat
-    end
+  def restore_max_ap(%CombatState{} = combat, player_id) do
+    current_player_initial_data = get_original_player_data(combat, player_id)
+    put_in(combat, [:current_turn, :player, :ap], current_player_initial_data.ap)
   end
 end
