@@ -46,23 +46,24 @@ defmodule Game.CombatState do
     |> update_current_turn_player()
   end
 
+  def initialize_turn(combat), do: combat
+
   def update_current_turn_player(%CombatState{current_turn: %{player: player}} = combat) do
     updated_player = Enum.find(combat.players, &(&1.id == player.id))
     %{combat | current_turn: %{combat.current_turn | player: updated_player}}
   end
 
-  def initialize_turn(combat), do: combat
   # Helper functions for refactored code
 
   # Move action helpers
   def update_player_position(combat, player, target_position) do
     moved_player = Character.move(player, target_position)
-    # Store temporarily for later use
-    Map.put(combat, :current_player, moved_player)
+    # Update the current turn player
+    %{combat | current_turn: %{combat.current_turn | player: moved_player}}
   end
 
   def update_grid_position(
-        %{current_player: moved_player, grid: grid} = combat,
+        %{current_turn: %{player: moved_player}, grid: grid} = combat,
         player,
         target_position
       ) do
@@ -70,53 +71,66 @@ defmodule Game.CombatState do
     %{combat | grid: updated_grid}
   end
 
-  def update_players_and_queue(%{current_player: moved_player} = combat) do
+  def update_players_and_queue(%{current_turn: %{player: moved_player}} = combat) do
     updated_players = update_player_in_list(combat.players, moved_player)
 
     updated_queue =
       Enum.map(combat.queue, fn p -> if p.id == moved_player.id, do: moved_player, else: p end)
 
-    # Create the final combat state and remove the temporary moved_player key
-    combat
-    |> Map.drop([:current_player])
-    |> Map.put(:players, updated_players)
-    |> Map.put(:queue, updated_queue)
-    |> Map.put(:current_turn, %{combat.current_turn | player: moved_player})
+    # Update the state with new players and queue
+    %{
+      combat
+      | players: updated_players,
+        queue: updated_queue
+    }
   end
 
   # Card action helpers
   def store_player(combat, player) do
-    Map.put(combat, :current_player, player)
+    %{combat | current_turn: %{combat.current_turn | player: player}}
   end
 
   def apply_card_effect_to_player(combat, player, effect) do
     updated_player = Character.apply_card_effect(player, effect)
-    Map.put(combat, :current_player, updated_player)
+    %{combat | current_turn: %{combat.current_turn | player: updated_player}}
   end
 
-  def discard_selected_card(%{current_player: player} = combat, card) do
-    # Only discard the specific card, not the entire hand
+  # Handle the case when player is in current_turn.player
+  # Handle any combat state with a card
+  def discard_selected_card(combat, card) do
+    player = combat.current_turn.player
     updated_player = Character.discard_card(player, card)
-    Map.put(combat, :current_player, updated_player)
+    %{combat | current_turn: %{combat.current_turn | player: updated_player}}
   end
 
-  def discard_player_hand(%{current_player: player} = combat) do
+  # Special case for tuple format that might be used in some contexts
+  def discard_selected_card({combat, card}, _) do
+    discard_selected_card(combat, card)
+  end
+
+  def discard_player_hand(%{current_turn: %{player: player}} = combat) do
     # In original tests, hands weren't discarded after every card play
     # So for test compatibility, we'll keep the hand
-    Map.put(combat, :current_player, player)
+    %{combat | current_turn: %{combat.current_turn | player: player}}
   end
 
-  def rotate_queue(%{current_player: player, queue: queue} = combat) do
+  def rotate_queue(%{current_turn: %{player: player}, queue: queue} = combat) do
     updated_queue = TurnQueue.rotate(queue, player)
     [next_player | _] = updated_queue
 
-    combat
-    |> Map.put(:queue, updated_queue)
-    |> Map.put(:next_player, next_player)
-    |> Map.put(:players, update_player_in_list(combat.players, player))
+    %{
+      combat
+      | queue: updated_queue,
+        players: update_player_in_list(combat.players, player),
+        current_turn: %{
+          combat.current_turn
+          | player: next_player,
+            starting_position: next_player.position
+        }
+    }
   end
 
-  def setup_next_player_turn(%{next_player: next_player} = combat) do
+  def setup_next_player_turn(%{current_turn: %{player: next_player}} = combat) do
     combat = %{
       combat
       | state: :running,
@@ -140,39 +154,41 @@ defmodule Game.CombatState do
     }
   end
 
-  def update_grid_with_player(%{current_player: player} = combat) do
+  def update_grid_with_player(%{current_turn: %{player: player}} = combat) do
     %{combat | grid: Grid.update_character(combat.grid, player)}
   end
 
-  def check_player_death(%{current_player: player} = combat) do
-    result =
-      if Character.is_dead?(player) do
-        combat_without_player = remove_player(combat, player)
+  def check_player_death(%{current_turn: %{player: player}} = combat) do
+    if Character.is_dead?(player) do
+      combat_without_player = remove_player(combat, player)
 
-        # Check if game is over but preserve result format for tests
-        remaining_teams =
-          Enum.map(combat_without_player.players, & &1.team) |> Enum.uniq() |> length()
+      # Check if game is over but preserve result format for tests
+      remaining_teams =
+        Enum.map(combat_without_player.players, & &1.team) |> Enum.uniq() |> length()
 
-        if remaining_teams <= 1 do
-          %CombatState{combat_without_player | state: :game_over}
-        else
-          combat_without_player
-        end
+      if remaining_teams <= 1 do
+        %CombatState{combat_without_player | state: :game_over}
       else
-        combat
+        combat_without_player
       end
-
-    # Clean up temp keys
-    Map.drop(result, [:current_player, :next_player])
+    else
+      combat
+    end
   end
 
   # Target interaction helpers
   def apply_card_effect_to_target(combat, target, effect) do
     updated_target = Character.apply_card_effect(target, effect)
-    Map.put(combat, :updated_target, updated_target)
+
+    # Update target in combat state directly
+    %{
+      combat
+      | players: update_player_in_list(combat.players, updated_target),
+        grid: Grid.update_character(combat.grid, updated_target)
+    }
   end
 
-  def check_target_death(%{updated_target: target} = combat) do
+  def check_target_death(combat, target) do
     if Character.is_dead?(target) do
       # Remove player and check for game over condition
       combat_without_target = remove_player(combat, target)
@@ -181,22 +197,14 @@ defmodule Game.CombatState do
       remaining_teams = Enum.map(combat_without_target.players, & &1.team) |> Enum.uniq()
 
       # Check for game over condition - single team remains
-      result =
-        if length(remaining_teams) <= 1 do
-          %CombatState{combat_without_target | state: :game_over}
-        else
-          combat_without_target
-        end
-
-      Map.drop(result, [:updated_target])
+      if length(remaining_teams) <= 1 do
+        %CombatState{combat_without_target | state: :game_over}
+      else
+        combat_without_target
+      end
     else
-      # Update combat with the new target state
-      result =
-        combat
-        |> Map.put(:grid, Grid.update_character(combat.grid, target))
-        |> Map.put(:players, update_player_in_list(combat.players, target))
-
-      Map.drop(result, [:updated_target])
+      # Target is still alive, return original combat state
+      combat
     end
   end
 
@@ -210,18 +218,23 @@ defmodule Game.CombatState do
       |> Character.discard_card(card)
       |> Character.spend_ap(card.cost)
 
-    Map.put(combat, :current_player, updated_player)
+    # Update player in all places
+    combat = %{combat | current_turn: %{combat.current_turn | player: updated_player}}
+    %{combat | players: update_player_in_list(combat.players, updated_player)}
   end
 
-  def setup_next_turn(%{current_player: player, queue: queue} = combat) do
+  def setup_next_turn(%{current_turn: %{player: player}, queue: queue} = combat) do
+    # First update the current player in the players list
+    combat = %{combat | players: update_player_in_list(combat.players, player)}
+
+    # Then rotate the queue
     updated_queue = TurnQueue.rotate(queue, player)
     [next_player | _] = updated_queue
 
-    # Update with player discard changes
-    updated_combat = %{
+    # Update combat state with the next player
+    %{
       combat
-      | players: update_player_in_list(combat.players, player),
-        queue: updated_queue,
+      | queue: updated_queue,
         state: :running,
         current_turn: %{
           starting_position: next_player.position,
@@ -229,28 +242,28 @@ defmodule Game.CombatState do
           card: nil
         }
     }
-
-    # For test compatibility, we won't draw cards for the next player here
-    # Some tests expect the next player to have an empty hand
-    updated_combat
   end
 
-  def update_grid_for_player(%{current_player: player} = combat) do
-    combat
-    # Remove temp key
-    |> Map.drop([:current_player])
-    |> Map.put(:grid, Grid.update_character(combat.grid, player))
+  def update_grid_for_player(%{current_turn: %{player: player}} = combat) do
+    %{combat | grid: Grid.update_character(combat.grid, player)}
   end
 
   def handle_card_effect(combat, player, target) do
-    if Character.is_dead?(target) do
-      # Remove dead character and check for game over
-      updated_combat = remove_player(combat, target)
-      check_game_over(updated_combat)
+    # Apply card effect to target
+    updated_combat = apply_card_effect_to_target(combat, target, player.card_effect)
+
+    # Find the updated target in the combat state
+    updated_target = Enum.find(updated_combat.players, &(&1.id == target.id))
+
+    # Check if target died from the effect
+    check_result = check_target_death(updated_combat, updated_target)
+
+    if check_result.state == :game_over do
+      # Game is over
+      {:game_over, check_result}
     else
-      # Update target state and continue game
-      updated_combat = update_player(combat, target, player)
-      {:ok, updated_combat}
+      # Game continues
+      {:ok, check_result}
     end
   end
 
@@ -309,7 +322,6 @@ defmodule Game.CombatState do
       # Explicitly set to running for test compatibility
       _ -> %CombatState{combat | state: :running}
     end
-    |> dbg()
   end
 
   @doc """

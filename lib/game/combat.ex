@@ -63,7 +63,7 @@ defmodule Game.Combat do
   def process_action(
         %CombatState{
           state: :card_selected,
-          queue: queue,
+          queue: [player | _] = queue,
           grid: grid,
           current_turn: %{
             player: player,
@@ -81,22 +81,21 @@ defmodule Game.Combat do
       not Character.has_enough_ap?(player, card.cost) ->
         {:error, "Not enough AP"}
 
-      # Self-targeting (healing or damage)
-      position == {:ok, nil} and player.position == target_position ->
-        result =
-          combat
-          |> CombatState.apply_card_effect_to_player(player, card.effect)
-          |> CombatState.discard_selected_card(card)
-          |> CombatState.update_grid_with_player()
-          |> CombatState.check_player_death()
+      # # Self-targeting (healing or damage)
+      # position == {:ok, nil} and player.position == target_position ->
+      #   result =
+      #     combat
+      #     |> CombatState.apply_card_effect_to_player(player, card.effect)
+      #     |> CombatState.discard_selected_card(card)
+      #     |> CombatState.update_grid_with_player()
+      #     |> CombatState.check_player_death()
 
-        {:ok, result}
+      # {:ok, result}
 
       is_nil(position) ->
         {:error, "There's nothing targetable in this tile"}
 
       elem(position, 0) == :ok ->
-        # Handle self-targeting or targeting empty tiles
         {:ok, target} = position
 
         cond do
@@ -108,7 +107,8 @@ defmodule Game.Combat do
             result =
               combat
               |> CombatState.apply_card_effect_to_target(target, card.effect)
-              |> CombatState.check_target_death()
+              |> CombatState.discard_selected_card(card)
+              |> CombatState.check_target_death(target)
               |> CombatState.update_current_player(player, card)
               |> CombatState.update_grid_for_player()
               |> CombatState.check_game_over()
