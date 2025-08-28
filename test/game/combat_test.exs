@@ -85,7 +85,7 @@ defmodule Game.CombatTest do
   describe "play_card with not enough AP" do
     setup %{combat_state: combat_state, fighter: fighter} do
       {:ok, updated_combat} =
-        Combat.process_action(combat_state, {:pick_card, fighter_with_low_ap, @cards.expensive})
+        Combat.process_action(combat_state, {:pick_card, fighter, @cards.expensive})
 
       result = Combat.process_action(updated_combat, {:play_card, {2, 0, -2}})
 
@@ -157,14 +157,14 @@ defmodule Game.CombatTest do
     setup %{combat_state: combat_state, fighter: fighter} do
       grid = %Grid{
         tiles: %{
-          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter_with_low_hp},
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
           {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
           {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
         }
       }
 
       {:ok, updated_combat} =
-        Combat.process_action(combat_state, {:pick_card, fighter_with_low_hp, @cards.heal})
+        Combat.process_action(combat_state, {:pick_card, fighter, @cards.heal})
 
       result = Combat.process_action(updated_combat, {:play_card, {0, 0, 0}})
 
