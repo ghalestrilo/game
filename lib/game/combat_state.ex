@@ -136,7 +136,10 @@ defmodule Game.CombatState do
       | state: :running,
         current_turn: %{
           starting_position: next_player.position,
-          player: next_player,
+          player: %{
+            next_player
+            | ap: Character.get_max_ap(next_player)
+          },
           card: nil
         }
     }

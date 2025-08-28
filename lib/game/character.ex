@@ -68,15 +68,7 @@ defmodule Game.Character do
   Heals a character
   """
   def heal(character, amount) do
-    # Cap healing at max HP (which is the initial HP value)
-    max_hp =
-      case character.class do
-        :fighter -> 20
-        :mage -> 15
-        _ -> 15
-      end
-
-    %{character | hp: min(character.hp + amount, max_hp)}
+    %{character | hp: min(character.hp + amount, get_max_hp(character))}
   end
 
   @doc """
@@ -97,7 +89,10 @@ defmodule Game.Character do
     updated_to = [card | Map.get(character.cards, to_pile)]
 
     # Update character with new card piles
-    %{character | cards: Map.put(Map.put(character.cards, from_pile, updated_from), to_pile, updated_to)}
+    %{
+      character
+      | cards: Map.put(Map.put(character.cards, from_pile, updated_from), to_pile, updated_to)
+    }
   end
 
   @doc """
@@ -118,14 +113,18 @@ defmodule Game.Character do
     cards_to_draw_count = min(count, available_cards)
 
     # Draw available cards
-    {cards_to_draw, remaining_draw} = Enum.split(character_with_reshuffled_cards.cards.draw, cards_to_draw_count)
+    {cards_to_draw, remaining_draw} =
+      Enum.split(character_with_reshuffled_cards.cards.draw, cards_to_draw_count)
 
     # Update character with new draw pile and hand
-    %{character_with_reshuffled_cards | cards: %{
-      character_with_reshuffled_cards.cards |
-      draw: remaining_draw,
-      hand: character_with_reshuffled_cards.cards.hand ++ cards_to_draw
-    }}
+    %{
+      character_with_reshuffled_cards
+      | cards: %{
+          character_with_reshuffled_cards.cards
+          | draw: remaining_draw,
+            hand: character_with_reshuffled_cards.cards.hand ++ cards_to_draw
+        }
+    }
   end
 
   @doc """
@@ -141,11 +140,14 @@ defmodule Game.Character do
   def shuffle_discard_into_draw(character) do
     shuffled_cards = Enum.shuffle(character.cards.discard)
 
-    %{character | cards: %{
-      character.cards |
-      draw: character.cards.draw ++ shuffled_cards,
-      discard: []
-    }}
+    %{
+      character
+      | cards: %{
+          character.cards
+          | draw: character.cards.draw ++ shuffled_cards,
+            discard: []
+        }
+    }
   end
 
   @doc """
@@ -154,4 +156,16 @@ defmodule Game.Character do
   def spend_ap(character, cost) do
     %{character | ap: max(0, character.ap - cost)}
   end
+
+  @doc """
+  TODO: These methods (get_max_ap and get_max_hp) should be replaced
+  once we have logic to store the characters' max_hp and max_hp somewhere safe
+  """
+  def get_max_hp(%__MODULE__{class: :fighter}), do: 20
+  def get_max_hp(%__MODULE__{class: :mage}), do: 15
+  def get_max_hp(%__MODULE__{}), do: 15
+
+  def get_max_ap(%__MODULE__{class: :fighter}), do: 3
+  def get_max_ap(%__MODULE__{class: :mage}), do: 3
+  def get_max_ap(%__MODULE__{}), do: 3
 end
