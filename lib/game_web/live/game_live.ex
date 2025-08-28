@@ -77,7 +77,9 @@ defmodule GameWeb.GameLive do
     # Create combat struct with proper state
     combat = %Game.CombatState{
       state: :running,
-      players: updated_players,
+      __constants__: %{
+        players: updated_players
+      },
       queue: updated_players,
       grid: grid,
       current_turn: %{

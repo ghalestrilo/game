@@ -86,7 +86,9 @@ defmodule Game do
 
     combat = %CombatState{
       state: :running,
-      players: characters,
+      __constants__: %{
+        players: characters
+      },
       queue: characters,
       grid: grid,
       current_turn: %{
@@ -107,7 +109,7 @@ defmodule Game do
 
   def handle_call({:move, character, target_position}, _from, state) do
     # Get the latest version of the character from state
-    current_character = Enum.find(state.combat.players, &(&1.id == character.id))
+    current_character = Enum.find(state.combat.queue, &(&1.id == character.id))
 
     case Combat.process_action(state.combat, {:move, current_character, target_position}) do
       {:ok, updated_combat} ->
@@ -120,7 +122,7 @@ defmodule Game do
 
   def handle_call({:play_card, character, card, target_position}, _from, state) do
     # Get the latest version of the character from state
-    current_character = Enum.find(state.combat.players, &(&1.id == character.id))
+    current_character = Enum.find(state.combat.queue, &(&1.id == character.id))
 
     # Check if it's the character's turn
     [current_turn | _] = state.combat.queue
@@ -135,7 +137,7 @@ defmodule Game do
           case Combat.process_action(card_selected_combat, {:play_card, target_position}) do
             {:ok, updated_combat} ->
               current_character =
-                Enum.find(updated_combat.players, &(&1.id == current_character.id))
+                Enum.find(updated_combat.queue, &(&1.id == current_character.id))
 
               # Update the character's state in the game state
               updated_state = %{state | combat: updated_combat}

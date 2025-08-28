@@ -7,7 +7,6 @@ defmodule Game.CombatState do
   """
 
   require Logger
-  alias __MODULE__
   alias Game.Card
   alias Game.CombatState
   alias Game.{Character, Grid, TurnQueue}
@@ -60,7 +59,7 @@ defmodule Game.CombatState do
   def initialize_turn(combat), do: combat
 
   def update_current_turn_player(%CombatState{current_turn: %{player: player}} = combat) do
-    updated_player = Enum.find(combat.players, &(&1.id == player.id))
+    updated_player = Enum.find(combat.queue, &(&1.id == player.id))
     %{combat | current_turn: %{combat.current_turn | player: updated_player}}
   end
 
@@ -80,11 +79,9 @@ defmodule Game.CombatState do
     %{combat | grid: updated_grid}
   end
 
-  def refresh_grid(
-        %{current_turn: %{player: current_player}, grid: grid, players: players} = combat
-      ) do
+  def refresh_grid(%{current_turn: %{player: current_player}, grid: grid, queue: queue} = combat) do
     updated_grid =
-      Enum.reduce([current_player] ++ players, grid, fn player, grid ->
+      Enum.reduce([current_player] ++ queue, grid, fn player, grid ->
         Grid.update_position(grid, player, player.position, player.position)
       end)
 
@@ -92,16 +89,13 @@ defmodule Game.CombatState do
   end
 
   def update_players_and_queue(%{current_turn: %{player: moved_player}} = combat) do
-    updated_players = update_player_in_list(combat.players, moved_player)
-
     updated_queue =
       Enum.map(combat.queue, fn p -> if p.id == moved_player.id, do: moved_player, else: p end)
 
-    # Update the state with new players and queue
+    # Update the state with new queue
     %{
       combat
-      | players: updated_players,
-        queue: updated_queue
+      | queue: updated_queue
     }
   end
 
@@ -118,7 +112,7 @@ defmodule Game.CombatState do
   end
 
   # Special case for tuple format that might be used in some contexts
-  def discard_selected_card({combat, card}, _) do
+  def discard_selected_card({combat, card}, _any) do
     discard_selected_card(combat, card)
   end
 
@@ -135,7 +129,6 @@ defmodule Game.CombatState do
     %{
       combat
       | queue: updated_queue,
-        players: update_player_in_list(combat.players, player),
         current_turn: %{
           combat.current_turn
           | player: next_player,
@@ -172,7 +165,7 @@ defmodule Game.CombatState do
 
       # Check if game is over but preserve result format for tests
       remaining_teams =
-        Enum.map(combat_without_player.players, & &1.team) |> Enum.uniq() |> length()
+        Enum.map(combat_without_player.queue, & &1.team) |> Enum.uniq() |> length()
 
       if remaining_teams <= 1 do
         %CombatState{combat_without_player | state: :game_over}
@@ -190,7 +183,7 @@ defmodule Game.CombatState do
       combat_without_target = remove_player(combat, target)
 
       # Get the teams of remaining players
-      remaining_teams = Enum.map(combat_without_target.players, & &1.team) |> Enum.uniq()
+      remaining_teams = Enum.map(combat_without_target.queue, & &1.team) |> Enum.uniq()
 
       # Check for game over condition - single team remains
       if length(remaining_teams) <= 1 do
@@ -211,12 +204,14 @@ defmodule Game.CombatState do
 
     all_characters = [combat.current_turn.player] ++ combat.queue
 
-    [updated_player | updated_queue] =
+    updated_characters =
       all_characters
       |> Enum.map(fn
         ^target -> Character.apply_card_effect(target, card.effect)
         not_target -> not_target
       end)
+
+    [updated_player | _updated_queue] = updated_characters
 
     updated_player =
       updated_player
@@ -225,13 +220,10 @@ defmodule Game.CombatState do
 
     # Update player in all places
     combat = %{combat | current_turn: %{combat.current_turn | player: updated_player}}
-    %{combat | players: update_player_in_list(combat.players, updated_player)}
+    %{combat | queue: update_player_in_list(combat.queue, updated_player)}
   end
 
   def setup_next_turn(%{current_turn: %{player: player}, queue: queue} = combat) do
-    # First update the current player in the players list
-    combat = %{combat | players: update_player_in_list(combat.players, player)}
-
     # Then rotate the queue
     updated_queue = TurnQueue.rotate(queue, player)
     [next_player | _] = updated_queue
@@ -245,26 +237,21 @@ defmodule Game.CombatState do
     }
   end
 
-  def remove_player(%CombatState{grid: grid, players: players, queue: queue} = combat, player) do
+  def remove_player(%CombatState{grid: grid, queue: queue} = combat, player) do
     %{
       combat
       | grid: Grid.remove_character(grid, player),
-        players: Enum.reject(players, &(&1.id == player.id)),
         queue: TurnQueue.remove_character(queue, player.id)
     }
   end
 
   def update_player(
-        %CombatState{grid: grid, players: players, queue: queue} = combat,
+        %CombatState{grid: grid, queue: queue} = combat,
         target,
         current_player
       ) do
     # Update the grid with the target's new state
     updated_grid = Grid.update_character(grid, target)
-
-    # Update the players list with both target and current player
-    updated_players = update_player_in_list(players, target)
-    updated_players = update_player_in_list(updated_players, current_player)
 
     # Update the queue - rotate after current player's action
     updated_queue = TurnQueue.rotate(queue, current_player)
@@ -279,7 +266,6 @@ defmodule Game.CombatState do
     %{
       combat
       | grid: updated_grid,
-        players: updated_players,
         queue: updated_queue
     }
   end
@@ -290,8 +276,8 @@ defmodule Game.CombatState do
     end)
   end
 
-  def check_game_over(%CombatState{players: players} = combat) do
-    players
+  def check_game_over(%CombatState{queue: queue} = combat) do
+    queue
     |> Enum.map(& &1.team)
     |> Enum.uniq()
     |> length()
@@ -327,10 +313,9 @@ defmodule Game.CombatState do
   end
 
   def update_player_in_combat(updated_player, combat) do
-    updated_players = update_player_in_list(combat.players, updated_player)
     updated_queue = TurnQueue.update_character(combat.queue, updated_player)
 
-    %{combat | players: updated_players, queue: updated_queue}
+    %{combat | queue: updated_queue}
   end
 
   @doc """

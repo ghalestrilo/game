@@ -110,7 +110,9 @@ defmodule Game.Fixtures do
 
     %CombatState{
       state: :running,
-      players: [warrior, mage],
+      __constants__: %{
+        players: [warrior, mage]
+      },
       queue: [warrior, mage],
       grid: basic_grid(),
       current_turn: %{
@@ -184,7 +186,7 @@ defmodule Game.Fixtures do
     }
   end
 
-  def long_range() do
+  def long_range_card() do
     %Card{
       id: 10,
       name: "Fireball",

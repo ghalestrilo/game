@@ -34,7 +34,9 @@ defmodule Game.CombatTest do
     # Create the combat state with fighter's turn first
     combat_state = %CombatState{
       state: :running,
-      players: [fighter, mage],
+      __constants__: %{
+        players: [fighter, mage]
+      },
       queue: [fighter, mage],
       grid: grid,
       current_turn: %{
@@ -127,7 +129,7 @@ defmodule Game.CombatTest do
       original_mage: original_mage,
       test_card: test_card
     } do
-      updated_mage = Enum.find(updated_combat.players, &(&1.id == original_mage.id))
+      updated_mage = Enum.find(updated_combat.queue, &(&1.id == original_mage.id))
       {:damage, damage_amount} = test_card.effect
       assert updated_mage.hp == original_mage.hp - damage_amount
     end
@@ -323,7 +325,7 @@ defmodule Game.CombatTest do
     end
 
     test "dead character is removed from players list", %{result: {:ok, updated_combat}} do
-      assert length(updated_combat.players) == 1
+      assert length(updated_combat.queue) == 1
     end
 
     test "dead character is removed from queue", %{result: {:ok, updated_combat}} do
