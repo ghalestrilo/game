@@ -2,7 +2,7 @@ defmodule Game.Content.BaseDeckCard do
   use Ecto.Schema
   import Ecto.Changeset
 
-  schema "base_deck_card" do
+  schema "base_deck_cards" do
     field :count, :integer
     field :deck_id, :id
     field :card_id, :id
