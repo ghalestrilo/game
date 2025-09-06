@@ -332,4 +332,61 @@ defmodule Game.CombatTest do
       assert length(updated_combat.queue) == 1
     end
   end
+
+  describe "move back and forth between tiles" do
+    setup %{combat_state: combat_state, fighter: fighter} do
+      # Starting position
+      start_position = fighter.position
+      # Adjacent empty tile
+      target_position = {1, 0, -1}
+
+      # First move to the target position
+      {:ok, first_move_result} =
+        Combat.process_action(combat_state, {:move, fighter, target_position})
+
+      # Then move back to the original position
+      result =
+        Combat.process_action(
+          first_move_result,
+          {:move, first_move_result.current_turn.player, start_position}
+        )
+
+      {:ok,
+       result: result,
+       start_position: start_position,
+       target_position: target_position,
+       first_move_result: first_move_result}
+    end
+
+    test "returns ok tuple for both moves", %{result: result} do
+      assert {:ok, _} = result
+    end
+
+    test "first move updates fighter position to target", %{
+      first_move_result: first_move_result,
+      target_position: target_position
+    } do
+      assert first_move_result.current_turn.player.position == target_position
+    end
+
+    test "second move returns fighter to original position", %{
+      result: {:ok, updated_combat},
+      start_position: start_position
+    } do
+      assert updated_combat.current_turn.player.position == start_position
+    end
+
+    test "grid correctly updates after both moves", %{
+      result: {:ok, updated_combat},
+      start_position: start_position,
+      target_position: target_position
+    } do
+      # Check character is at original position
+      {:ok, character_at_start} = Grid.get_object(updated_combat.grid, start_position)
+      assert character_at_start.id == updated_combat.current_turn.player.id
+
+      # Ensure target tile is now empty
+      assert Grid.tile_blocked?(updated_combat.grid, target_position) == false
+    end
+  end
 end

@@ -49,11 +49,12 @@ defmodule Game.Combat do
         {:error, "Tile is blocked"}
 
       true ->
-        result =
-          combat
-          |> CombatState.update_player_position(player, target_position)
-          |> CombatState.refresh_grid()
-          |> CombatState.update_players_and_queue()
+        # First update the player's position property
+        updated_combat = CombatState.update_player_position(combat, player, target_position)
+        # Then properly update the grid with old and new positions
+        updated_combat = CombatState.update_grid_position(updated_combat, player, target_position)
+        # Finally update the queue
+        result = CombatState.update_players_and_queue(updated_combat)
 
         {:ok, result}
     end
@@ -115,7 +116,7 @@ defmodule Game.Combat do
       not TurnQueue.is_players_turn?(combat.queue, player) ->
         {:error, "Not player's turn"}
 
-      not Enum.any?(player.cards.hand, fn c -> c.id == card.id end) ->
+      not Enum.any?(player.cards.hand, fn c -> c.id() == card.id() end) ->
         {:error, "Card not in hand"}
 
       true ->

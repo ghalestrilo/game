@@ -1,12 +1,12 @@
 defmodule Game.CardFlowTest do
   use ExUnit.Case
-  alias Game.{Combat, Character, Card, Grid}
+  alias Game.{Combat, Character, Card, Grid, CombatState}
 
   describe "turn card flow" do
     setup do
       # Create standard cards for testing
-      card1 = %Card{id: "card1", name: "Card 1", cost: 1, effect: {:damage, 5}}
-      card2 = %Card{id: "card2", name: "Card 2", cost: 1, effect: {:heal, 3}}
+      card1 = %Card{id: "card1", name: "Card 1", cost: 1, effects: [{:damage, 5}]}
+      card2 = %Card{id: "card2", name: "Card 2", cost: 1, effects: [{:heal, 3}]}
 
       # Create warrior with cards in all piles
       warrior = %Character{
@@ -74,7 +74,9 @@ defmodule Game.CardFlowTest do
       # Create combat with warrior as current player
       combat = %CombatState{
         state: :running,
-        players: [warrior, mage],
+        __constants__: %{
+          players: [warrior, mage]
+        },
         queue: [warrior, mage],
         grid: grid,
         current_turn: %{
@@ -105,8 +107,8 @@ defmodule Game.CardFlowTest do
       # Skip warrior's turn
       {:ok, updated_combat} = Combat.process_action(combat, {:skip_turn, hd(combat.queue)})
 
-      # Find warrior in updated player list
-      updated_warrior = Enum.find(updated_combat.players, &(&1.id == 1))
+      # Find warrior in updated queue
+      updated_warrior = Enum.find(updated_combat.queue, &(&1.id == 1))
 
       # Warrior's hand should be empty after skipping turn
       assert length(updated_warrior.cards.hand) == 0
@@ -114,8 +116,8 @@ defmodule Game.CardFlowTest do
       # Warrior's discard pile should have hand cards (2) + previous discards (4) = 6 total
       assert length(updated_warrior.cards.discard) == 6
 
-      # Find mage in updated player list (should be current player now)
-      updated_mage = Enum.find(updated_combat.players, &(&1.id == 2))
+      # Find mage in updated queue (should be current player now)
+      updated_mage = Enum.find(updated_combat.queue, &(&1.id == 2))
       [current_player | _] = updated_combat.queue
       assert current_player.id == updated_mage.id
 
@@ -144,8 +146,8 @@ defmodule Game.CardFlowTest do
       {:ok, updated_combat} =
         Combat.process_action(card_selected_combat, {:play_card, {1, 0, -1}})
 
-      # Find warrior in updated player list
-      updated_warrior = Enum.find(updated_combat.players, &(&1.id == 1))
+      # Find warrior in updated queue
+      updated_warrior = Enum.find(updated_combat.queue, &(&1.id == 1))
 
       # Warrior's hand should be empty after playing card
       assert length(updated_warrior.cards.hand) == 0
@@ -154,8 +156,8 @@ defmodule Game.CardFlowTest do
       # 4 original + 2 from hand
       assert length(updated_warrior.cards.discard) == 6
 
-      # Find mage in updated player list (should be current player now)
-      updated_mage = Enum.find(updated_combat.players, &(&1.id == 2))
+      # Find mage in updated queue (should be current player now)
+      updated_mage = Enum.find(updated_combat.queue, &(&1.id == 2))
       [current_player | _] = updated_combat.queue
       assert current_player.id == updated_mage.id
 
@@ -175,11 +177,13 @@ defmodule Game.CardFlowTest do
       mage_with_few_cards = %{
         mage
         | cards: %{
-            draw: [%Card{id: "single_draw", name: "Single Draw", cost: 1, effect: {:damage, 1}}],
+            draw: [
+              %Card{id: "single_draw", name: "Single Draw", cost: 1, effects: [{:damage, 1}]}
+            ],
             hand: [],
             discard: [
-              %Card{id: "single_discard1", name: "Discard 1", cost: 1, effect: {:heal, 1}},
-              %Card{id: "single_discard2", name: "Discard 2", cost: 1, effect: {:heal, 1}}
+              %Card{id: "single_discard1", name: "Discard 1", cost: 1, effects: [{:heal, 1}]},
+              %Card{id: "single_discard2", name: "Discard 2", cost: 1, effects: [{:heal, 1}]}
             ]
           }
       }

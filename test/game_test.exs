@@ -21,7 +21,7 @@ defmodule GameTest do
                 id: 1,
                 name: "Strike",
                 cost: 1,
-                effect: {:damage, 5},
+                effects: [{:damage, 5}],
                 range: 1,
                 targeting: :single
               },
@@ -29,7 +29,7 @@ defmodule GameTest do
                 id: 2,
                 name: "Power Strike",
                 cost: 3,
-                effect: {:damage, 10},
+                effects: [{:damage, 10}],
                 range: 1,
                 targeting: :single
               }
@@ -47,7 +47,7 @@ defmodule GameTest do
                 id: 3,
                 name: "Fireball",
                 cost: 2,
-                effect: {:damage, 8},
+                effects: [{:damage, 8}],
                 range: 3,
                 targeting: :single
               },
@@ -55,7 +55,7 @@ defmodule GameTest do
                 id: 4,
                 name: "Heal",
                 cost: 2,
-                effect: {:heal, 5},
+                effects: [{:heal, 5}],
                 range: 1,
                 targeting: :single
               }
@@ -204,7 +204,7 @@ defmodule GameTest do
         id: 1,
         name: "Strike",
         cost: 1,
-        effect: {:damage, 5},
+        effects: [{:damage, 5}],
         range: 1,
         targeting: :single
       }

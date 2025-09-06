@@ -1,15 +1,15 @@
 defmodule Game.TurnTransitionsTest do
   use ExUnit.Case
-  alias Game.{Combat, Character, Fixtures}
+  alias Game.{Combat, Character, Fixtures, CombatState}
 
   setup do
     # Set up cards for testing
-    card1 = %Game.Card{id: "card1", name: "Card 1", cost: 1, effect: {:damage, 1}}
-    card2 = %Game.Card{id: "card2", name: "Card 2", cost: 1, effect: {:damage, 2}}
-    card3 = %Game.Card{id: "card3", name: "Card 3", cost: 1, effect: {:damage, 3}}
-    card4 = %Game.Card{id: "card4", name: "Card 4", cost: 1, effect: {:damage, 4}}
-    card5 = %Game.Card{id: "card5", name: "Card 5", cost: 1, effect: {:damage, 5}}
-    card6 = %Game.Card{id: "card6", name: "Card 6", cost: 1, effect: {:damage, 6}}
+    card1 = %Game.Card{id: "card1", name: "Card 1", cost: 1, effects: [{:damage, 1}]}
+    card2 = %Game.Card{id: "card2", name: "Card 2", cost: 1, effects: [{:damage, 2}]}
+    card3 = %Game.Card{id: "card3", name: "Card 3", cost: 1, effects: [{:damage, 3}]}
+    card4 = %Game.Card{id: "card4", name: "Card 4", cost: 1, effects: [{:damage, 4}]}
+    card5 = %Game.Card{id: "card5", name: "Card 5", cost: 1, effects: [{:damage, 5}]}
+    card6 = %Game.Card{id: "card6", name: "Card 6", cost: 1, effects: [{:damage, 6}]}
 
     # Get base fixtures
     warrior = Fixtures.warrior()
@@ -37,10 +37,11 @@ defmodule Game.TurnTransitionsTest do
     }
 
     # Update combat state with our custom characters
-    updated_combat = %{combat |
-      players: [warrior_with_cards, mage_with_cards],
-      queue: [warrior_with_cards, mage_with_cards],
-      current_turn: %{combat.current_turn | player: warrior_with_cards}
+    updated_combat = %{
+      combat
+      | players: [warrior_with_cards, mage_with_cards],
+        queue: [warrior_with_cards, mage_with_cards],
+        current_turn: %{combat.current_turn | player: warrior_with_cards}
     }
 
     %{
@@ -136,9 +137,10 @@ defmodule Game.TurnTransitionsTest do
       }
 
       # Update combat
-      combat_with_mage = %{combat |
-        players: [warrior, mage_with_hand],
-        queue: [warrior, mage_with_hand]
+      combat_with_mage = %{
+        combat
+        | players: [warrior, mage_with_hand],
+          queue: [warrior, mage_with_hand]
       }
 
       # Skip warrior's turn
@@ -193,9 +195,10 @@ defmodule Game.TurnTransitionsTest do
       }
 
       # Update combat
-      combat_with_mage = %{combat |
-        players: [warrior, mage_with_low_draw],
-        queue: [warrior, mage_with_low_draw]
+      combat_with_mage = %{
+        combat
+        | players: [warrior, mage_with_low_draw],
+          queue: [warrior, mage_with_low_draw]
       }
 
       # Skip warrior's turn

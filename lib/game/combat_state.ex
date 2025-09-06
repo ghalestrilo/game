@@ -74,6 +74,8 @@ defmodule Game.CombatState do
         player,
         target_position
       ) do
+    # We need to use the player's original position (before it was updated)
+    # as the source position, and the target_position as the destination
     updated_grid = Grid.update_position(grid, moved_player, player.position, target_position)
     %{combat | grid: updated_grid}
   end

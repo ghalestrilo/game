@@ -1,16 +1,16 @@
 defmodule Game.CardManagementTest do
   use ExUnit.Case
-  alias Game.{Character, Combat}
+  alias Game.{Character, Combat, CombatState}
 
   describe "character card management" do
     setup do
       # Create a character with 3 cards in draw, 2 in hand, 1 in discard
-      card1 = %Game.Card{id: "card1", name: "Card 1", cost: 1, effect: {:damage, 1}}
-      card2 = %Game.Card{id: "card2", name: "Card 2", cost: 1, effect: {:damage, 2}}
-      card3 = %Game.Card{id: "card3", name: "Card 3", cost: 1, effect: {:damage, 3}}
-      card4 = %Game.Card{id: "card4", name: "Card 4", cost: 1, effect: {:damage, 4}}
-      card5 = %Game.Card{id: "card5", name: "Card 5", cost: 1, effect: {:damage, 5}}
-      card6 = %Game.Card{id: "card6", name: "Card 6", cost: 1, effect: {:damage, 6}}
+      card1 = %Game.Card{id: "card1", name: "Card 1", cost: 1, effects: [{:damage, 1}]}
+      card2 = %Game.Card{id: "card2", name: "Card 2", cost: 1, effects: [{:damage, 2}]}
+      card3 = %Game.Card{id: "card3", name: "Card 3", cost: 1, effects: [{:damage, 3}]}
+      card4 = %Game.Card{id: "card4", name: "Card 4", cost: 1, effects: [{:damage, 4}]}
+      card5 = %Game.Card{id: "card5", name: "Card 5", cost: 1, effects: [{:damage, 5}]}
+      card6 = %Game.Card{id: "card6", name: "Card 6", cost: 1, effects: [{:damage, 6}]}
 
       character = %Character{
         id: 1,
@@ -184,9 +184,9 @@ defmodule Game.CardManagementTest do
   describe "combat card management" do
     setup do
       # Create cards
-      card1 = %Game.Card{id: "card1", name: "Card 1", cost: 1, effect: {:damage, 1}}
-      card2 = %Game.Card{id: "card2", name: "Card 2", cost: 1, effect: {:damage, 2}}
-      card3 = %Game.Card{id: "card3", name: "Card 3", cost: 1, effect: {:heal, 3}}
+      card1 = %Game.Card{id: "card1", name: "Card 1", cost: 1, effects: [{:damage, 1}]}
+      card2 = %Game.Card{id: "card2", name: "Card 2", cost: 1, effects: [{:damage, 2}]}
+      card3 = %Game.Card{id: "card3", name: "Card 3", cost: 1, effects: [{:heal, 3}]}
 
       # Create player with cards
       player = %Character{
@@ -233,7 +233,9 @@ defmodule Game.CardManagementTest do
       # Create combat state
       combat = %CombatState{
         state: :running,
-        players: [player, target],
+        __constants__: %{
+          players: [player, target]
+        },
         queue: [player, target],
         grid: grid,
         current_turn: %{
@@ -292,7 +294,7 @@ defmodule Game.CardManagementTest do
                Combat.process_action(card_selected_combat, {:play_card, target.position})
 
       # Find updated player
-      updated_player = Enum.find(updated_combat.players, &(&1.id == player.id))
+      updated_player = Enum.find(updated_combat.queue, &(&1.id == player.id))
 
       # Card should no longer be in hand with the same ID
       refute Enum.any?(updated_player.cards.hand, fn c -> c.id == card1_with_range.id end)
@@ -333,7 +335,7 @@ defmodule Game.CardManagementTest do
       updated_combat = Combat.draw_cards_for_player(combat, player, 1)
 
       # Find updated player
-      updated_player = Enum.find(updated_combat.players, &(&1.id == player.id))
+      updated_player = Enum.find(updated_combat.queue, &(&1.id == player.id))
 
       # Player should have drawn a card from shuffled discard
       assert length(updated_player.cards.hand) == 1
@@ -375,7 +377,7 @@ defmodule Game.CardManagementTest do
       updated_combat = Combat.draw_cards_for_player(modified_combat, modified_player, 5)
 
       # Find updated player
-      updated_player = Enum.find(updated_combat.players, &(&1.id == player.id))
+      updated_player = Enum.find(updated_combat.queue, &(&1.id == player.id))
 
       # Player should have drawn all available cards (3 total)
       assert length(updated_player.cards.hand) == 3
