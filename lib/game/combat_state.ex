@@ -83,7 +83,12 @@ defmodule Game.CombatState do
   def refresh_grid(%{current_turn: %{player: current_player}, grid: grid, queue: queue} = combat) do
     updated_grid =
       Enum.reduce([current_player] ++ queue, grid, fn player, grid ->
-        Grid.update_position(grid, player, player.position, player.position)
+        # Check if the position exists in the grid before updating
+        if Map.has_key?(grid.tiles, player.position) do
+          Grid.update_character(grid, player)
+        else
+          grid
+        end
       end)
 
     %{combat | grid: updated_grid}

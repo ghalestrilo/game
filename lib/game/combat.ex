@@ -64,7 +64,7 @@ defmodule Game.Combat do
   def process_action(
         %CombatState{
           state: :card_selected,
-          queue: [player | _] = queue,
+          queue: queue,
           grid: grid,
           current_turn: %{
             player: player,
@@ -94,8 +94,11 @@ defmodule Game.Combat do
             {:error, "Out of range"}
 
           target != nil ->
+            # First set state back to :running so we can chain card plays
+            combat_with_running_state = %{combat | state: :running}
+
             result =
-              combat
+              combat_with_running_state
               |> CombatState.apply_card_effect_to_target(target, card)
               |> CombatState.check_target_death(target)
               |> CombatState.refresh_grid()
@@ -116,7 +119,7 @@ defmodule Game.Combat do
       not TurnQueue.is_players_turn?(combat.queue, player) ->
         {:error, "Not player's turn"}
 
-      not Enum.any?(player.cards.hand, fn c -> c.id() == card.id() end) ->
+      not Enum.any?(player.cards.hand, fn c -> c.id == card.id end) ->
         {:error, "Card not in hand"}
 
       true ->
