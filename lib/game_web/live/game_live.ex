@@ -98,7 +98,6 @@ defmodule GameWeb.GameLive do
 
     # Set the game state in the GenServer
     :ok = GenServer.call(game_pid, {:set_state, game_state})
-    dbg(Jason.encode(game_state))
     {game_pid, game_state}
   end
 

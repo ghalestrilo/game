@@ -169,4 +169,16 @@
       <% end %>
     </div>
   <% end %>
+
+  <div class="">
+    <details>
+      <summary>Current Encoded Game State</summary>
+      <p>{Jason.encode!(@game_state)}</p>
+    </details>
+
+    <details>
+      <summary>Current Game State</summary>
+      <p>{Jason.encode!(@game_state)}</p>
+    </details>
+  </div>
 </div>
