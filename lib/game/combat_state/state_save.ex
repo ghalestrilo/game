@@ -128,13 +128,18 @@ defmodule Game.CombatState.StateSave do
   """
   @spec decode(String.t()) :: {:ok, CombatState.t()} | {:error, String.t()}
   def decode(encoded_string) when is_binary(encoded_string) do
+    # Log the length of the encoded string for debugging
+    IO.puts("Encoded string length: #{String.length(encoded_string)}")
+
     with {:ok, encrypted_data} <- decode_base64(encoded_string),
          {:ok, json_string} <- decrypt(encrypted_data, @secret_key_base),
          {:ok, decoded_map} <- decode_json(json_string),
          {:ok, combat_state} <- build_combat_state(decoded_map) do
       {:ok, combat_state}
     else
-      {:error, reason} -> {:error, reason}
+      {:error, reason} ->
+        IO.inspect(reason, label: "Decode error")
+        {:error, reason}
     end
   end
 
@@ -142,18 +147,31 @@ defmodule Game.CombatState.StateSave do
 
   # Decrypt data that was encrypted with the encrypt function
   defp decrypt(data, key) when byte_size(data) > @iv_length do
-    # Extract the IV and the encrypted data
-    <<_iv::binary-size(@iv_length), encrypted_data::binary>> = data
+    try do
+      # Extract the IV and the encrypted data
+      <<_iv::binary-size(@iv_length), encrypted_data::binary>> = data
 
-    # Convert to binary lists for processing
-    data_bytes = :erlang.binary_to_list(encrypted_data)
-    key_bytes = :erlang.binary_to_list(key)
+      # Log the sizes for debugging
+      IO.puts("Encrypted data size: #{byte_size(encrypted_data)} bytes")
 
-    # XOR decrypt (same operation as encrypt)
-    key_length = length(key_bytes)
-    decrypted = encrypt_bytes(data_bytes, key_bytes, key_length, 0, [])
+      # Convert to binary lists for processing
+      data_bytes = :erlang.binary_to_list(encrypted_data)
+      key_bytes = :erlang.binary_to_list(key)
 
-    {:ok, :erlang.list_to_binary(decrypted)}
+      # XOR decrypt (same operation as encrypt)
+      key_length = length(key_bytes)
+      decrypted = encrypt_bytes(data_bytes, key_bytes, key_length, 0, [])
+
+      # Convert back to binary
+      decrypted_binary = :erlang.list_to_binary(decrypted)
+      IO.puts("Decrypted data size: #{byte_size(decrypted_binary)} bytes")
+
+      {:ok, decrypted_binary}
+    rescue
+      e ->
+        IO.puts("Exception during decryption: #{inspect(e)}")
+        {:error, "Decryption error: #{inspect(e)}"}
+    end
   end
 
   defp decrypt(_data, _key) do
@@ -162,52 +180,116 @@ defmodule Game.CombatState.StateSave do
 
   defp decode_base64(encoded_string) do
     try do
-      {:ok, Base.decode64!(encoded_string)}
+      # Check if string needs padding
+      needs_padding = rem(byte_size(encoded_string), 4)
+
+      if needs_padding > 0 do
+        IO.puts("Base64 string needs padding (remainder: #{needs_padding})")
+      end
+
+      case Base.decode64(encoded_string) do
+        {:ok, decoded} ->
+          IO.puts("Base64 decoded successfully, size: #{byte_size(decoded)} bytes")
+          {:ok, decoded}
+
+        :error ->
+          IO.puts("Adding padding to Base64 string")
+          # Try with padding added if needed
+          padded =
+            case rem(byte_size(encoded_string), 4) do
+              2 -> encoded_string <> "=="
+              3 -> encoded_string <> "="
+              _ -> encoded_string
+            end
+
+          case Base.decode64(padded) do
+            {:ok, decoded} ->
+              IO.puts("Base64 decoded with padding, size: #{byte_size(decoded)} bytes")
+              {:ok, decoded}
+
+            :error ->
+              # Try to identify where the Base64 might be invalid
+              # Show a snippet of the encoded string
+              snippet =
+                if byte_size(encoded_string) > 100 do
+                  "#{String.slice(encoded_string, 0, 50)}...#{String.slice(encoded_string, -50..-1)}"
+                else
+                  encoded_string
+                end
+
+              IO.puts("Invalid Base64 snippet: #{snippet}")
+              {:error, "Invalid Base64 encoding"}
+          end
+      end
     rescue
-      _ -> {:error, "Invalid Base64 encoding"}
+      e ->
+        IO.puts("Exception during Base64 decoding: #{inspect(e)}")
+        {:error, "Base64 decoding error: #{inspect(e)}"}
     end
   end
 
   defp decode_json(json_string) do
+    # Log the length of the JSON string for debugging
+    IO.puts("JSON string length: #{String.length(json_string)}")
+
+    # Check if the string appears to be complete JSON
+    if String.ends_with?(json_string, "}") do
+      IO.puts("JSON string appears to end properly with '}'")
+    else
+      IO.puts("WARNING: JSON string does not end with '}', it might be truncated")
+      # Print the last 100 characters to see where it cuts off
+      IO.puts("Last 100 chars: #{String.slice(json_string, -100..-1)}")
+    end
+
     case Jason.decode(json_string) do
-      {:ok, decoded} -> {:ok, decoded}
-      {:error, _} -> {:error, "Invalid JSON format"}
+      {:ok, decoded} ->
+        {:ok, decoded}
+
+      {:error, %Jason.DecodeError{position: pos} = error} ->
+        IO.inspect(error, label: "JSON decode error")
+
+        # Print context around the error position
+        start_pos = max(0, pos - 50)
+        end_pos = min(String.length(json_string), pos + 50)
+        context = String.slice(json_string, start_pos, end_pos - start_pos)
+        IO.puts("Error context (around position #{pos}):\n#{context}")
+
+        # Show where exactly the error is
+        pointer = String.duplicate(" ", pos - start_pos) <> "^"
+        IO.puts(pointer)
+
+        {:error, "Invalid JSON format: #{inspect(error)}"}
     end
   end
 
   defp build_combat_state(map) do
     try do
-      # Check if we're dealing with a valid structure
-      if not is_map(map) or not Map.has_key?(map, "state") do
-        {:error, "Invalid combat state format"}
-      else
-        # Convert string keys to atoms for struct creation and handle nested structures
-        combat_state = atomize_keys(map)
+      # Convert string keys to atoms for struct creation and handle nested structures
+      combat_state = atomize_keys(map)
 
-        # Specially handle the grid tiles with tuple keys
-        combat_state =
-          if combat_state[:grid] && combat_state[:grid][:tiles] do
-            grid_tiles = combat_state[:grid][:tiles]
+      # Specially handle the grid tiles with tuple keys
+      combat_state =
+        if combat_state[:grid] && combat_state[:grid][:tiles] do
+          grid_tiles = combat_state[:grid][:tiles]
 
-            updated_tiles =
-              Enum.map(grid_tiles, fn {key, value} ->
-                if is_binary(key) do
-                  # Convert JSON array string back to tuple
-                  {:ok, [q, r, s]} = Jason.decode(key)
-                  {{q, r, s}, value}
-                else
-                  {key, value}
-                end
-              end)
-              |> Enum.into(%{})
+          updated_tiles =
+            Enum.map(grid_tiles, fn {key, value} ->
+              if is_binary(key) do
+                # Convert JSON array string back to tuple
+                {:ok, [q, r, s]} = Jason.decode(key)
+                {{q, r, s}, value}
+              else
+                {key, value}
+              end
+            end)
+            |> Enum.into(%{})
 
-            put_in(combat_state, [:grid, :tiles], updated_tiles)
-          else
-            combat_state
-          end
+          put_in(combat_state, [:grid, :tiles], updated_tiles)
+        else
+          combat_state
+        end
 
-        {:ok, struct(CombatState, combat_state)}
-      end
+      {:ok, struct(CombatState, combat_state)}
     rescue
       e -> {:error, "Failed to build CombatState struct: #{inspect(e)}"}
     end
@@ -236,6 +318,9 @@ defmodule Game.CombatState.StateSave do
 
       {"starting_position", [q, r, s]} when is_integer(q) and is_integer(r) and is_integer(s) ->
         {:starting_position, {q, r, s}}
+
+      {"state", state} when is_atom(state) ->
+        {:state, state}
 
       {key, value} when is_map(value) ->
         {String.to_atom(key), atomize_keys(value)}
