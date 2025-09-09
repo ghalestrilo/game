@@ -213,7 +213,7 @@
   <div :if={@game_state != nil} class="">
     <details>
       <summary>Current Encoded Game State</summary>
-      <p>{Game.CombatState.StateSave.encode(@game_state.combat)}</p>
+      <p class="break-words">{Game.CombatState.StateSave.encode(@game_state.combat)}</p>
     </details>
 
     <details>
