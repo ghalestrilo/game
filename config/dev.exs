@@ -21,7 +21,7 @@ config :game, Game.Repo,
 config :game, GameWeb.Endpoint,
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   # http: [ip: {127, 0, 0, 1}, port: 4000],
-  http: [ip: {0, 0, 0, 0}, port: 4002],
+  http: [ip: {0, 0, 0, 0}, port: 4003],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,

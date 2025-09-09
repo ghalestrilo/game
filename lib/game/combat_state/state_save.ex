@@ -16,11 +16,6 @@ defmodule Game.CombatState.StateSave do
   @iv_length 16
 
   # Define implementations for the Jason.Encoder protocol for our structs
-  require Protocol
-  Protocol.derive(Jason.Encoder, Game.CombatState)
-  Protocol.derive(Jason.Encoder, Game.Character)
-  Protocol.derive(Jason.Encoder, Game.Card)
-  Protocol.derive(Jason.Encoder, Game.Grid)
 
   # Define a custom encoder for tuples (used in positions)
   defimpl Jason.Encoder, for: Tuple do

@@ -352,4 +352,28 @@ defmodule Game.CombatState do
     updated_player = %{player | ap: current_player_initial_data.ap}
     %{combat | current_turn: %{combat.current_turn | player: updated_player}}
   end
+
+  defimpl Jason.Encoder, for: Game.CombatState do
+    def encode(combat_state, opts) do
+      # Convert the struct to a map
+      combat_map = Map.from_struct(combat_state)
+
+      # Format the starting_position in current_turn
+      current_turn =
+        if combat_map.current_turn do
+          Map.update!(combat_map.current_turn, :starting_position, fn
+            tuple when is_tuple(tuple) -> Tuple.to_list(tuple)
+            other -> other
+          end)
+        else
+          combat_map.current_turn
+        end
+
+      # Put the updated current_turn back
+      combat_map = Map.put(combat_map, :current_turn, current_turn)
+
+      # Encode the updated map
+      Jason.Encode.map(combat_map, opts)
+    end
+  end
 end
