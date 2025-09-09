@@ -36,4 +36,50 @@ defmodule Game.Card do
           cost: integer(),
           effects: list(card_effect())
         }
+
+  defimpl Jason.Encoder, for: Game.Card do
+    def encode(card, opts) do
+      card_map = Map.from_struct(card)
+
+      # Convert effect tuples to lists for proper JSON encoding
+      updated_effects =
+        case card_map.effects do
+          effects when is_list(effects) ->
+            Enum.map(effects, fn
+              tuple when is_tuple(tuple) -> Tuple.to_list(tuple)
+              other -> other
+            end)
+
+          effect when is_tuple(effect) ->
+            Tuple.to_list(effect)
+
+          other ->
+            other
+        end
+
+      # Also handle conditional_effects if present
+      updated_conditional_effects =
+        case card_map.conditional_effects do
+          effects when is_list(effects) ->
+            Enum.map(effects, fn
+              tuple when is_tuple(tuple) -> Tuple.to_list(tuple)
+              other -> other
+            end)
+
+          effect when is_tuple(effect) ->
+            Tuple.to_list(effect)
+
+          other ->
+            other
+        end
+
+      card_map = %{
+        card_map
+        | effects: updated_effects,
+          conditional_effects: updated_conditional_effects
+      }
+
+      Jason.Encode.map(card_map, opts)
+    end
+  end
 end

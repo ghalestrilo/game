@@ -122,4 +122,16 @@ defmodule Game.Grid do
       |> Enum.sort_by(fn {q, _r, _s, _tile} -> q end)
     end)
   end
+
+  defimpl Jason.Encoder, for: Game.Grid do
+    def encode(%{tiles: tiles}, opts) do
+      tiles_with_string_keys =
+        Enum.map(tiles, fn {coords, tile} ->
+          {Enum.join(Tuple.to_list(coords), ","), tile}
+        end)
+        |> Enum.into(%{})
+
+      Jason.Encode.map(%{tiles: tiles_with_string_keys}, opts)
+    end
+  end
 end

@@ -157,6 +157,24 @@ defmodule Game.Character do
     %{character | ap: max(0, character.ap - cost)}
   end
 
+  defimpl Jason.Encoder, for: Game.Character do
+    def encode(character, opts) do
+      # Convert position tuple to list representation for JSON encoding
+      character_map = Map.from_struct(character)
+
+      position_list =
+        case character_map.position do
+          tuple when is_tuple(tuple) -> Tuple.to_list(tuple)
+          other -> other
+        end
+
+      # Create a new map with list position
+      character_map = Map.put(character_map, :position, position_list)
+
+      Jason.Encode.map(character_map, opts)
+    end
+  end
+
   @doc """
   TODO: These methods (get_max_ap and get_max_hp) should be replaced
   once we have logic to store the characters' max_hp and max_hp somewhere safe
