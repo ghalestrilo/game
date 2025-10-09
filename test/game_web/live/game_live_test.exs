@@ -12,12 +12,15 @@ defmodule GameWeb.GameLiveTest do
         {{0, 1, 1}, :mage, 2}
       ]
 
-      # Serialize the initial state into a URI-safe string
+      # Serialize the initial state into a simplified URI format
       serialized_state =
         initial_state
-        |> :erlang.term_to_binary()
-        |> Base.url_encode64(padding: false)
-        |> dbg()
+        |> Enum.map(fn {{q, r, s}, class, id} ->
+          "#{q}_#{r}_#{s}-#{class}-#{id}"
+        end)
+        |> Enum.join(",")
+        |> then(&"[#{&1}]")
+        |> IO.inspect()
 
       # Construct the URI with the `initial_state` query parameter
       uri = ~p"/game?initial_state=#{serialized_state}"

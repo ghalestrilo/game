@@ -38,14 +38,28 @@ defmodule GameWeb.GameLive do
 
   defp decode_initial_state(encoded_state) do
     encoded_state
-    |> Base.url_decode64(padding: false)
-    |> case do
-      {:ok, binary} ->
-        {:ok, :erlang.binary_to_term(binary)}
+    |> String.trim_leading("[")
+    |> String.trim_trailing("]")
+    |> String.split(",")
+    |> Enum.map(fn entry ->
+      case String.split(entry, ":") do
+        [position, class, id] ->
+          {parse_position(position), String.to_atom(class), String.to_integer(id)}
 
-      :error ->
-        {:error, "Invalid encoding"}
-    end
+        _ ->
+          raise "Invalid format for initial_state entry: #{entry}"
+      end
+    end)
+    |> then(&{:ok, &1})
+  rescue
+    _ -> {:error, "Invalid initial_state format"}
+  end
+
+  defp parse_position(position) do
+    position
+    |> String.split("_")
+    |> Enum.map(&String.to_integer/1)
+    |> List.to_tuple()
   end
 
   defp initialize_game_from_state(initial_state) do
@@ -62,7 +76,7 @@ defmodule GameWeb.GameLive do
     positions = Enum.map(initial_state, fn {{q, r, s}, _class, _id} -> {q, r, s} end)
 
     # Log characters for debugging
-    IO.inspect(characters, label: "Loaded Characters")
+    # IO.inspect(characters, label: "Loaded Characters")
 
     # Create a grid and update it with the characters
     # Calculate the grid radius dynamically based on the positions
@@ -219,7 +233,7 @@ defmodule GameWeb.GameLive do
          {:ok, combat} <- process_game_action(socket, {:play_card, position}) do
       # Get next player for debugging
       [next_player | _] = combat.queue
-      IO.inspect(next_player.cards, label: "AFTER Play Card - Next Player Cards")
+      # IO.inspect(next_player.cards, label: "AFTER Play Card - Next Player Cards")
 
       action =
         "#{socket.assigns.game_state.combat.current_turn.player.name} played card: #{card.name}"
@@ -281,12 +295,12 @@ defmodule GameWeb.GameLive do
         } = socket
       ) do
     # Print current player's card counts for debugging
-    IO.inspect(player.cards, label: "BEFORE Skip Turn - Player Cards")
+    # IO.inspect(player.cards, label: "BEFORE Skip Turn - Player Cards")
 
     with {:ok, combat} <- process_game_action(socket, {:skip_turn, player}) do
       # Get next player for debugging
       [next_player | _] = combat.queue
-      IO.inspect(next_player.cards, label: "AFTER Skip Turn - Next Player Cards")
+      # IO.inspect(next_player.cards, label: "AFTER Skip Turn - Next Player Cards")
 
       action = "#{player.name} skipped their turn"
       updated_log = [action | socket.assigns.action_log]
