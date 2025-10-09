@@ -16,7 +16,7 @@ defmodule GameWeb.GameLiveTest do
       serialized_state =
         initial_state
         |> Enum.map(fn {{q, r, s}, class, id} ->
-          "#{q}_#{r}_#{s}-#{class}-#{id}"
+          "#{q}_#{r}_#{s}:#{class}:#{id}"
         end)
         |> Enum.join(",")
         |> then(&"[#{&1}]")
