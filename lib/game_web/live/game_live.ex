@@ -18,8 +18,89 @@ defmodule GameWeb.GameLive do
   end
 
   @impl true
-  def handle_params(_params, _url, socket) do
-    {:noreply, socket}
+  def handle_params(params, _url, socket) do
+    if params["initial_state"] do
+      case decode_initial_state(params["initial_state"]) do
+        {:ok, initial_state} ->
+          {game_pid, game_state} = initialize_game_from_state(initial_state)
+          {:noreply, assign(socket, game_pid: game_pid, game_state: game_state)}
+
+        {:error, reason} ->
+          {:noreply,
+           socket
+           |> put_flash(:error, "Failed to load initial state: #{reason}")
+           |> assign(game_pid: nil, game_state: nil)}
+      end
+    else
+      {:noreply, socket}
+    end
+  end
+
+  defp decode_initial_state(encoded_state) do
+    encoded_state
+    |> Base.url_decode64(padding: false)
+    |> case do
+      {:ok, binary} ->
+        {:ok, :erlang.binary_to_term(binary)}
+
+      :error ->
+        {:error, "Invalid encoding"}
+    end
+  end
+
+  defp initialize_game_from_state(initial_state) do
+    {:ok, game_pid} = Game.start_link()
+
+    # Create characters from the initial state
+    characters =
+      Enum.map(initial_state, fn {{q, r, s}, class, id} ->
+        character = Fixtures.character(class, id)
+        %{character | position: {q, r, s}}
+      end)
+
+    # Extract all positions from the initial state
+    positions = Enum.map(initial_state, fn {{q, r, s}, _class, _id} -> {q, r, s} end)
+
+    # Log characters for debugging
+    IO.inspect(characters, label: "Loaded Characters")
+
+    # Create a grid and update it with the characters
+    # Calculate the grid radius dynamically based on the positions
+    max_radius = positions |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end) |> Enum.max()
+    grid = Game.Grid.new({max_radius, max_radius, max_radius})
+
+    # Ensure all positions in the initial_state are included in the grid
+    grid = Enum.reduce(positions, grid, fn position, acc ->
+      Map.update!(acc, :tiles, fn tiles ->
+        Map.put_new(tiles, position, %{terrain: :plain, occupied_by: nil})
+      end)
+    end)
+    # Update the grid with the characters
+    grid = Enum.reduce(characters, grid, &Game.Grid.update_character(&2, &1))
+
+    # Create combat struct
+    combat = %Game.CombatState{
+      state: :running,
+      __constants__: %{players: characters},
+      queue: characters,
+      grid: grid,
+      current_turn: %{
+        starting_position: hd(characters).position,
+        player: hd(characters),
+        card: nil
+      }
+    }
+
+    # Create the game state
+    game_state = %{
+      grid: grid,
+      characters: characters,
+      combat: combat
+    }
+
+    # Set the game state in the GenServer
+    :ok = GenServer.call(game_pid, {:set_state, game_state})
+    {game_pid, game_state}
   end
 
   @impl true

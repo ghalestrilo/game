@@ -43,11 +43,11 @@ defmodule Game.Grid do
       for q <- -x..x,
           r <- -y..y,
           s <- -z..z,
-          q + r + s == 0,
-          abs(q) <= x and abs(r) <= y and abs(s) <= z do
+          q + r + s == 0 do
         {{q, r, s}, %{terrain: :plain, occupied_by: nil}}
       end
       |> Map.new()
+      |> tap(fn tiles -> IO.inspect(tiles, label: "Generated Tiles") end)
 
     %Grid{tiles: tiles}
   end

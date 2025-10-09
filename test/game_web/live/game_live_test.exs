@@ -17,6 +17,7 @@ defmodule GameWeb.GameLiveTest do
         initial_state
         |> :erlang.term_to_binary()
         |> Base.url_encode64(padding: false)
+        |> dbg()
 
       # Construct the URI with the `initial_state` query parameter
       uri = ~p"/game?initial_state=#{serialized_state}"
@@ -40,6 +41,7 @@ defmodule GameWeb.GameLiveTest do
       {:ok, view, _html} = live(conn, ~p"/game")
 
       # Verify initial state has warrior as current player with 5 cards
+      IO.puts("Rendered HTML: #{view |> element(".card-status-panel") |> render()}")
       assert view |> element(".card-status-panel") |> render() =~ "Warrior"
       assert view |> element(".card-status-panel") |> render() =~ "Hand: 5 cards"
 
@@ -48,6 +50,11 @@ defmodule GameWeb.GameLiveTest do
       pick_first_card(view)
       click_warrior(view)
       assert view |> render() =~ "HP: 15" # (new hp)
+
+      # Skip Warrior's turn
+      view
+      |> element("button[phx-click=\"skip_turn\"]")
+      |> render_click()
 
       # Verify now mage is the current player
       assert view |> element(".card-status-panel") |> render() =~ "Mage"
@@ -60,6 +67,11 @@ defmodule GameWeb.GameLiveTest do
       # Have mage attack himself
       pick_first_card(view)
       click_warrior(view)
+
+      # Skip Warrior's turn
+      view
+      |> element("button[phx-click=\"skip_turn\"]")
+      |> render_click()
 
       # Verify warrior is now current player
       assert view |> element(".card-status-panel") |> render() =~ "Warrior"

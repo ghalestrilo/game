@@ -1,6 +1,43 @@
 defmodule Game.Fixtures do
   alias Game.{Character, Card, Grid, Combat, CombatState}
 
+  # Dynamic character creation
+  def character(:warrior, id) do
+    %Character{
+      id: id,
+      name: "Warrior",
+      class: :fighter,
+      ap: 3,
+      hp: 20,
+      position: {0, 0, 0},
+      movement_range: 2,
+      team: :team1,
+      cards: %{
+        draw: Enum.map(1..10, fn idx -> %{attack_card() | id: idx} end),
+        hand: [],
+        discard: []
+      }
+    }
+  end
+
+  def character(:mage, id) do
+    %Character{
+      id: id,
+      name: "Mage",
+      class: :mage,
+      ap: 3,
+      hp: 15,
+      position: {2, 0, -2},
+      movement_range: 1,
+      team: :team2,
+      cards: %{
+        draw: Enum.map(1..10, fn idx -> %{fireball_card() | id: idx} end),
+        hand: [],
+        discard: []
+      }
+    }
+  end
+
   def warrior do
     %Character{
       id: 1,
