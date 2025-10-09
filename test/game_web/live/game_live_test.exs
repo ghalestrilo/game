@@ -5,6 +5,33 @@ defmodule GameWeb.GameLiveTest do
 
 
   describe "Game state initialization from query parameter" do
+    test "Grid cell count for radius=2 with sideways movement", %{conn: conn} do
+      # Define the initial state with sideways movement
+      initial_state = [
+        {{0, 0, 0}, :warrior, 1},
+        {{-1, 0, 1}, :mage, 2}
+      ]
+
+      # Serialize the initial state into a simplified URI format
+      serialized_state =
+        initial_state
+        |> Enum.map(fn {{q, r, s}, class, id} ->
+          "#{q}_#{r}_#{s}:#{class}:#{id}"
+        end)
+        |> Enum.join(",")
+        |> then(&"[#{&1}]")
+
+      # Construct the URI with the `initial_state` query parameter
+      uri = ~p"/game?initial_state=#{serialized_state}"
+
+      # Load the game page with the query parameter
+      {:ok, view, _html} = live(conn, uri)
+
+      # Verify the grid contains 19 cells (radius=2)
+      rendered_grid = view |> element(".game-board") |> render()
+      cell_count = (rendered_grid |> String.split("hex-cell") |> length()) - 1
+      assert cell_count == 19
+    end
     test "Loads game state from `initial_state` query parameter", %{conn: conn} do
       # Define the initial state as a list of tuples
       initial_state = [

@@ -81,7 +81,8 @@ defmodule GameWeb.GameLive do
     # Create a grid and update it with the characters
     # Calculate the grid radius dynamically based on the positions
     max_radius = positions |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end) |> Enum.max()
-    grid = Game.Grid.new({max_radius, max_radius, max_radius})
+    padded_radius = max_radius + 1
+    grid = Game.Grid.new({padded_radius, padded_radius, padded_radius})
 
     # Ensure all positions in the initial_state are included in the grid
     grid = Enum.reduce(positions, grid, fn position, acc ->
