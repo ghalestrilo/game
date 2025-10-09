@@ -3,8 +3,39 @@ defmodule GameWeb.GameLiveTest do
 
   import Phoenix.LiveViewTest
 
+
+  describe "Game state initialization from query parameter" do
+    test "Loads game state from `initial_state` query parameter", %{conn: conn} do
+      # Define the initial state as a list of tuples
+      initial_state = [
+        {{0, 0, 0}, :warrior, 1},
+        {{0, 1, 1}, :mage, 2}
+      ]
+
+      # Serialize the initial state into a URI-safe string
+      serialized_state =
+        initial_state
+        |> :erlang.term_to_binary()
+        |> Base.url_encode64(padding: false)
+
+      # Construct the URI with the `initial_state` query parameter
+      uri = ~p"/game?initial_state=#{serialized_state}"
+
+      # Load the game page with the query parameter
+      {:ok, view, _html} = live(conn, uri)
+
+      # Verify that the game state is initialized correctly
+      assert view |> element("[phx-value-target_position=\"0_0_0\"]") |> has_element?()
+      assert view |> element("[phx-value-target_position=\"0_1_1\"]") |> has_element?()
+
+      # Verify that the characters are positioned correctly
+      assert view |> render() =~ "Warrior"
+      assert view |> render() =~ "Mage"
+    end
+  end
   describe "Combat sandbox demo" do
-    test "Drawing a card changes turn to next character with a freshly drawn 5-card hand", %{conn: conn} do
+
+  test "Drawing a card changes turn to next character with a freshly drawn 5-card hand", %{conn: conn} do
       # Load the game page
       {:ok, view, _html} = live(conn, ~p"/game")
 
