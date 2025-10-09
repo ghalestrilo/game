@@ -1,5 +1,7 @@
 defmodule Game.Grid do
   alias __MODULE__
+  alias HexGrid.Map, as: HexMap
+  alias HexGrid.Hex, as: Hex
 
   @type t() :: %__MODULE__{
           tiles: %{
@@ -38,18 +40,17 @@ defmodule Game.Grid do
   """
   def new(radius) do
     {x, y, z} = radius
+    max_radius = Enum.max([x, y, z])
+    {:ok, hex_map} = HexMap.new_hex(max_radius)
 
     tiles =
-      for q <- -x..x,
-          r <- -y..y,
-          s <- -z..z,
-          q + r + s == 0 do
+      hex_map.data
+      |> Enum.map(fn {%Hex{q: q, r: r, s: s}, _metadata} ->
         {{q, r, s}, %{terrain: :plain, occupied_by: nil}}
-      end
+      end)
       |> Map.new()
-      |> tap(fn tiles -> IO.inspect(tiles, label: "Generated Tiles") end)
 
-    %Grid{tiles: tiles}
+    %__MODULE__{tiles: tiles}
   end
 
   @doc """
