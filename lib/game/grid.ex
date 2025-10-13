@@ -13,6 +13,19 @@ defmodule Game.Grid do
         }
 
   @doc """
+  Normalizes hex coordinates to ensure canonical representation.
+  Ensures the constraint q + r + s = 0 is satisfied.
+  """
+  def normalize({q, r, s}) do
+    # Ensure the smallest absolute value among q, r, and s is zero
+    cond do
+      abs(q) <= abs(r) and abs(q) <= abs(s) -> {q, -q - s, s}
+      abs(r) <= abs(q) and abs(r) <= abs(s) -> {-r - s, r, s}
+      true -> {q, r, -q - r}
+    end
+  end
+
+  @doc """
   Map of {q, r, s} => tile info
   """
   defstruct tiles: %{}
@@ -41,14 +54,18 @@ defmodule Game.Grid do
   def new(radius) do
     {x, y, z} = radius
     max_radius = Enum.max([x, y, z])
-    {:ok, hex_map} = HexMap.new_hex(max_radius)
-
+    IO.inspect(radius, label: "Input Radius")
     tiles =
-      hex_map.data
-      |> Enum.map(fn {%Hex{q: q, r: r, s: s}, _metadata} ->
-        {{q, r, s}, %{terrain: :plain, occupied_by: nil}}
-      end)
+      for q <- -max_radius..max_radius,
+          r <- -max_radius..max_radius,
+          s <- -max_radius..max_radius,
+          q + r + s == 0 do
+        {normalize({q, r, s}), %{terrain: :plain, occupied_by: nil}}
+      end
       |> Map.new()
+
+    IO.inspect(tiles, label: "Generated Tiles")
+    %__MODULE__{tiles: tiles}
 
     %__MODULE__{tiles: tiles}
   end

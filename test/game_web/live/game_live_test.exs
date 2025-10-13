@@ -32,11 +32,11 @@ defmodule GameWeb.GameLiveTest do
       cell_count = (rendered_grid |> String.split("hex-cell") |> length()) - 1
       assert cell_count == 19
     end
-    test "Loads game state from `initial_state` query parameter", %{conn: conn} do
+    test "Loads game state from `initial_state` query parameter and validates mage position", %{conn: conn} do
       # Define the initial state as a list of tuples
       initial_state = [
         {{0, 0, 0}, :warrior, 1},
-        {{0, 1, 1}, :mage, 2}
+        {{1, 1, 0}, :mage, 2}
       ]
 
       # Serialize the initial state into a simplified URI format
@@ -47,7 +47,6 @@ defmodule GameWeb.GameLiveTest do
         end)
         |> Enum.join(",")
         |> then(&"[#{&1}]")
-        |> IO.inspect()
 
       # Construct the URI with the `initial_state` query parameter
       uri = ~p"/game?initial_state=#{serialized_state}"
@@ -57,11 +56,16 @@ defmodule GameWeb.GameLiveTest do
 
       # Verify that the game state is initialized correctly
       assert view |> element("[phx-value-target_position=\"0_0_0\"]") |> has_element?()
-      assert view |> element("[phx-value-target_position=\"0_1_1\"]") |> has_element?()
+      assert view |> element("[phx-value-target_position=\"1_1_0\"]") |> has_element?()
 
       # Verify that the characters are positioned correctly
       assert view |> render() =~ "Warrior"
       assert view |> render() =~ "Mage"
+
+      # Validate mage's position visually
+      mage_position_style = view |> element("[phx-value-target_position=\"1_1_0\"]") |> render() |> Floki.attribute("style")
+      IO.inspect(mage_position_style, label: "Mage Position Style")
+      assert mage_position_style == ["transform: translate(45px, 104px)"], "Mage position rendering failed"
     end
   end
   describe "Combat sandbox demo" do

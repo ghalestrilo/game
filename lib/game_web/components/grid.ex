@@ -2,11 +2,11 @@ defmodule GameWeb.Grid do
   use Phoenix.LiveComponent
 
   def render(assigns) do
-    ~H"""
+    rendered_html = ~H"""
     <div class="grid-container">
       <svg viewBox="-100 -100 200 200" class="hex-grid">
-        <%= for {q, r, s} <- @tiles do %>
-          <polygon points="#{hex_points(q, r)}" class="hex-tile filled" />
+        <%= for {q, r, s, style} <- @tiles do %>
+          <polygon points="#{hex_points(q, r)}" class="hex-tile filled" style={style} />
         <% end %>
       </svg>
     </div>
@@ -26,6 +26,8 @@ defmodule GameWeb.Grid do
       }
     </style>
     """
+    IO.inspect(rendered_html, label: "Rendered HTML in GameWeb.Grid")
+    rendered_html
   end
 
   defp hex_points(q, r) do

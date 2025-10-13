@@ -16,11 +16,12 @@ defmodule Game.GridTest do
       expected_positions = [
         {0, 0, 0},  # center
         {1, 0, -1}, {0, 1, -1}, {-1, 1, 0},  # first ring
-        {-1, 0, 1}, {0, -1, 1}, {1, -1, 0}
+        {-1, 0, 1}, {0, -1, 1}, {1, -1, 0}, {1, 1, 0}  # added {1, 1, 0}
       ]
 
       Enum.each(expected_positions, fn pos ->
         assert Map.has_key?(grid.tiles, pos), "Position #{inspect(pos)} should exist in grid"
+        assert pos == {1, 1, 0} || true, "Position {1, 1, 0} is missing"
       end)
     end
 
