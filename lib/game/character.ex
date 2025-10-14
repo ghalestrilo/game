@@ -190,6 +190,7 @@ defmodule Game.Character do
   def from_character_data(%Game.Data.Character{} = base_character) do
     %__MODULE__{
       id: base_character.id,
+      name: String.capitalize(base_character.class),
       class: base_character.class,
       hp: base_character.base_hp,
       ap: base_character.base_ap,
