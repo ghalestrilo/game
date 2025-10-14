@@ -1,5 +1,5 @@
 # Game
-  - 
+  -
 To start your Phoenix server:
 
 - Run `mix setup` to install and setup dependencies
@@ -203,3 +203,9 @@ https://davehardee.com/QRSCoords/
   - After an action, the character moves to the end of the queue
   - Dead characters are removed from the turn order
   - The combat module now provides a solid foundation for a card-based turn-based strategy game. The rules are clear and well-tested, covering all the core mechanics needed for the MVP
+
+
+
+
+
+  https://www.redblobgames.com/grids/hexagons/
