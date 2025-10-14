@@ -76,41 +76,44 @@ defmodule GameWeb.GameLive do
     positions = Enum.map(initial_state, fn {{q, r, s}, _class, _id} -> {q, r, s} end)
 
     # Log characters for debugging
-    # IO.inspect(characters, label: "Loaded Characters")
 
     # Create a grid and update it with the characters
     # Calculate the grid radius dynamically based on the positions
-    max_radius = positions |> Enum.map(&Game.Grid.normalize/1) |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end) |> Enum.max()
+    max_radius =
+      positions
+      |> Enum.map(&Game.Grid.normalize/1)
+      |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end)
+      |> Enum.max()
+
     padded_radius = max_radius + 1
-    IO.inspect(max_radius, label: "Max Radius")
-    IO.inspect(padded_radius, label: "Padded Radius")
     grid = Game.Grid.new({padded_radius, padded_radius, padded_radius})
-    IO.inspect(grid, label: "Grid Struct")
-    IO.inspect(Map.keys(grid.tiles), label: "Grid Tiles")
 
     # Validate that all positions in the initial_state are within the grid radius
-    IO.inspect(positions, label: "Initial Positions")
     Enum.each(positions, fn position ->
       normalized_position = Game.Grid.normalize(position)
+
       unless Map.has_key?(grid.tiles, normalized_position) do
         raise "Position #{inspect(position)} is outside the grid radius"
       end
     end)
-Enum.each(positions, fn position ->
-  normalized_position = Game.Grid.normalize(position)
 
-  unless Map.has_key?(grid.tiles, normalized_position) do
-    raise "Position #{inspect(position)} is outside the grid radius"
-  end
-end)
+    Enum.each(positions, fn position ->
+      normalized_position = Game.Grid.normalize(position)
 
-grid = Map.update!(grid, :tiles, fn tiles ->
-      Enum.map(tiles, fn {position, tile} ->
-        {position, Map.put(tile, :style, get_hex_position(elem(position, 0), elem(position, 1)))}
-      end)
-      |> Enum.into(%{})
+      unless Map.has_key?(grid.tiles, normalized_position) do
+        raise "Position #{inspect(position)} is outside the grid radius"
+      end
     end)
-    IO.inspect(grid.tiles, label: "Updated Grid Tiles")
+
+    grid =
+      Map.update!(grid, :tiles, fn tiles ->
+        Enum.map(tiles, fn {position, tile} ->
+          {position,
+           Map.put(tile, :style, get_hex_position(elem(position, 0), elem(position, 1)))}
+        end)
+        |> Enum.into(%{})
+      end)
+
     # Update the grid with the characters
     grid = Enum.reduce(characters, grid, &Game.Grid.update_character(&2, &1))
 
@@ -153,9 +156,7 @@ grid = Map.update!(grid, :tiles, fn tiles ->
     tiles
     |> Map.to_list()
     |> Enum.map(fn {{q, r, s}, _tile} -> {q, r, s, get_hex_position(q, r)} end)
-    |> tap(&IO.inspect(&1, label: "All Grid Keys with Styles"))
     |> Enum.sort_by(fn {q, r, _s, _style} -> {r, q} end)
-    |> tap(&IO.inspect(&1, label: "Visible Tiles After Sorting"))
   end
 
   defp get_hex_position(q, r) do
@@ -165,10 +166,7 @@ grid = Map.update!(grid, :tiles, fn tiles ->
     x = (q * (width * 0.75)) |> round()
     y = r * height + if rem(q, 2) == 1, do: height / 2, else: 0
     y = round(y)
-    IO.inspect({q, r, x, y}, label: "Hex Position and Pixel Coordinates")
-    IO.inspect({q, r, x, y}, label: "Hex Position and Pixel Coordinates")
     "transform: translate(#{x}px, #{y}px)"
-    |> tap(&IO.inspect(&1, label: "Generated Style Attribute"))
   end
 
   defp character_class(%{class: :mage}), do: "character mage"
@@ -261,7 +259,6 @@ grid = Map.update!(grid, :tiles, fn tiles ->
          {:ok, combat} <- process_game_action(socket, {:play_card, position}) do
       # Get next player for debugging
       [next_player | _] = combat.queue
-      # IO.inspect(next_player.cards, label: "AFTER Play Card - Next Player Cards")
 
       action =
         "#{socket.assigns.game_state.combat.current_turn.player.name} played card: #{card.name}"
@@ -323,12 +320,10 @@ grid = Map.update!(grid, :tiles, fn tiles ->
         } = socket
       ) do
     # Print current player's card counts for debugging
-    # IO.inspect(player.cards, label: "BEFORE Skip Turn - Player Cards")
 
     with {:ok, combat} <- process_game_action(socket, {:skip_turn, player}) do
       # Get next player for debugging
       [next_player | _] = combat.queue
-      # IO.inspect(next_player.cards, label: "AFTER Skip Turn - Next Player Cards")
 
       action = "#{player.name} skipped their turn"
       updated_log = [action | socket.assigns.action_log]

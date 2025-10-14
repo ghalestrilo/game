@@ -70,7 +70,7 @@
         <div class="text-md mb-4">
           {@game_state.combat.current_turn.player.name} ({@game_state.combat.current_turn.player.class})
         </div>
-
+        
 <!-- Turn Queue Panel -->
         <div class="mt-4">
           <h3 class="text-lg font-bold mb-2">Turn Queue</h3>
@@ -91,7 +91,7 @@
         <div class="card-status-panel w-full bg-gray-100 p-4 rounded">
           <div class="mb-3">
             <h4 class="font-semibold">
-              Current Player: <%= @game_state.combat.current_turn.player.name %>
+              Current Player: {@game_state.combat.current_turn.player.name}
             </h4>
           </div>
           <div class="flex gap-4 flex-row justify-between items-stretch flex-1">
@@ -131,7 +131,7 @@
         </div>
       </div>
     </div>
-
+    
 <!-- Game board -->
     <div class="flex gap-8">
       <div class="game-board flex-1">
@@ -179,7 +179,7 @@
           </div>
         <% end %>
       </div>
-
+      
 <!-- Action log panel -->
       <div
         class="action-log bg-gray-100 p-4 mt-8 rounded overflow-auto flex-1"

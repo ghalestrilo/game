@@ -29,7 +29,12 @@
   </:action>
 </.table>
 
-<.modal :if={@live_action in [:new, :edit]} id="base_deck-modal" show on_cancel={JS.patch(~p"/admin/basedecks")}>
+<.modal
+  :if={@live_action in [:new, :edit]}
+  id="base_deck-modal"
+  show
+  on_cancel={JS.patch(~p"/admin/basedecks")}
+>
   <.live_component
     module={GameWeb.BaseDeckLive.FormComponent}
     id={@base_deck.id || :new}

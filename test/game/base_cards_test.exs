@@ -21,7 +21,13 @@ defmodule Game.BaseCardsTest do
     end
 
     test "create_base_card/1 with valid data creates a base_card" do
-      valid_attrs = %{name: "some name", effects: [], ap: 42, headline: "some headline", rarity: :common}
+      valid_attrs = %{
+        name: "some name",
+        effects: [],
+        ap: 42,
+        headline: "some headline",
+        rarity: :common
+      }
 
       assert {:ok, %BaseCard{} = base_card} = BaseCards.create_base_card(valid_attrs)
       assert base_card.name == "some name"
@@ -37,7 +43,14 @@ defmodule Game.BaseCardsTest do
 
     test "update_base_card/2 with valid data updates the base_card" do
       base_card = base_card_fixture()
-      update_attrs = %{name: "some updated name", effects: [], ap: 43, headline: "some updated headline", rarity: :uncommon}
+
+      update_attrs = %{
+        name: "some updated name",
+        effects: [],
+        ap: 43,
+        headline: "some updated headline",
+        rarity: :uncommon
+      }
 
       assert {:ok, %BaseCard{} = base_card} = BaseCards.update_base_card(base_card, update_attrs)
       assert base_card.name == "some updated name"

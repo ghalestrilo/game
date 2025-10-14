@@ -55,6 +55,7 @@ defmodule Game.Grid do
     {x, y, z} = radius
     max_radius = Enum.max([x, y, z])
     IO.inspect(radius, label: "Input Radius")
+
     tiles =
       for q <- -max_radius..max_radius,
           r <- -max_radius..max_radius,

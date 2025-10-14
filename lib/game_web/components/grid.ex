@@ -26,6 +26,7 @@ defmodule GameWeb.Grid do
       }
     </style>
     """
+
     IO.inspect(rendered_html, label: "Rendered HTML in GameWeb.Grid")
     rendered_html
   end

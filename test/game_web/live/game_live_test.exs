@@ -3,7 +3,6 @@ defmodule GameWeb.GameLiveTest do
 
   import Phoenix.LiveViewTest
 
-
   describe "Game state initialization from query parameter" do
     test "Grid cell count for radius=2 with sideways movement", %{conn: conn} do
       # Define the initial state with sideways movement
@@ -32,7 +31,10 @@ defmodule GameWeb.GameLiveTest do
       cell_count = (rendered_grid |> String.split("hex-cell") |> length()) - 1
       assert cell_count == 19
     end
-    test "Loads game state from `initial_state` query parameter and validates mage position", %{conn: conn} do
+
+    test "Loads game state from `initial_state` query parameter and validates mage position", %{
+      conn: conn
+    } do
       # Define the initial state as a list of tuples
       initial_state = [
         {{0, 0, 0}, :warrior, 1},
@@ -63,14 +65,23 @@ defmodule GameWeb.GameLiveTest do
       assert view |> render() =~ "Mage"
 
       # Validate mage's position visually
-      mage_position_style = view |> element("[phx-value-target_position=\"1_1_0\"]") |> render() |> Floki.attribute("style")
+      mage_position_style =
+        view
+        |> element("[phx-value-target_position=\"1_1_0\"]")
+        |> render()
+        |> Floki.attribute("style")
+
       IO.inspect(mage_position_style, label: "Mage Position Style")
-      assert mage_position_style == ["transform: translate(45px, 104px)"], "Mage position rendering failed"
+
+      assert mage_position_style == ["transform: translate(45px, 104px)"],
+             "Mage position rendering failed"
     end
   end
-  describe "Combat sandbox demo" do
 
-  test "Drawing a card changes turn to next character with a freshly drawn 5-card hand", %{conn: conn} do
+  describe "Combat sandbox demo" do
+    test "Drawing a card changes turn to next character with a freshly drawn 5-card hand", %{
+      conn: conn
+    } do
       # Load the game page
       {:ok, view, _html} = live(conn, ~p"/game")
 
@@ -83,7 +94,8 @@ defmodule GameWeb.GameLiveTest do
       assert view |> render() =~ "HP: 20"
       pick_first_card(view)
       click_warrior(view)
-      assert view |> render() =~ "HP: 15" # (new hp)
+      # (new hp)
+      assert view |> render() =~ "HP: 15"
 
       # Skip Warrior's turn
       view

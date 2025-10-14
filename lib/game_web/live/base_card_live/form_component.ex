@@ -20,13 +20,7 @@ defmodule GameWeb.BaseCardLive.FormComponent do
         phx-submit="save"
       >
         <.input field={@form[:name]} type="text" label="Name" />
-        <.input
-          field={@form[:effects]}
-          type="select"
-          multiple
-          label="Effects"
-          options={[]}
-        />
+        <.input field={@form[:effects]} type="select" multiple label="Effects" options={[]} />
         <.input field={@form[:ap]} type="number" label="Ap" />
         <.input field={@form[:headline]} type="text" label="Headline" />
         <.input

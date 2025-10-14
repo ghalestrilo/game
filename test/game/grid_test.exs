@@ -14,9 +14,17 @@ defmodule Game.GridTest do
       assert map_size(grid.tiles) == 7
 
       expected_positions = [
-        {0, 0, 0},  # center
-        {1, 0, -1}, {0, 1, -1}, {-1, 1, 0},  # first ring
-        {-1, 0, 1}, {0, -1, 1}, {1, -1, 0}, {1, 1, 0}  # added {1, 1, 0}
+        # center
+        {0, 0, 0},
+        # first ring
+        {1, 0, -1},
+        {0, 1, -1},
+        {-1, 1, 0},
+        # added {1, 1, 0}
+        {-1, 0, 1},
+        {0, -1, 1},
+        {1, -1, 0},
+        {1, 1, 0}
       ]
 
       Enum.each(expected_positions, fn pos ->
@@ -54,7 +62,9 @@ defmodule Game.GridTest do
       actual_counts = Enum.map(rows, &length/1)
       assert actual_counts == expected_counts
       # Check that all tiles are present
-      all_tiles = rows |> List.flatten() |> Enum.map(fn {q, r, s, _tile} -> {q, r, s} end) |> Enum.sort()
+      all_tiles =
+        rows |> List.flatten() |> Enum.map(fn {q, r, s, _tile} -> {q, r, s} end) |> Enum.sort()
+
       expected_tiles = Map.keys(grid.tiles) |> Enum.sort()
       assert all_tiles == expected_tiles
     end
