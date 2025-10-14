@@ -4,7 +4,7 @@ defmodule Game.DataTest do
   alias Game.Data
 
   describe "characters" do
-    alias Game.Data.Data.Character
+    alias Game.Data.Character
 
     import Game.DataFixtures
 

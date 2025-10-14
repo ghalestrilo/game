@@ -67,12 +67,12 @@ defmodule GameWeb.GameLive do
 
     # Create characters from the initial state
     characters =
-      Enum.map(initial_state, fn {{q, r, s}, class, id} ->
-        # character = Fixtures.character(class, id)
-        character =
-        [name: class]
-        |> Game.Data.get_character_by_name!()
-        |> Game.Character.from_base_character()
+      Enum.map(initial_state, fn {{q, r, s}, classname, id} ->
+        # character = Fixtures.character(classname, id)
+        character = classname
+        |> to_string()
+        |> Game.Data.get_character_by_class!()
+        |> Game.Character.from_character_data()
         |> Map.put(:position, {q, r, s})
       end)
 

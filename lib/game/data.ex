@@ -6,7 +6,7 @@ defmodule Game.Data do
   import Ecto.Query, warn: false
   alias Game.Repo
 
-  alias Game.Data.Data.Character
+  alias Game.Data.Character
 
   @doc """
   Returns the list of characters.
@@ -37,7 +37,7 @@ defmodule Game.Data do
   """
   def get_character!(id), do: Repo.get!(Character, id)
 
-  def get_character_by_name!(name), do: Repo.get_by!(Character, [name: name])
+  def get_character_by_class!(class), do: Repo.get_by!(Character, [class: class])
 
   @doc """
   Creates a character.
