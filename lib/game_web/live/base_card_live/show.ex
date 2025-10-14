@@ -8,7 +8,7 @@ defmodule GameWeb.BaseCardLive.Show do
     {:ok, socket}
   end
 
-  @impl true
+@impl true
   def handle_params(%{"id" => id}, _, socket) do
     {:noreply,
      socket

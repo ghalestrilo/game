@@ -2,7 +2,7 @@ defmodule Game.BaseDecks.BaseDeck do
   use Ecto.Schema
   import Ecto.Changeset
 
-  schema "base_decks" do
+  schema "decks" do
     field :name, :string
 
     timestamps(type: :utc_datetime)

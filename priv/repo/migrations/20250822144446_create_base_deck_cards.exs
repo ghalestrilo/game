@@ -4,8 +4,8 @@ defmodule Game.Repo.Migrations.CreateBaseDeckCards do
   def change do
     create table(:base_deck_cards) do
       add :count, :integer
-      add :deck_id, references(:base_decks, on_delete: :nothing)
-      add :card_id, references(:base_cards, on_delete: :nothing)
+      add :deck_id, references(:decks, on_delete: :nothing)
+      add :card_id, references(:cards, on_delete: :nothing)
 
       timestamps(type: :utc_datetime)
     end

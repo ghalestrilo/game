@@ -13,7 +13,7 @@
 alias Game.{Repo, BaseCards.BaseCard, BaseDecks.BaseDeck, Content.BaseDeckCard}
 
 # Define all base cards
-base_cards = [
+cards = [
   # Base/Common Cards
   %{
     name: "Strike",
@@ -243,7 +243,7 @@ base_cards = [
 
 # Insert all base cards and create a map for easy lookup by name
 cards_map =
-  base_cards
+  cards
   |> Enum.map(fn card -> Repo.insert!(%BaseCard{} |> BaseCard.changeset(card)) end)
   |> Enum.map(fn card -> {card.name, card} end)
   |> Enum.into(%{})

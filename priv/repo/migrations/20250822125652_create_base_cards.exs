@@ -2,7 +2,7 @@ defmodule Game.Repo.Migrations.CreateBaseCards do
   use Ecto.Migration
 
   def change do
-    create table(:base_cards) do
+    create table(:cards) do
       add :name, :string
       add :effects, {:array, :map}
       add :ap, :integer

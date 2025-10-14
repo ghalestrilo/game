@@ -13,7 +13,7 @@
   row_click={fn {_id, base_card} -> JS.navigate(~p"/admin/basecards/#{base_card}") end}
 >
   <:col :let={{_id, base_card}} label="Name">{base_card.name}</:col>
-  <:col :let={{_id, base_card}} label="Effects">{base_card.effects}</:col>
+  <:col :let={{_id, base_card}} label="Effects">{inspect(base_card.effects)}</:col>
   <:col :let={{_id, base_card}} label="Ap">{base_card.ap}</:col>
   <:col :let={{_id, base_card}} label="Headline">{base_card.headline}</:col>
   <:col :let={{_id, base_card}} label="Rarity">{base_card.rarity}</:col>
