@@ -1,0 +1,44 @@
+<.header>
+  Listing Characters
+  <:actions>
+    <.link patch={~p"/admin/characters/new"}>
+      <.button>New Character</.button>
+    </.link>
+  </:actions>
+</.header>
+
+<.table
+  id="characters"
+  rows={@streams.characters}
+  row_click={fn {_id, character} -> JS.navigate(~p"/admin/characters/#{character}") end}
+>
+  <:col :let={{_id, character}} label="Class">{character.class}</:col>
+  <:col :let={{_id, character}} label="Base hp">{character.base_hp}</:col>
+  <:col :let={{_id, character}} label="Base ap">{character.base_ap}</:col>
+  <:col :let={{_id, character}} label="Base movement">{character.base_movement}</:col>
+  <:action :let={{_id, character}}>
+    <div class="sr-only">
+      <.link navigate={~p"/admin/characters/#{character}"}>Show</.link>
+    </div>
+    <.link patch={~p"/admin/characters/#{character}/edit"}>Edit</.link>
+  </:action>
+  <:action :let={{id, character}}>
+    <.link
+      phx-click={JS.push("delete", value: %{id: character.id}) |> hide("##{id}")}
+      data-confirm="Are you sure?"
+    >
+      Delete
+    </.link>
+  </:action>
+</.table>
+
+<.modal :if={@live_action in [:new, :edit]} id="character-modal" show on_cancel={JS.patch(~p"/admin/characters")}>
+  <.live_component
+    module={GameWeb.CharacterLive.FormComponent}
+    id={@character.id || :new}
+    title={@page_title}
+    action={@live_action}
+    character={@character}
+    patch={~p"/admin/characters"}
+  />
+</.modal>

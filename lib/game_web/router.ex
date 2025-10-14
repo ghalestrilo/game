@@ -42,6 +42,13 @@ defmodule GameWeb.Router do
 
     live "/basedecks/:id", BaseDeckLive.Show, :show
     live "/basedecks/:id/show/edit", BaseDeckLive.Show, :edit
+
+    live "/characters", CharacterLive.Index, :index
+    live "/characters/new", CharacterLive.Index, :new
+    live "/characters/:id/edit", CharacterLive.Index, :edit
+
+    live "/characters/:id", CharacterLive.Show, :show
+    live "/characters/:id/show/edit", CharacterLive.Show, :edit
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development

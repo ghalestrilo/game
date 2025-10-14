@@ -17,4 +17,21 @@ defmodule Game.DataFixtures do
 
     character
   end
+
+  @doc """
+  Generate a character.
+  """
+  def character_fixture(attrs \\ %{}) do
+    {:ok, character} =
+      attrs
+      |> Enum.into(%{
+        base_ap: 42,
+        base_hp: 42,
+        base_movement: 42,
+        class: "some class"
+      })
+      |> Game.Data.create_character()
+
+    character
+  end
 end
