@@ -200,7 +200,20 @@ defmodule Game.Character do
     }
   end
 
-  defp get_character_deck(deck) do
-    dbg(deck)
+  defp get_character_deck(%Game.BaseDecks.BaseDeck{ base_deck_cards: cards }) do
+    cards
+    |> Enum.flat_map(&
+      [&1.card]
+      |> Stream.cycle()
+      |> Enum.take(&1.count)
+      |> Enum.to_list
+    )
+    |> Enum.map(&base_card_to_card/1)
+  end
+
+  defp base_card_to_card(card) do
+    card = Map.drop(card, [:__meta__, :__struct__, :inserted_at, :updated_at, :ap, :headline])
+    |> dbg()
+    struct!(Game.Card, card)
   end
 end
