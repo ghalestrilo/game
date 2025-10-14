@@ -2,6 +2,8 @@ defmodule GameWeb.CharacterLive.FormComponent do
   use GameWeb, :live_component
 
   alias Game.Data
+  alias Game.BaseDecks.BaseDeck
+  import GameWeb.CoreComponents
 
   @impl true
   def render(assigns) do
@@ -23,6 +25,13 @@ defmodule GameWeb.CharacterLive.FormComponent do
         <.input field={@form[:base_hp]} type="number" label="Base hp" />
         <.input field={@form[:base_ap]} type="number" label="Base ap" />
         <.input field={@form[:base_movement]} type="number" label="Base movement" />
+        <.input
+          field={@form[:deck_id]}
+          type="select"
+          label="Base Deck"
+          prompt="Select a deck"
+          options={Enum.map(@decks, &{&1.name, &1.id})}
+        />
         <:actions>
           <.button phx-disable-with="Saving...">Save Character</.button>
         </:actions>
@@ -33,9 +42,11 @@ defmodule GameWeb.CharacterLive.FormComponent do
 
   @impl true
   def update(%{character: character} = assigns, socket) do
+    decks = Game.Repo.all(BaseDeck)
     {:ok,
      socket
      |> assign(assigns)
+     |> assign(:decks, decks)
      |> assign_new(:form, fn ->
        to_form(Data.change_character(character))
      end)}

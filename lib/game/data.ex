@@ -38,7 +38,9 @@ defmodule Game.Data do
   """
   def get_character!(id), do: Repo.get!(Character, id)
 
-  def get_character_by_class!(class), do: Repo.get_by!(Character, [class: class])
+  def get_character_by_class!(class), do: Character
+  |> Repo.get_by!([class: class], preload: [:deck])
+  |> Repo.preload([deck: [:cards]])
 
   @doc """
   Creates a character.

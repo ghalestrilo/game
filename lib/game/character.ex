@@ -196,7 +196,11 @@ defmodule Game.Character do
       ap: base_character.base_ap,
       movement_range: base_character.base_movement,
       position: {0, 0},
-      cards: %{draw: [], hand: [], discard: []}
+      cards: %{draw: get_character_deck(base_character.deck), hand: [], discard: []}
     }
+  end
+
+  defp get_character_deck(deck) do
+    dbg(deck)
   end
 end
