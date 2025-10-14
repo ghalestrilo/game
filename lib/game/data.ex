@@ -7,6 +7,7 @@ defmodule Game.Data do
   alias Game.Repo
 
   alias Game.Data.Character
+  alias Game.BaseDecks.BaseDeck
 
   @doc """
   Returns the list of characters.
@@ -89,6 +90,19 @@ defmodule Game.Data do
   """
   def delete_character(%Character{} = character) do
     Repo.delete(character)
+  end
+
+  @doc """
+  Returns the list of decks.
+
+  ## Examples
+
+      iex> list_decks()
+      [%Deck{}, ...]
+
+  """
+  def list_decks do
+    Repo.all(BaseDeck)
   end
 
   @doc """

@@ -15,7 +15,7 @@ defmodule Game.Data.Character do
   @doc false
   def changeset(character, attrs) do
     character
-    |> cast(attrs, [:class, :base_hp, :base_ap, :base_movement])
+    |> cast(attrs, [:class, :base_hp, :base_ap, :base_movement, :deck_id])
     |> validate_required([:class, :base_hp, :base_ap, :base_movement])
   end
 end
