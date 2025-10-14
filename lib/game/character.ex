@@ -186,4 +186,19 @@ defmodule Game.Character do
   def get_max_ap(%__MODULE__{class: :fighter}), do: 3
   def get_max_ap(%__MODULE__{class: :mage}), do: 3
   def get_max_ap(%__MODULE__{}), do: 3
+
+  def from_base_character(%Game.BaseCharacter{} = base_character) do
+    %__MODULE__{
+      id: base_character.id,
+      class: base_character.class,
+      base_hp: base_character.base_hp,
+      base_ap: base_character.base_ap,
+      base_movement: base_character.base_movement,
+      hp: base_character.base_hp,
+      ap: base_character.base_ap,
+      movement: base_character.base_movement,
+      position: {0, 0},
+      cards: %{draw: [], hand: [], discard: []}
+    }
+  end
 end
