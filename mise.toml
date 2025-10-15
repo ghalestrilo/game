@@ -1,0 +1,8 @@
+[tools]
+elixir = "1.18.4"
+erlang = "28"
+
+[tasks]
+dev = "iex -S mix phx.server"
+seed = "mix run priv/repo/seeds.exs"
+proxy = "fly proxy -a hexdecks-db 5433:5432"

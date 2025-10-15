@@ -70,19 +70,30 @@
         <div class="text-md mb-4">
           {@game_state.combat.current_turn.player.name} ({@game_state.combat.current_turn.player.class})
         </div>
-        
+
 <!-- Turn Queue Panel -->
         <div class="mt-4">
           <h3 class="text-lg font-bold mb-2">Turn Queue</h3>
-          <div class="bg-white rounded p-2 border border-gray-200">
             <ul class="text-sm">
               <%= for character <- @game_state.combat.queue do %>
-                <li class="py-1 border-b border-gray-100 last:border-0">
+                <li class="my-2 p-2 border border-gray-100 rounded">
+                  <div class="pb-1 flex gap-1">
+                    <span
+                      :for={hp <- 1..Game.Character.get_max_hp(character)}
+                      class={"#{if hp > character.hp, do: "bg-gray-300", else: "bg-green-300"} flex-1 h-1 rounded-[2px]"}
+                      />
+                  </div>
+                  <div class="pb-1 flex gap-1">
+                    <span
+                      :for={ap <- 1..Game.Character.get_max_ap(character)}
+                      class={"#{if ap > character.ap, do: "bg-gray-300", else: "bg-yellow-300"} flex-1 h-1 rounded-[2px]"}
+                      />
+                  </div>
                   {inspect(character)}
+
                 </li>
               <% end %>
             </ul>
-          </div>
         </div>
       </div>
 
@@ -131,7 +142,7 @@
         </div>
       </div>
     </div>
-    
+
 <!-- Game board -->
     <div class="flex gap-8">
       <div class="game-board flex-1">
@@ -143,7 +154,7 @@
                 phx-value-target_position={"#{q}_#{r}_#{s}"}
                 class={
                   [
-                    "hex-cell border border-gray-300 w-16 h-16 flex items-center justify-center m-1 bg-white",
+                    "hex-cell border border-gray-300 w-20 h-20 flex items-center justify-center  bg-white",
                     # If distance from `:starting_position` is within `:movement_range` highlight the hex cell
                     if(
                       Grid.distance(
@@ -179,7 +190,7 @@
           </div>
         <% end %>
       </div>
-      
+
 <!-- Action log panel -->
       <div
         class="action-log bg-gray-100 p-4 mt-8 rounded overflow-auto flex-1"
