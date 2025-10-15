@@ -107,7 +107,7 @@ defmodule Game.Fixtures do
       id: 1,
       name: "Strike",
       cost: 1,
-      effects: [{:damage, 5}],
+      effects: [%{"type" => "damage", "value" => 5}],
       range: 1
     }
   end
@@ -117,7 +117,7 @@ defmodule Game.Fixtures do
       id: 2,
       name: "Heal",
       cost: 2,
-      effects: [{:heal, 3}]
+      effects: [%{"type" => "heal", "value" => 3}]
     }
   end
 
@@ -126,7 +126,7 @@ defmodule Game.Fixtures do
       id: 4,
       name: "Death Strike",
       cost: 1,
-      effects: [{:damage, 20}]
+      effects: [%{"type" => "damage", "value" => 20}]
     }
   end
 
@@ -183,7 +183,7 @@ defmodule Game.Fixtures do
       id: 3,
       name: "Mega Strike",
       cost: 5,
-      effects: [{:damage, 10}]
+      effects: [%{"type" => "damage", "value" => 10}]
     }
   end
 
@@ -192,7 +192,7 @@ defmodule Game.Fixtures do
       id: 5,
       name: "Self Harm",
       cost: 1,
-      effects: [{:damage, 5}]
+      effects: [%{"type" => "damage", "value" => 5}]
     }
   end
 
@@ -201,7 +201,7 @@ defmodule Game.Fixtures do
       id: 7,
       name: "Max Heal",
       cost: 1,
-      effects: [{:heal, 100}]
+      effects: [%{"type" => "heal", "value" => 100}]
     }
   end
 
@@ -210,7 +210,7 @@ defmodule Game.Fixtures do
       id: 8,
       name: "Negative Strike",
       cost: 1,
-      effects: [{:damage, -5}]
+      effects: [%{"type" => "damage", "value" => -5}]
     }
   end
 
@@ -219,7 +219,7 @@ defmodule Game.Fixtures do
       id: 9,
       name: "Fireball",
       cost: 1,
-      effects: [{:damage, 10}]
+      effects: [%{"type" => "damage", "value" => 10}]
     }
   end
 
@@ -229,7 +229,7 @@ defmodule Game.Fixtures do
       name: "Fireball",
       cost: 1,
       range: 3,
-      effects: [{:damage, 10}]
+      effects: [%{"type" => "damage", "value" => 10}]
     }
   end
 end
