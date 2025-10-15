@@ -20,7 +20,7 @@ defmodule GameWeb.BaseCardLive.FormComponent do
         phx-submit="save"
       >
         <.input field={@form[:name]} type="text" label="Name" />
-        <.input field={@form[:effects]} type="select" multiple label="Effects" options={[]} />
+        <%!-- <.input field={@form[:effects]} type="select" multiple label="Effects" options={get_card_effects_as_options()} /> --%>
         <.input field={@form[:ap]} type="number" label="Ap" />
         <.input field={@form[:headline]} type="text" label="Headline" />
         <.input
@@ -89,4 +89,22 @@ defmodule GameWeb.BaseCardLive.FormComponent do
   end
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
+
+
+  # defp get_card_effects_as_options() do
+  #   Game.BaseCards.list_basecards
+  #   |> Enum.flat_map(& &1.effects)
+  #   |> Enum.with_index()
+  #   |> Enum.map(& {1, })
+  # end
+
+  # defp parse_effects(assigns, base_card_params) do
+  #   Map.put(assigns.basecards, :effects, Enum.map(base_card_params["effects"], &Map.get(assigns.card_effects,&1)))
+  # end
+  # defp temp_format_effects_from_text(base_card_params) do
+  #   case Jason.decode(base_card_params["effects"] || "") do
+  #     {:ok, effects} -> Map.put(base_card_params, "effects", effects)
+  #     _ -> base_card_params
+  #   end
+  # end
 end
