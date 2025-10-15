@@ -177,19 +177,19 @@ defmodule GameWeb.GameLive do
   # defp character_class(%{class: :mage}), do: "character mage"
   # defp character_class(%{class: :fighter}), do: "character warrior"
   defp character_class(%{class: class}),
-    do: "character !bg-cover !bg-no-repeat #{get_class_bg(dbg(class))}"
+    do: "character !bg-cover !bg-no-repeat #{get_class_bg(to_string(class))}"
 
-  defp get_class_bg(:bard), do: "!bg-[url('/images/cat-bard.png')]"
-  defp get_class_bg(:cleric), do: "!bg-[url('/images/cat-cleric.png')]"
-  defp get_class_bg(:druid), do: "!bg-[url('/images/cat-druid.png')]"
-  defp get_class_bg(:fighter), do: "!bg-[url('/images/cat-fighter.png')]"
-  defp get_class_bg(:mage), do: "!bg-[url('/images/cat-mage.png')]"
-  defp get_class_bg(:monk), do: "!bg-[url('/images/cat-monk.png')]"
-  defp get_class_bg(:paladin), do: "!bg-[url('/images/cat-paladin.png')]"
-  defp get_class_bg(:ranger), do: "!bg-[url('/images/cat-ranger.png')]"
-  defp get_class_bg(:sorcerer), do: "!bg-[url('/images/cat-sorcerer.png')]"
-  defp get_class_bg(:thief), do: "!bg-[url('/images/cat-thief.png')]"
-  defp get_class_bg(:warlock), do: "!bg-[url('/images/cat-warlock.png')]"
+  defp get_class_bg("bard"), do: "!bg-[url('/images/cat-bard.png')]"
+  defp get_class_bg("cleric"), do: "!bg-[url('/images/cat-cleric.png')]"
+  defp get_class_bg("druid"), do: "!bg-[url('/images/cat-druid.png')]"
+  defp get_class_bg("fighter"), do: "!bg-[url('/images/cat-fighter.png')]"
+  defp get_class_bg("mage"), do: "!bg-[url('/images/cat-mage.png')]"
+  defp get_class_bg("monk"), do: "!bg-[url('/images/cat-monk.png')]"
+  defp get_class_bg("paladin"), do: "!bg-[url('/images/cat-paladin.png')]"
+  defp get_class_bg("ranger"), do: "!bg-[url('/images/cat-ranger.png')]"
+  defp get_class_bg("sorcerer"), do: "!bg-[url('/images/cat-sorcerer.png')]"
+  defp get_class_bg("thief"), do: "!bg-[url('/images/cat-thief.png')]"
+  defp get_class_bg("warlock"), do: "!bg-[url('/images/cat-warlock.png')]"
 
   defp initialize_game() do
     {:ok, game_pid} = Game.start_link()
