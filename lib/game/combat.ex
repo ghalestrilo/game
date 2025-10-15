@@ -99,7 +99,7 @@ defmodule Game.Combat do
 
             result =
               combat_with_running_state
-              |> CombatState.apply_card_effect_to_target(target, card)
+              |> CombatState.process_card(target, card)
               |> CombatState.check_target_death(target)
               |> CombatState.refresh_grid()
               |> CombatState.check_game_over()

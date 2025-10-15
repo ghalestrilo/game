@@ -1,4 +1,13 @@
 defmodule Game.Card do
+  alias Game.CombatState
+  alias Game.Combat.CardEffect
+  alias Game.Combat.CardEffects
+
+  @effect_types %{
+    "damage" => CardEffects.Damage,
+    "heal" => CardEffects.Heal
+  }
+
   defstruct [
     :id,
     :name,
@@ -81,5 +90,35 @@ defmodule Game.Card do
 
       Jason.Encode.map(card_map, opts)
     end
+  end
+
+  def process_card(combat_state, target, card) do
+    current_player = CombatState.get_current_player(combat_state)
+
+    combat_state
+    # Process ap cost, hand, etc
+    |> CombatState.update_target(
+      current_player,
+      current_player
+      |> Game.Character.discard_card(card)
+      |> Game.Character.spend_ap(card.cost)
+    )
+    # Process card effects (heal, damage, etc)
+    |> apply_card_effects(card.effects, target)
+  end
+
+  # Helper function to apply multiple card effects
+  defp apply_card_effects(combat_state, effects, target) when is_list(effects) do
+    Enum.reduce(effects, combat_state, fn effect, combat_state ->
+      effect
+      |> get_structured_effect()
+      |> CardEffect.process(target, combat_state)
+    end)
+  end
+
+  def get_structured_effect(%{"type" => type} = effect) do
+    @effect_types
+    |> Map.fetch!(type)
+    |> struct(effect)
   end
 end

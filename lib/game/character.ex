@@ -213,8 +213,11 @@ defmodule Game.Character do
 
   defp base_card_to_card(card) do
     card =
-      Map.drop(card, [:__meta__, :__struct__, :inserted_at, :updated_at, :ap, :headline])
-      |> dbg()
+      card
+      |> Map.drop([:__meta__, :__struct__, :inserted_at, :updated_at, :ap, :headline])
+      |> Map.merge(%{
+        cost: card.ap
+      })
 
     struct!(Game.Card, card)
   end

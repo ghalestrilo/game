@@ -42,6 +42,8 @@ defmodule Game.CombatState do
           }
         }
 
+  defdelegate process_card(combat, target, card), to: Game.Card
+
   @doc """
   Initializes a player's turn by ensuring they have 5 cards in their hand.
   Always draws up to 5 cards at the beginning of a turn.
@@ -181,42 +183,6 @@ defmodule Game.CombatState do
       # Target is still alive, return original combat state
       combat
     end
-  end
-
-  def apply_card_effect_to_target(combat, target, card) do
-    # Discard only the played card, not the entire hand
-    # For test compatibility, also apply the card effect here
-    # Deduct AP cost but keep the turn
-
-    all_characters = [combat.current_turn.player] ++ combat.queue
-
-    [updated_player | updated_queue] =
-      Enum.map(all_characters, fn
-        ^target -> apply_card_effects(target, card.effects)
-        not_target -> not_target
-      end)
-
-    updated_player =
-      updated_player
-      |> Character.discard_card(card)
-      |> Character.spend_ap(card.cost)
-
-    # Update player in all places
-    combat
-    |> put_in([:current_turn, :player], updated_player)
-    |> put_in([:queue], updated_queue)
-  end
-
-  # Helper function to apply multiple card effects
-  defp apply_card_effects(character, effects) when is_list(effects) do
-    Enum.reduce(effects, character, fn effect, char ->
-      Character.apply_card_effect(char, effect)
-    end)
-  end
-
-  # Fallback for backward compatibility with single effect cards
-  defp apply_card_effects(character, effect) do
-    Character.apply_card_effect(character, effect)
   end
 
   def setup_next_turn(%{current_turn: %{player: player}, queue: queue} = combat) do
@@ -376,4 +342,21 @@ defmodule Game.CombatState do
       Jason.Encode.map(combat_map, opts)
     end
   end
+
+  # TODO: move to Game.Card.Targeting which should process different targeting strategies
+  def update_target(combat_state, target, updated_target) do
+    all_characters = [get_current_player(combat_state)] ++ combat_state.queue
+
+    [updated_player | updated_queue] =
+      Enum.map(all_characters, fn
+        ^target -> updated_target
+        not_target -> not_target
+      end)
+
+    combat_state
+    |> put_in([:current_turn, :player], updated_player)
+    |> put_in([:queue], updated_queue)
+  end
+
+  def get_current_player(%{current_turn: %{player: player}}), do: player
 end
