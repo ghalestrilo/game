@@ -1,8 +1,6 @@
 .game-board {
     @apply w-full h-full;
     position: relative;
-    width: 800px;
-    height: 600px;
     margin-bottom: 2rem;
     background-color: #f8f9fa;
     border-radius: 8px;
