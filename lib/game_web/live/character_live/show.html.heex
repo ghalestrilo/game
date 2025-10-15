@@ -17,7 +17,12 @@
 
 <.back navigate={~p"/admin/characters"}>Back to characters</.back>
 
-<.modal :if={@live_action == :edit} id="character-modal" show on_cancel={JS.patch(~p"/admin/characters/#{@character}")}>
+<.modal
+  :if={@live_action == :edit}
+  id="character-modal"
+  show
+  on_cancel={JS.patch(~p"/admin/characters/#{@character}")}
+>
   <.live_component
     module={GameWeb.CharacterLive.FormComponent}
     id={@character.id}

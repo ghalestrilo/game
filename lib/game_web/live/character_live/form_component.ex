@@ -43,6 +43,7 @@ defmodule GameWeb.CharacterLive.FormComponent do
   @impl true
   def update(%{character: character} = assigns, socket) do
     decks = Game.Repo.all(BaseDeck)
+
     {:ok,
      socket
      |> assign(assigns)

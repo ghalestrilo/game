@@ -10,9 +10,7 @@ defmodule Game.DataFixtures do
   def character_fixture(attrs \\ %{}) do
     {:ok, character} =
       attrs
-      |> Enum.into(%{
-
-      })
+      |> Enum.into(%{})
       |> Game.Data.create_character()
 
     character

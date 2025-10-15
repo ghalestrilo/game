@@ -90,7 +90,6 @@ defmodule GameWeb.BaseCardLive.FormComponent do
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 
-
   # defp get_card_effects_as_options() do
   #   Game.BaseCards.list_basecards
   #   |> Enum.flat_map(& &1.effects)

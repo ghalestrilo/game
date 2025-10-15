@@ -32,7 +32,12 @@
   </:action>
 </.table>
 
-<.modal :if={@live_action in [:new, :edit]} id="character-modal" show on_cancel={JS.patch(~p"/admin/characters")}>
+<.modal
+  :if={@live_action in [:new, :edit]}
+  id="character-modal"
+  show
+  on_cancel={JS.patch(~p"/admin/characters")}
+>
   <.live_component
     module={GameWeb.CharacterLive.FormComponent}
     id={@character.id || :new}
