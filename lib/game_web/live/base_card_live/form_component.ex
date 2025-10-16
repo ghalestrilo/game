@@ -40,12 +40,17 @@ defmodule GameWeb.BaseCardLive.FormComponent do
         phx-submit="save"
       >
         <.input field={@form[:name]} type="text" label="Name" />
-        <div id="effects-list">
+        <div id="effects-list" class="flex gap-2 flex-col items-baseline">
+          <%!-- <div id="effects-list gap-2 flex-col"> --%>
           <label>Effects</label>
           <%= for {effect, idx} <- Enum.with_index(@form[:effects].value || []) do %>
             <% effect = if is_tuple(effect), do: elem(effect, 1), else: effect %>
-            <div class="effect-fields" id={"effect-#{idx}"}>
+            <div
+              class="flex w-full gap-4 items-end justify-between [&_div]:w-full"
+              id={"effect-#{idx}"}
+            >
               <.input
+                class="flex-1 w-full"
                 name={"#{@form.name}[effects][#{idx}][type]"}
                 id={"#{@form.id}_effects_#{idx}_type"}
                 value={effect["type"]}
@@ -54,18 +59,32 @@ defmodule GameWeb.BaseCardLive.FormComponent do
                 options={@effect_types}
               />
               <.input
+                class="flex-1 w-full"
                 name={"#{@form.name}[effects][#{idx}][value]"}
                 id={"#{@form.id}_effects_#{idx}_value"}
                 value={effect["value"]}
                 type="number"
                 label="Effect Value"
               />
-              <button type="button" phx-click="remove_effect" phx-value-idx={idx} phx-target={@myself}>
+              <button
+                type="button"
+                class="my-[10px]"
+                phx-click="remove_effect"
+                phx-value-idx={idx}
+                phx-target={@myself}
+              >
                 ✕
               </button>
             </div>
           <% end %>
-          <button type="button" phx-click="add_effect" phx-target={@myself}>＋ Add Effect</button>
+          <button
+            type="button"
+            class="rounded bg-gray-100 p-2"
+            phx-click="add_effect"
+            phx-target={@myself}
+          >
+            ＋ Add Effect
+          </button>
         </div>
         <.input field={@form[:ap]} type="number" label="Ap" />
         <.input field={@form[:headline]} type="text" label="Headline" />
