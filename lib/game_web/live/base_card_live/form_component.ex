@@ -3,6 +3,26 @@ defmodule GameWeb.BaseCardLive.FormComponent do
 
   alias Game.BaseCards
 
+  @effect_types [
+    "burn",
+    "cleanse",
+    "damage",
+    "dodge",
+    "draw",
+    "growth",
+    "heal",
+    "move",
+    "poison",
+    "position",
+    "regen",
+    "root",
+    "shield",
+    "slow",
+    "stealth",
+    "stun",
+    "taunt"
+  ]
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -20,7 +40,33 @@ defmodule GameWeb.BaseCardLive.FormComponent do
         phx-submit="save"
       >
         <.input field={@form[:name]} type="text" label="Name" />
-        <%!-- <.input field={@form[:effects]} type="select" multiple label="Effects" options={get_card_effects_as_options()} /> --%>
+        <div id="effects-list">
+          <label>Effects</label>
+          <%= for {effect, idx} <- Enum.with_index(@form[:effects].value || []) do %>
+            <% effect = if is_tuple(effect), do: elem(effect, 1), else: effect %>
+            <div class="effect-fields" id={"effect-#{idx}"}>
+              <.input
+                name={"#{@form.name}[effects][#{idx}][type]"}
+                id={"#{@form.id}_effects_#{idx}_type"}
+                value={effect["type"]}
+                type="select"
+                label="Effect Type"
+                options={@effect_types}
+              />
+              <.input
+                name={"#{@form.name}[effects][#{idx}][value]"}
+                id={"#{@form.id}_effects_#{idx}_value"}
+                value={effect["value"]}
+                type="number"
+                label="Effect Value"
+              />
+              <button type="button" phx-click="remove_effect" phx-value-idx={idx} phx-target={@myself}>
+                ✕
+              </button>
+            </div>
+          <% end %>
+          <button type="button" phx-click="add_effect" phx-target={@myself}>＋ Add Effect</button>
+        </div>
         <.input field={@form[:ap]} type="number" label="Ap" />
         <.input field={@form[:headline]} type="text" label="Headline" />
         <.input
@@ -45,7 +91,8 @@ defmodule GameWeb.BaseCardLive.FormComponent do
      |> assign(assigns)
      |> assign_new(:form, fn ->
        to_form(BaseCards.change_base_card(base_card))
-     end)}
+     end)
+     |> assign(:effect_types, @effect_types)}
   end
 
   @impl true
@@ -54,7 +101,34 @@ defmodule GameWeb.BaseCardLive.FormComponent do
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
 
+  @impl true
+  def handle_event("add_effect", _params, socket) do
+    effects = socket.assigns.form[:effects].value || []
+    new_effect = %{"type" => List.first(@effect_types), "value" => 0}
+    updated_effects = effects ++ [new_effect]
+    params = Map.put(socket.assigns.form.params || %{}, "effects", updated_effects)
+    changeset = BaseCards.change_base_card(socket.assigns.base_card, params)
+    {:noreply, assign(socket, form: to_form(changeset))}
+  end
+
+  @impl true
+  def handle_event("remove_effect", %{"idx" => idx}, socket) do
+    idx = String.to_integer(idx)
+    effects = socket.assigns.form[:effects].value || []
+    updated_effects = List.delete_at(effects, idx)
+    params = Map.put(socket.assigns.form.params || %{}, "effects", updated_effects)
+    changeset = BaseCards.change_base_card(socket.assigns.base_card, params)
+    {:noreply, assign(socket, form: to_form(changeset))}
+  end
+
   def handle_event("save", %{"base_card" => base_card_params}, socket) do
+    base_card_params =
+      if Map.has_key?(base_card_params, "effects") do
+        Map.update!(base_card_params, "effects", &normalize_effects/1)
+      else
+        base_card_params
+      end
+
     save_base_card(socket, socket.assigns.action, base_card_params)
   end
 
@@ -106,4 +180,20 @@ defmodule GameWeb.BaseCardLive.FormComponent do
   #     _ -> base_card_params
   #   end
   # end
+  defp normalize_effects(effects) when is_map(effects) do
+    effects
+    |> Map.values()
+    |> Enum.map(fn effect ->
+      %{
+        "type" => effect["type"],
+        "value" => parse_int(effect["value"])
+      }
+    end)
+  end
+
+  defp normalize_effects(effects) when is_list(effects), do: effects
+  defp normalize_effects(_), do: []
+
+  defp parse_int(val) when is_binary(val), do: String.to_integer(val)
+  defp parse_int(val), do: val
 end
