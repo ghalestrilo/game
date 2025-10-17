@@ -85,7 +85,7 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
     {:ok,
      socket
      |> assign(assigns)
-     |> assign(:cards, base_deck.cards)
+     |> assign(:cards, Game.BaseCards.list_basecards())
      |> assign_new(:form, fn ->
        to_form(Game.BaseDecks.change_base_deck(base_deck))
      end)}
@@ -168,19 +168,25 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
   defp normalize_base_deck_cards(cards) when is_map(cards) do
     cards
     |> Map.values()
-    |> Enum.map(fn card ->
-      %{
-        "id" => Map.get(card, "id") || Map.get(card, :id),
-        "card_id" => parse_int(Map.get(card, "card_id") || Map.get(card, :card_id)),
-        "count" => parse_int(Map.get(card, "count") || Map.get(card, :count))
-      }
-      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-      |> Enum.into(%{})
-    end)
+    |> Enum.map(&normalize_base_deck_card/1)
   end
 
-  defp normalize_base_deck_cards(cards) when is_list(cards), do: cards
+  defp normalize_base_deck_cards(cards) when is_list(cards),
+    do: Enum.map(cards, &normalize_base_deck_card/1)
+
   defp normalize_base_deck_cards(_), do: []
+
+  defp normalize_base_deck_card(card) do
+    card = if is_struct(card), do: Map.from_struct(card), else: card
+
+    %{
+      "id" => Map.get(card, "id") || Map.get(card, :id),
+      "card_id" => parse_int(Map.get(card, "card_id") || Map.get(card, :card_id)),
+      "count" => parse_int(Map.get(card, "count") || Map.get(card, :count))
+    }
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Enum.into(%{})
+  end
 
   defp parse_int(val) when is_binary(val) and val != "", do: String.to_integer(val)
   defp parse_int(val), do: val
