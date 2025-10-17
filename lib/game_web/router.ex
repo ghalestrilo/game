@@ -29,6 +29,8 @@ defmodule GameWeb.Router do
   scope "/admin", GameWeb do
     pipe_through :browser
 
+    live "/", Admin.AdminMenuLive
+
     live "/basecards", BaseCardLive.Index, :index
     live "/basecards/new", BaseCardLive.Index, :new
     live "/basecards/:id/edit", BaseCardLive.Index, :edit

@@ -1,0 +1,13 @@
+<.header>
+  Admin Pages
+  <:subtitle>Manage all admin sections from here.</:subtitle>
+</.header>
+<ul class="space-y-4 mt-8">
+  <%= for item <- @menu do %>
+    <li>
+      <.link navigate={item.route} class="text-lg font-medium text-blue-600 hover:underline">
+        <%= item.label %>
+      </.link>
+    </li>
+  <% end %>
+</ul>
