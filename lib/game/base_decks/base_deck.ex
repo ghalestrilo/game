@@ -16,6 +16,7 @@ defmodule Game.BaseDecks.BaseDeck do
   def changeset(base_deck, attrs) do
     base_deck
     |> cast(attrs, [:name])
+    |> cast_assoc(:base_deck_cards, with: &Game.Content.BaseDeckCard.changeset/2)
     |> validate_required([:name])
   end
 end

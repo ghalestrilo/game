@@ -35,7 +35,11 @@ defmodule Game.BaseDecks do
       ** (Ecto.NoResultsError)
 
   """
-  def get_base_deck!(id), do: Repo.get!(BaseDeck, id)
+  def get_base_deck!(id) do
+    BaseDeck
+    |> Repo.get!(id)
+    |> Repo.preload([:base_deck_cards, :cards])
+  end
 
   @doc """
   Creates a base_deck.
