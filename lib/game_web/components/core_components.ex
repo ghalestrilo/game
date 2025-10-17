@@ -597,6 +597,21 @@ defmodule GameWeb.CoreComponents do
     """
   end
 
+  # TODO: Move all below to GameWeb.AdminComponents
+  attr :card, Game.BaseCards.BaseCard
+
+  def effect_list(assigns) do
+    ~H"""
+    <ul>
+      <li :for={effect <- @card.effects} class="grid grid-cols-[auto_1fr] gap-2">
+        <%!-- <li :for={effect <- @card.effects} class="grid grid-cols-2 gap-2"> --%>
+        <span>{effect["type"]}</span>
+        <span>{Jason.encode!(Map.drop(effect, ["type"]))}</span>
+      </li>
+    </ul>
+    """
+  end
+
   ## JS Commands
 
   def show(js \\ %JS{}, selector) do
