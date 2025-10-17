@@ -22,15 +22,17 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
         <.input field={@form[:name]} type="text" label="Name" />
         <div id="base_deck_cards-list" class="flex gap-2 flex-col items-baseline">
           <label>Cards in Deck</label>
-          <%= for {base_deck_card, idx} <- Enum.with_index(@form[:base_deck_cards].value || []) do %>
+          <%= for {base_deck_card, idx} <- Enum.with_index(@form.params["base_deck_cards"] || @form[:base_deck_cards].value || []) do %>
             <% base_deck_card =
               if is_tuple(base_deck_card), do: elem(base_deck_card, 1), else: base_deck_card %>
             <% card_id = Map.get(base_deck_card, "card_id") || Map.get(base_deck_card, :card_id) %>
             <% count = Map.get(base_deck_card, "count") || Map.get(base_deck_card, :count) %>
+            <% id = Map.get(base_deck_card, "id") || Map.get(base_deck_card, :id) %>
             <div
               class="flex w-full gap-4 items-end justify-between [&_div]:w-full"
               id={"base_deck_card-#{idx}"}
             >
+              <input type="hidden" name={"#{@form.name}[base_deck_cards][#{idx}][id]"} value={id} />
               <.input
                 class="flex-1 w-full"
                 name={"#{@form.name}[base_deck_cards][#{idx}][card_id]"}
@@ -168,9 +170,12 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
     |> Map.values()
     |> Enum.map(fn card ->
       %{
-        "card_id" => parse_int(card["card_id"]),
-        "count" => parse_int(card["count"])
+        "id" => Map.get(card, "id") || Map.get(card, :id),
+        "card_id" => parse_int(Map.get(card, "card_id") || Map.get(card, :card_id)),
+        "count" => parse_int(Map.get(card, "count") || Map.get(card, :count))
       }
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Enum.into(%{})
     end)
   end
 
