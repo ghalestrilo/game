@@ -148,7 +148,11 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 
   def handle_event("add_base_deck_card", _params, socket) do
-    base_deck_cards = socket.assigns.form[:base_deck_cards].value || []
+    base_deck_cards =
+      (socket.assigns.form.params["base_deck_cards"] ||
+         socket.assigns.form[:base_deck_cards].value || [])
+      |> Enum.map(fn card -> if is_struct(card), do: Map.from_struct(card), else: card end)
+
     new_card = %{"card_id" => nil, "count" => 1}
     updated_cards = base_deck_cards ++ [new_card]
     params = Map.put(socket.assigns.form.params || %{}, "base_deck_cards", updated_cards)
@@ -158,7 +162,12 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
 
   def handle_event("remove_base_deck_card", %{"idx" => idx}, socket) do
     idx = String.to_integer(idx)
-    base_deck_cards = socket.assigns.form[:base_deck_cards].value || []
+
+    base_deck_cards =
+      (socket.assigns.form.params["base_deck_cards"] ||
+         socket.assigns.form[:base_deck_cards].value || [])
+      |> Enum.map(fn card -> if is_struct(card), do: Map.from_struct(card), else: card end)
+
     updated_cards = List.delete_at(base_deck_cards, idx)
     params = Map.put(socket.assigns.form.params || %{}, "base_deck_cards", updated_cards)
     changeset = Game.BaseDecks.change_base_deck(socket.assigns.base_deck, params)
