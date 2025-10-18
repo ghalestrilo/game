@@ -188,8 +188,9 @@ defmodule GameWeb.GameLive do
   defp get_class_bg("paladin"), do: "!bg-[url('/images/cat-paladin.png')]"
   defp get_class_bg("ranger"), do: "!bg-[url('/images/cat-ranger.png')]"
   defp get_class_bg("sorcerer"), do: "!bg-[url('/images/cat-sorcerer.png')]"
-  defp get_class_bg("thief"), do: "!bg-[url('/images/cat-thief.png')]"
+  defp get_class_bg("rogue"), do: "!bg-[url('/images/cat-rogue.png')]"
   defp get_class_bg("warlock"), do: "!bg-[url('/images/cat-warlock.png')]"
+  defp get_class_bg(_), do: "!bg-none"
 
   defp initialize_game() do
     {:ok, game_pid} = Game.start_link()
