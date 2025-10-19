@@ -196,29 +196,11 @@ defmodule Game.Character do
       ap: base_character.base_ap,
       movement_range: base_character.base_movement,
       position: {0, 0},
-      cards: %{draw: get_character_deck(base_character.deck), hand: [], discard: []}
+      cards: %{
+        draw: Game.BaseDecks.BaseDeck.get_cards(base_character.deck),
+        hand: [],
+        discard: []
+      }
     }
-  end
-
-  defp get_character_deck(%Game.BaseDecks.BaseDeck{base_deck_cards: cards}) do
-    cards
-    |> Enum.flat_map(
-      &([&1.card]
-        |> Stream.cycle()
-        |> Enum.take(&1.count)
-        |> Enum.to_list())
-    )
-    |> Enum.map(&base_card_to_card/1)
-  end
-
-  defp base_card_to_card(card) do
-    card =
-      card
-      |> Map.drop([:__meta__, :__struct__, :inserted_at, :updated_at, :ap, :headline])
-      |> Map.merge(%{
-        cost: card.ap
-      })
-
-    struct!(Game.Card, card)
   end
 end

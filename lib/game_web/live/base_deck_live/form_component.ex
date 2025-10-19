@@ -82,10 +82,21 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
   def update(%{base_deck: base_deck} = assigns, socket) do
     base_deck = Game.BaseDecks.get_base_deck!(base_deck.id)
 
+    already_used_card_ids =
+      base_deck
+      |> Game.BaseDecks.BaseDeck.get_cards()
+      |> Enum.map(& &1.id)
+      |> dbg()
+
+    available_cards =
+      Game.BaseCards.list_basecards()
+
+    # |> Enum.filter(&(&1.id not in already_used_card_ids))
+
     {:ok,
      socket
      |> assign(assigns)
-     |> assign(:cards, Game.BaseCards.list_basecards())
+     |> assign(:cards, available_cards)
      |> assign_new(:form, fn ->
        to_form(Game.BaseDecks.change_base_deck(base_deck))
      end)}

@@ -23,6 +23,7 @@ defmodule Game.Deck do
 
     # Extract card name from either a Card struct or card ID
     defp extract_card_info(%Game.Card{name: name}), do: name
+    # TODO: remove below
     defp extract_card_info(card_id) when is_integer(card_id), do: Game.Deck.get_card_name(card_id)
     defp extract_card_info(unknown), do: "Unknown (#{inspect(unknown)})"
   end
