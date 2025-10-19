@@ -2,10 +2,11 @@ defmodule Game.Card do
   alias Game.CombatState
   alias Game.Combat.CardEffect
   alias Game.Combat.CardEffects
+  require Logger
 
   @effect_types %{
-    "damage" => CardEffects.Damage,
-    "heal" => CardEffects.Heal
+    "damage" => CardEffects.Damage
+    # "heal" => CardEffects.Heal
   }
 
   defstruct [
@@ -109,7 +110,9 @@ defmodule Game.Card do
 
   # Helper function to apply multiple card effects
   defp apply_card_effects(combat_state, effects, target) when is_list(effects) do
-    Enum.reduce(effects, combat_state, fn effect, combat_state ->
+    effects
+    |> temporary_hack_filter_only_allowed_effects()
+    |> Enum.reduce(combat_state, fn effect, combat_state ->
       effect
       |> get_structured_effect()
       |> CardEffect.process(target, combat_state)
@@ -120,5 +123,16 @@ defmodule Game.Card do
     @effect_types
     |> Map.fetch!(type)
     |> struct(effect)
+  end
+
+  defp temporary_hack_filter_only_allowed_effects(effects) do
+    Enum.filter(effects, fn effect ->
+      if Map.has_key?(@effect_types, effect["type"]) do
+        true
+      else
+        Logger.warn("Effect not implemented, ignoring: #{inspect(effect)}")
+        false
+      end
+    end)
   end
 end
