@@ -4,8 +4,10 @@ defmodule Game.Character do
             class: nil,
             # Action Points
             ap: nil,
+            max_ap: nil,
             # Health Points
             hp: nil,
+            max_hp: nil,
             # Cards structure with draw, hand, and discard piles
             cards: %{
               draw: [],
@@ -179,13 +181,14 @@ defmodule Game.Character do
   TODO: These methods (get_max_ap and get_max_hp) should be replaced
   once we have logic to store the characters' max_hp and max_hp somewhere safe
   """
-  def get_max_hp(%__MODULE__{class: :fighter}), do: 20
-  def get_max_hp(%__MODULE__{class: :mage}), do: 15
-  def get_max_hp(%__MODULE__{}), do: 15
+  # def get_max_hp(%__MODULE__{class: :fighter}), do: 20
+  # def get_max_hp(%__MODULE__{class: :mage}), do: 15
+  # def get_max_hp(%__MODULE__{}), do: 15
+  def get_max_hp(%__MODULE__{max_hp: max_hp}), do: max_hp
 
-  def get_max_ap(%__MODULE__{class: :fighter}), do: 3
-  def get_max_ap(%__MODULE__{class: :mage}), do: 3
-  def get_max_ap(%__MODULE__{}), do: 3
+  # def get_max_ap(%__MODULE__{class: :fighter}), do: 3
+  # def get_max_ap(%__MODULE__{class: :mage}), do: 3
+  def get_max_ap(%__MODULE__{max_ap: max_ap}), do: max_ap
 
   def from_character_data(%Game.Data.Character{} = base_character) do
     %__MODULE__{
@@ -193,7 +196,9 @@ defmodule Game.Character do
       name: String.capitalize(base_character.class),
       class: base_character.class,
       hp: base_character.base_hp,
+      max_hp: base_character.base_hp,
       ap: base_character.base_ap,
+      max_ap: base_character.base_ap,
       movement_range: base_character.base_movement,
       position: {0, 0},
       cards: %{
