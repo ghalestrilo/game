@@ -50,6 +50,15 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
                 type="number"
                 label="Count"
               />
+              <span style="display: none">
+                <.input
+                  name={"#{@form.name}[base_deck_cards][#{idx}][deck_id]"}
+                  id={"#{@form.id}_base_deck_cards_#{idx}_deck_id"}
+                  value={@form.data.id}
+                  type="number"
+                  label="Deck ID"
+                />
+              </span>
               <button
                 type="button"
                 class="my-[10px]"
@@ -202,6 +211,7 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
     %{
       "id" => Map.get(card, "id") || Map.get(card, :id),
       "card_id" => parse_int(Map.get(card, "card_id") || Map.get(card, :card_id)),
+      "deck_id" => parse_int(Map.get(card, "deck_id") || Map.get(card, :deck_id)),
       "count" => parse_int(Map.get(card, "count") || Map.get(card, :count))
     }
     |> Enum.reject(fn {_k, v} -> is_nil(v) end)
