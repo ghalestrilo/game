@@ -95,7 +95,6 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
       base_deck
       |> Game.BaseDecks.BaseDeck.get_cards()
       |> Enum.map(& &1.id)
-      |> dbg()
 
     available_cards =
       Game.BaseCards.list_basecards()

@@ -17,6 +17,5 @@ defmodule Game.Content.BaseDeckCard do
     base_deck_card
     |> cast(attrs, [:card_id, :deck_id, :count])
     |> validate_required([:card_id, :deck_id, :count])
-    |> dbg()
   end
 end
