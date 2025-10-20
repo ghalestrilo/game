@@ -69,16 +69,9 @@ defmodule Game.Character do
   @doc """
   Heals a character
   """
-  def heal(character, amount) do
+  def apply_healing(character, amount) do
     %{character | hp: min(character.hp + amount, get_max_hp(character))}
   end
-
-  @doc """
-  Applies a card effect to a character
-  """
-  def apply_card_effect(character, {:damage, amount}), do: apply_damage(character, amount)
-  def apply_card_effect(character, {:heal, amount}), do: heal(character, amount)
-  def apply_card_effect(character, _), do: character
 
   @doc """
   Moves a card from one pile to another
