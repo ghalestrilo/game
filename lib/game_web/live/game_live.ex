@@ -67,7 +67,9 @@ defmodule GameWeb.GameLive do
 
     # Create characters from the initial state
     characters =
-      Enum.map(initial_state, fn {{q, r, s}, classname, team} ->
+      initial_state
+      |> Enum.with_index()
+      |> Enum.map(fn {{{q, r, s}, classname, team}, idx} ->
         character =
           classname
           |> to_string()
@@ -75,6 +77,7 @@ defmodule GameWeb.GameLive do
           |> Game.Character.from_character_data()
           |> Map.put(:position, {q, r, s})
           |> Map.put(:team, team)
+          |> Map.put(:id, idx)
       end)
 
     # Extract all positions from the initial state
