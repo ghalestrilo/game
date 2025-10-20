@@ -2,6 +2,9 @@ defmodule Game.Combat do
   @moduledoc """
   This module implements resolvers that receive player or game actions and coordinats calls to
   Game.CombatState methods which transform the state accordingly.
+
+  The principle is that CombatState implemens simple, atomic, composable state mutations, while Combat coordinates these calls
+  without getting too involved in the implementation details of any of the associated modules
   """
   require Logger
   alias Game.Card
@@ -174,13 +177,13 @@ defmodule Game.Combat do
     end
   end
 
-  # Game over check
-  def process_action(%CombatState{state: :running} = combat, {:win_check, win_or_not}) do
-    case win_or_not do
-      :no_win -> {:ok, combat}
-      :win -> {:ok, %CombatState{combat | state: :game_over}}
-    end
-  end
+  # # Game over check
+  # def process_action(%CombatState{state: :running} = combat, {:win_check, win_or_not}) do
+  #   case win_or_not do
+  #     :no_win -> {:ok, combat}
+  #     :win -> {:ok, %CombatState{combat | state: :game_over}}
+  #   end
+  # end
 
   # Catch-all for invalid actions
   def process_action(%CombatState{} = combat, action) do

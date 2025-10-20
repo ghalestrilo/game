@@ -43,8 +43,8 @@ defmodule GameWeb.GameLive do
     |> String.split(",")
     |> Enum.map(fn entry ->
       case String.split(entry, ":") do
-        [position, class, id] ->
-          {parse_position(position), String.to_atom(class), String.to_integer(id)}
+        [position, class, team] ->
+          {parse_position(position), String.to_atom(class), String.to_integer(team)}
 
         _ ->
           raise "Invalid format for initial_state entry: #{entry}"
@@ -67,14 +67,14 @@ defmodule GameWeb.GameLive do
 
     # Create characters from the initial state
     characters =
-      Enum.map(initial_state, fn {{q, r, s}, classname, id} ->
-        # character = Fixtures.character(classname, id)
+      Enum.map(initial_state, fn {{q, r, s}, classname, team} ->
         character =
           classname
           |> to_string()
           |> Game.Data.get_character_by_class!()
           |> Game.Character.from_character_data()
           |> Map.put(:position, {q, r, s})
+          |> Map.put(:team, team)
       end)
 
     # Extract all positions from the initial state
