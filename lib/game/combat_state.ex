@@ -242,7 +242,6 @@ defmodule Game.CombatState do
     |> Enum.map(& &1.team)
     |> Enum.uniq()
     |> length()
-    |> dbg()
     |> case do
       n when n <= 1 -> %CombatState{combat | state: :game_over}
       # Explicitly set to running for test compatibility

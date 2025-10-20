@@ -5,8 +5,8 @@ defmodule Game.Card do
   require Logger
 
   @effect_types %{
-    "damage" => CardEffects.Damage
-    # "heal" => CardEffects.Heal
+    "damage" => CardEffects.Damage,
+    "heal" => CardEffects.Heal
   }
 
   defstruct [

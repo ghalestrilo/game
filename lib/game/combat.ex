@@ -79,13 +79,10 @@ defmodule Game.Combat do
       state: :running,
       __constants__: %{players: characters},
       queue: characters,
-      grid: grid,
-      current_turn: %{
-        starting_position: hd(characters).position,
-        player: hd(characters),
-        card: nil
-      }
+      grid: grid
     }
+    |> CombatState.set_current_player(Enum.at(characters, 0))
+    |> CombatState.setup_next_player_turn()
   end
 
   @doc """
@@ -191,7 +188,6 @@ defmodule Game.Combat do
     end
   end
 
-  # Define a `:pick_card` action
   def process_action(%CombatState{state: :running} = combat, {:pick_card, player, card}) do
     cond do
       not TurnQueue.is_players_turn?(combat.queue, player) ->
@@ -283,21 +279,4 @@ defmodule Game.Combat do
 
     {:error, "Invalid state"}
   end
-
-  # defp get_visible_tiles(%{tiles: tiles}) do
-  #   tiles
-  #   |> Map.to_list()
-  #   # |> Enum.map(fn {{q, r, s}, _tile} -> {q, r, s, get_hex_position(q, r)} end)
-  #   |> Enum.sort_by(fn {q, r, _s, _style} -> {r, q} end)
-  # end
-
-  # defp get_hex_position(q, r) do
-  #   # Regular hex geometry (pointy-topped)
-  #   width = 60
-  #   height = 52
-  #   x = (q * (width * 0.75)) |> round()
-  #   y = r * height + if rem(q, 2) == 1, do: height / 2, else: 0
-  #   y = round(y)
-  #   "transform: translate(#{x}px, #{y}px)"
-  # end
 end
