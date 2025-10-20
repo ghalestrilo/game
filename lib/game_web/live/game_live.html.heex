@@ -70,7 +70,7 @@
         <div class="text-md mb-4">
           {@game_state.combat.current_turn.player.name} ({@game_state.combat.current_turn.player.class})
         </div>
-        
+
 <!-- Turn Queue Panel -->
         <div class="mt-4">
           <h3 class="text-lg font-bold mb-2">Turn Queue</h3>
@@ -95,7 +95,7 @@
           </ul>
         </div>
       </div>
-      
+
 <!-- Game board -->
       <div class="game-board flex-1">
         <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
@@ -208,7 +208,7 @@
 
     <div class="card-row mt-4">
       <%= for {card, index} <- Enum.with_index(@game_state.combat.current_turn.player.cards.hand) do %>
-        <div
+        <div :if={false}
           phx-click="pick_card"
           phx-value-card_index={index}
           class={[
@@ -223,6 +223,10 @@
 
           <div class="card-effect">Cost: {card.cost} | {inspect(card.effects)}</div>
         </div>
+        <.card
+          selected={card == Map.get(@game_state.combat.current_turn, :card, nil)}
+          index={index}
+          card={card} />
       <% end %>
     </div>
   <% end %>

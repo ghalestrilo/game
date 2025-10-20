@@ -612,6 +612,56 @@ defmodule GameWeb.CoreComponents do
     """
   end
 
+  @doc """
+  Renders a card.
+
+  ## Examples
+
+      <.card card={@card} />
+
+  """
+  attr :card, Game.Card, required: true
+  attr :index, :integer
+  attr :selected, :boolean, default: false
+
+  def card(assigns) do
+    # For some reason phx-blur does not work. Investigate...
+    ~H"""
+    <div
+      class={[
+        "rounded-lg border border-zinc-300 bg-white shadow-md w-72 flex flex-col p-4 transition-[all] duration-140 ease-in-out",
+        if(@selected, do: "!bg-yellow-50 -mt-4 mb-4", else: "")
+      ]}
+      phx-click="pick_card"
+      phx-blur="pick_card"
+      phx-value-card_index={@index}
+    >
+      <div class="flex items-center justify-between mb-2">
+        <span class="font-bold text-lg text-zinc-800">{@card.name}</span>
+        <div class="flex gap-2 items-center">
+          <span class="text-xs bg-zinc-100 rounded px-2 py-0.5 text-zinc-600" title="Range">
+            <.icon name="hero-arrow-up-right-mini" class="inline-block w-3 h-3 mr-1" /> {@card.range}
+          </span>
+          <span class="text-xs bg-zinc-900 text-white rounded px-2 py-0.5" title="Cost">
+            <.icon name="hero-bolt-mini" class="inline-block w-3 h-3 mr-1" /> {@card.cost}
+          </span>
+        </div>
+      </div>
+      <div class="mb-2 text-sm text-zinc-700 min-h-[3rem]">
+        {@card.description}
+      </div>
+      <div class="mt-auto pt-2 border-t border-zinc-100 w-full">
+        <.effect_list card={@card} />
+      </div>
+    </div>
+    """
+  end
+
+  # ----------------------------------------------------------------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------------------------------------------------------------------
+  # ----------------------------------------------------------------------------------------------------------------------------------------
+
   ## JS Commands
 
   def show(js \\ %JS{}, selector) do
