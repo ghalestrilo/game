@@ -43,7 +43,7 @@
     id={@base_deck.id || :new}
     title={@page_title}
     action={@live_action}
-    base_deck={@base_deck}
+    base_deck={@base_deck |> Game.Repo.preload(:base_deck_cards)}
     patch={~p"/admin/basedecks"}
   />
 </.modal>

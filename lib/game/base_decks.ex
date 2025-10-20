@@ -54,9 +54,25 @@ defmodule Game.BaseDecks do
 
   """
   def create_base_deck(attrs \\ %{}) do
-    %BaseDeck{}
-    |> BaseDeck.changeset(attrs)
-    |> Repo.insert()
+    base_deck_cards = Map.get(attrs, "base_deck_cards") || Map.get(attrs, :base_deck_cards)
+    deck_attrs = Map.drop(attrs, ["base_deck_cards", :base_deck_cards])
+
+    Repo.transaction(fn ->
+      insert_result =
+        %BaseDeck{}
+        |> Repo.preload(:base_deck_cards)
+        |> BaseDeck.changeset(deck_attrs)
+        |> Repo.insert()
+
+      with {:ok, deck} <- insert_result,
+           updated_base_deck_cards <- Enum.map(base_deck_cards, &Map.put(&1, "deck_id", deck.id)),
+           update_attrs <- Map.put(deck_attrs, "base_deck_cards", updated_base_deck_cards),
+           {:ok, updated_deck} <- update_base_deck(deck, update_attrs) do
+        updated_deck
+      else
+        error -> Repo.rollback(error)
+      end
+    end)
   end
 
   @doc """

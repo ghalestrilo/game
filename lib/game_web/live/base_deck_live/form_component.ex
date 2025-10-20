@@ -87,24 +87,47 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
     """
   end
 
-  @impl true
-  def update(%{base_deck: base_deck} = assigns, socket) do
-    base_deck = Game.BaseDecks.get_base_deck!(base_deck.id)
+  def mount(params, session, %{assigns: assigns} = socket) do
+    base_deck =
+      case @base_deck.id do
+        index when is_integer(index) ->
+          Game.BaseDecks.get_base_deck(index)
+          |> Game.Repo.preload(:base_deck_cards)
+
+        nil ->
+          @base_deck
+          |> Game.Repo.preload(:base_deck_cards)
+      end
 
     already_used_card_ids =
-      base_deck
-      |> Game.BaseDecks.BaseDeck.get_cards()
-      |> Enum.map(& &1.id)
+      case base_deck.id do
+        index when is_integer(index) ->
+          @base_deck
+          |> Game.BaseDecks.BaseDeck.get_cards()
+          |> Enum.map(& &1.id)
+
+        _ ->
+          []
+      end
 
     available_cards =
       Game.BaseCards.list_basecards()
 
-    # |> Enum.filter(&(&1.id not in already_used_card_ids))
-
     {:ok,
      socket
      |> assign(assigns)
-     |> assign(:cards, available_cards)
+     |> assign_new(:cards, available_cards)
+     |> assign_new(:form, fn ->
+       to_form(Game.BaseDecks.change_base_deck(base_deck))
+     end)}
+  end
+
+  @impl true
+  def update(%{base_deck: base_deck} = assigns, socket) do
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:cards, Game.BaseCards.list_basecards())
      |> assign_new(:form, fn ->
        to_form(Game.BaseDecks.change_base_deck(base_deck))
      end)}
