@@ -65,7 +65,6 @@ defmodule Game.Grid do
       end
       |> Map.new()
 
-    IO.inspect(tiles, label: "Generated Tiles")
     %__MODULE__{tiles: tiles}
 
     %__MODULE__{tiles: tiles}

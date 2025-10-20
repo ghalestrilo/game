@@ -120,9 +120,14 @@ defmodule Game.Card do
   end
 
   def get_structured_effect(%{"type" => type} = effect) do
+    effect_data =
+      Enum.reduce(effect, %{}, fn {key, value}, acc ->
+        Map.put(acc, String.to_atom(key), value)
+      end)
+
     @effect_types
     |> Map.fetch!(type)
-    |> struct(effect)
+    |> struct(effect_data)
   end
 
   defp temporary_hack_filter_only_allowed_effects(effects) do

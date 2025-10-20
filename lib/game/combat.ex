@@ -13,6 +13,81 @@ defmodule Game.Combat do
 
   def new, do: %CombatState{}
 
+  def initialize_from_char_params_list(params) do
+    # Create characters from the initial state
+    characters =
+      params
+      |> Enum.with_index()
+      |> Enum.map(fn {{{q, r, s}, classname, team}, idx} ->
+        character =
+          classname
+          |> to_string()
+          |> Game.Data.get_character_by_class!()
+          |> Game.Character.from_character_data()
+          |> Map.put(:position, {q, r, s})
+          |> Map.put(:team, team)
+          |> Map.put(:id, idx)
+      end)
+
+    # Extract all positions from the initial state
+    positions = Enum.map(params, fn {{q, r, s}, _class, _id} -> {q, r, s} end)
+
+    # Log characters for debugging
+
+    # Create a grid and update it with the characters
+    # Calculate the grid radius dynamically based on the positions
+    max_radius =
+      positions
+      |> Enum.map(&Game.Grid.normalize/1)
+      |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end)
+      |> Enum.max()
+
+    padded_radius = max_radius + 1
+    grid = Game.Grid.new({padded_radius, padded_radius, padded_radius})
+
+    # Validate that all positions in the initial_state are within the grid radius
+    Enum.each(positions, fn position ->
+      normalized_position = Game.Grid.normalize(position)
+
+      unless Map.has_key?(grid.tiles, normalized_position) do
+        raise "Position #{inspect(position)} is outside the grid radius"
+      end
+    end)
+
+    Enum.each(positions, fn position ->
+      normalized_position = Game.Grid.normalize(position)
+
+      unless Map.has_key?(grid.tiles, normalized_position) do
+        raise "Position #{inspect(position)} is outside the grid radius"
+      end
+    end)
+
+    # grid =
+    #   Map.update!(grid, :tiles, fn tiles ->
+    #     Enum.map(tiles, fn {position, tile} ->
+    #       {position,
+    #        Map.put(tile, :style, get_hex_position(elem(position, 0), elem(position, 1)))}
+    #     end)
+    #     |> Enum.into(%{})
+    #   end)
+
+    # Update the grid with the characters
+    grid = Enum.reduce(characters, grid, &Game.Grid.update_character(&2, &1))
+
+    # Create combat struct
+    %Game.CombatState{
+      state: :running,
+      __constants__: %{players: characters},
+      queue: characters,
+      grid: grid,
+      current_turn: %{
+        starting_position: hd(characters).position,
+        player: hd(characters),
+        card: nil
+      }
+    }
+  end
+
   @doc """
   This function is used to handle actions in the combat state.
   It receives the current game state and an action to perform
@@ -208,4 +283,21 @@ defmodule Game.Combat do
 
     {:error, "Invalid state"}
   end
+
+  # defp get_visible_tiles(%{tiles: tiles}) do
+  #   tiles
+  #   |> Map.to_list()
+  #   # |> Enum.map(fn {{q, r, s}, _tile} -> {q, r, s, get_hex_position(q, r)} end)
+  #   |> Enum.sort_by(fn {q, r, _s, _style} -> {r, q} end)
+  # end
+
+  # defp get_hex_position(q, r) do
+  #   # Regular hex geometry (pointy-topped)
+  #   width = 60
+  #   height = 52
+  #   x = (q * (width * 0.75)) |> round()
+  #   y = r * height + if rem(q, 2) == 1, do: height / 2, else: 0
+  #   y = round(y)
+  #   "transform: translate(#{x}px, #{y}px)"
+  # end
 end
