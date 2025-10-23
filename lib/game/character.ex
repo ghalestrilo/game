@@ -202,4 +202,8 @@ defmodule Game.Character do
       }
     }
   end
+
+  def shuffle_deck(character) do
+    update_in(character.cards.draw, &Enum.shuffle(&1))
+  end
 end

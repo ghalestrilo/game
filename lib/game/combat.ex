@@ -24,7 +24,7 @@ defmodule Game.Combat do
           |> to_string()
           |> Game.Content.get_base_class_by_class!()
           |> Game.Character.from_character_data()
-          |> dbg()
+          |> Game.Character.shuffle_deck()
           |> Map.put(:position, {q, r, s})
           |> Map.put(:team, team)
           |> Map.put(:id, idx)
