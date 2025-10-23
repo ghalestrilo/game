@@ -1,4 +1,4 @@
-defmodule GameWeb.CharacterLive.Show do
+defmodule GameWeb.BaseClassLive.Show do
   use GameWeb, :live_view
 
   alias Game.Data
@@ -13,7 +13,7 @@ defmodule GameWeb.CharacterLive.Show do
     {:noreply,
      socket
      |> assign(:page_title, page_title(socket.assigns.live_action))
-     |> assign(:character, Data.get_character!(id))}
+     |> assign(:base_class, Content.get_base_class!(id))}
   end
 
   defp page_title(:show), do: "Show Character"

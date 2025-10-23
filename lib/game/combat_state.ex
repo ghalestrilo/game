@@ -315,11 +315,11 @@ defmodule Game.CombatState do
   def restore_max_ap(%CombatState{current_turn: %{player: character}} = combat) do
     updated_character = %{character | ap: Game.Character.get_max_ap(character)}
 
-    queue =
-      Enum.map(combat.queue, fn
-        %{id: character.id} -> updated_character
-        character -> character
-      end)
+    # queue =
+    #   Enum.map(combat.queue, fn
+    #     %{id: id} when id == character.id -> updated_character
+    #     character -> character
+    #   end)
 
     %{combat | current_turn: %{combat.current_turn | player: updated_character}}
   end

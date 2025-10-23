@@ -22,8 +22,9 @@ defmodule Game.Combat do
         character =
           classname
           |> to_string()
-          |> Game.Data.get_character_by_class!()
+          |> Game.Content.get_base_class_by_class!()
           |> Game.Character.from_character_data()
+          |> dbg()
           |> Map.put(:position, {q, r, s})
           |> Map.put(:team, team)
           |> Map.put(:id, idx)

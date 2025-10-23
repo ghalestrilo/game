@@ -79,13 +79,13 @@
               <li class="my-2 p-2 border border-gray-100 rounded">
                 <div class="pb-1 flex gap-1">
                   <span
-                    :for={hp <- 1..Game.Character.get_max_hp(character)}
+                    :for={hp <- 1..(Game.Character.get_max_hp(character))}
                     class={"#{if hp > character.hp, do: "bg-gray-300", else: "bg-green-300"} flex-1 h-1 rounded-[2px]"}
                   />
                 </div>
                 <div class="pb-1 flex gap-1">
                   <span
-                    :for={ap <- 1..Game.Character.get_max_ap(character)}
+                    :for={ap <- 1..(Game.Character.get_max_ap(character))}
                     class={"#{if ap > character.ap, do: "bg-gray-300", else: "bg-yellow-300"} flex-1 h-1 rounded-[2px]"}
                   />
                 </div>

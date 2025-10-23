@@ -1,7 +1,7 @@
-defmodule GameWeb.CharacterLive.FormComponent do
+defmodule GameWeb.BaseClassLive.FormComponent do
   use GameWeb, :live_component
 
-  alias Game.Data
+  alias Game.Content
   alias Game.BaseDecks.BaseDeck
   import GameWeb.CoreComponents
 
@@ -11,12 +11,12 @@ defmodule GameWeb.CharacterLive.FormComponent do
     <div>
       <.header>
         {@title}
-        <:subtitle>Use this form to manage character records in your database.</:subtitle>
+        <:subtitle>Use this form to manage base_class records in your database.</:subtitle>
       </.header>
 
       <.simple_form
         for={@form}
-        id="character-form"
+        id="base_class-form"
         phx-target={@myself}
         phx-change="validate"
         phx-submit="save"
@@ -33,7 +33,7 @@ defmodule GameWeb.CharacterLive.FormComponent do
           options={Enum.map(@decks, &{&1.name, &1.id})}
         />
         <:actions>
-          <.button phx-disable-with="Saving...">Save Character</.button>
+          <.button phx-disable-with="Saving...">Save Base Class</.button>
         </:actions>
       </.simple_form>
     </div>
@@ -41,7 +41,7 @@ defmodule GameWeb.CharacterLive.FormComponent do
   end
 
   @impl true
-  def update(%{character: character} = assigns, socket) do
+  def update(%{base_class: base_class} = assigns, socket) do
     decks = Game.Repo.all(BaseDeck)
 
     {:ok,
@@ -49,28 +49,28 @@ defmodule GameWeb.CharacterLive.FormComponent do
      |> assign(assigns)
      |> assign(:decks, decks)
      |> assign_new(:form, fn ->
-       to_form(Data.change_character(character))
+       to_form(Content.change_base_class(base_class))
      end)}
   end
 
   @impl true
-  def handle_event("validate", %{"character" => character_params}, socket) do
-    changeset = Data.change_character(socket.assigns.character, character_params)
+  def handle_event("validate", %{"base_class" => base_class_params}, socket) do
+    changeset = Content.change_base_class(socket.assigns.base_class, base_class_params)
     {:noreply, assign(socket, form: to_form(changeset, action: :validate))}
   end
 
-  def handle_event("save", %{"character" => character_params}, socket) do
-    save_character(socket, socket.assigns.action, character_params)
+  def handle_event("save", %{"base_class" => base_class_params}, socket) do
+    save_base_class(socket, socket.assigns.action, base_class_params)
   end
 
-  defp save_character(socket, :edit, character_params) do
-    case Data.update_character(socket.assigns.character, character_params) do
-      {:ok, character} ->
-        notify_parent({:saved, character})
+  defp save_base_class(socket, :edit, base_class_params) do
+    case Content.update_base_class(socket.assigns.base_class, base_class_params) do
+      {:ok, base_class} ->
+        notify_parent({:saved, base_class})
 
         {:noreply,
          socket
-         |> put_flash(:info, "Character updated successfully")
+         |> put_flash(:info, "Base Class updated successfully")
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->
@@ -78,14 +78,14 @@ defmodule GameWeb.CharacterLive.FormComponent do
     end
   end
 
-  defp save_character(socket, :new, character_params) do
-    case Data.create_character(character_params) do
-      {:ok, character} ->
-        notify_parent({:saved, character})
+  defp save_base_class(socket, :new, base_class_params) do
+    case Content.create_base_class(base_class_params) do
+      {:ok, base_class} ->
+        notify_parent({:saved, base_class})
 
         {:noreply,
          socket
-         |> put_flash(:info, "Character created successfully")
+         |> put_flash(:info, "Base Class created successfully")
          |> push_patch(to: socket.assigns.patch)}
 
       {:error, %Ecto.Changeset{} = changeset} ->

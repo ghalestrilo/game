@@ -28,8 +28,8 @@ defmodule GameWeb.Admin.AdminMenuLive do
   def get_menu() do
     [
       %{
-        route: ~p"/admin/characters",
-        label: "Characters"
+        route: ~p"/admin/base_classes",
+        label: "Base Classes"
       },
       %{
         route: ~p"/admin/basedecks",

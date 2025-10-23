@@ -1,117 +1,120 @@
-defmodule Game.DataTest do
-  use Game.DataCase
+defmodule Game.ContentTest do
+  use Game.ContentCase
 
-  alias Game.Data
+  alias Game.Content
 
-  describe "characters" do
-    alias Game.Data.Character
+  describe "base_classes" do
+    alias Game.Content.BaseClass
 
-    import Game.DataFixtures
+    import Game.ContentFixtures
 
     @invalid_attrs %{}
 
-    test "list_characters/0 returns all characters" do
-      character = character_fixture()
-      assert Data.list_characters() == [character]
+    test "list_base_classes/0 returns all base_classes" do
+      base_class = base_class_fixture()
+      assert Content.list_base_classes() == [base_class]
     end
 
-    test "get_character!/1 returns the character with given id" do
-      character = character_fixture()
-      assert Data.get_character!(character.id) == character
+    test "get_base_class!/1 returns the base_class with given id" do
+      base_class = base_class_fixture()
+      assert Content.get_base_class!(base_class.id) == base_class
     end
 
-    test "create_character/1 with valid data creates a character" do
+    test "create_base_class/1 with valid data creates a base_class" do
       valid_attrs = %{}
 
-      assert {:ok, %Character{} = character} = Data.create_character(valid_attrs)
+      assert {:ok, %BaseClass{} = base_class} = Content.create_base_class(valid_attrs)
     end
 
-    test "create_character/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Data.create_character(@invalid_attrs)
+    test "create_base_class/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Content.create_base_class(@invalid_attrs)
     end
 
-    test "update_character/2 with valid data updates the character" do
-      character = character_fixture()
+    test "update_base_class/2 with valid data updates the base_class" do
+      base_class = base_class_fixture()
       update_attrs = %{}
 
-      assert {:ok, %Character{} = character} = Data.update_character(character, update_attrs)
+      assert {:ok, %BaseClass{} = base_class} =
+               Content.update_base_class(base_class, update_attrs)
     end
 
-    test "update_character/2 with invalid data returns error changeset" do
-      character = character_fixture()
-      assert {:error, %Ecto.Changeset{}} = Data.update_character(character, @invalid_attrs)
-      assert character == Data.get_character!(character.id)
+    test "update_base_class/2 with invalid data returns error changeset" do
+      base_class = base_class_fixture()
+      assert {:error, %Ecto.Changeset{}} = Content.update_base_class(base_class, @invalid_attrs)
+      assert base_class == Content.get_base_class!(base_class.id)
     end
 
-    test "delete_character/1 deletes the character" do
-      character = character_fixture()
-      assert {:ok, %Character{}} = Data.delete_character(character)
-      assert_raise Ecto.NoResultsError, fn -> Data.get_character!(character.id) end
+    test "delete_base_class/1 deletes the base_class" do
+      base_class = base_class_fixture()
+      assert {:ok, %BaseClass{}} = Content.delete_base_class(base_class)
+      assert_raise Ecto.NoResultsError, fn -> Content.get_base_class!(base_class.id) end
     end
 
-    test "change_character/1 returns a character changeset" do
-      character = character_fixture()
-      assert %Ecto.Changeset{} = Data.change_character(character)
+    test "change_base_class/1 returns a base_class changeset" do
+      base_class = base_class_fixture()
+      assert %Ecto.Changeset{} = Content.change_base_class(base_class)
     end
   end
 
-  describe "characters" do
-    alias Game.Data.Character
+  describe "base_classes" do
+    alias Game.Content.BaseClass
 
-    import Game.DataFixtures
+    import Game.ContentFixtures
 
     @invalid_attrs %{class: nil, base_hp: nil, base_ap: nil, base_movement: nil}
 
-    test "list_characters/0 returns all characters" do
-      character = character_fixture()
-      assert Data.list_characters() == [character]
+    test "list_base_classes/0 returns all base_classes" do
+      base_class = base_class_fixture()
+      assert Content.list_base_classes() == [base_class]
     end
 
-    test "get_character!/1 returns the character with given id" do
-      character = character_fixture()
-      assert Data.get_character!(character.id) == character
+    test "get_base_class!/1 returns the base_class with given id" do
+      base_class = base_class_fixture()
+      assert Content.get_base_class!(base_class.id) == base_class
     end
 
-    test "create_character/1 with valid data creates a character" do
+    test "create_base_class/1 with valid data creates a base_class" do
       valid_attrs = %{class: "some class", base_hp: 42, base_ap: 42, base_movement: 42}
 
-      assert {:ok, %Character{} = character} = Data.create_character(valid_attrs)
-      assert character.class == "some class"
-      assert character.base_hp == 42
-      assert character.base_ap == 42
-      assert character.base_movement == 42
+      assert {:ok, %BaseClass{} = base_class} = Content.create_base_class(valid_attrs)
+      assert base_class.class == "some class"
+      assert base_class.base_hp == 42
+      assert base_class.base_ap == 42
+      assert base_class.base_movement == 42
     end
 
-    test "create_character/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = Data.create_character(@invalid_attrs)
+    test "create_base_class/1 with invalid data returns error changeset" do
+      assert {:error, %Ecto.Changeset{}} = Content.create_base_class(@invalid_attrs)
     end
 
-    test "update_character/2 with valid data updates the character" do
-      character = character_fixture()
+    test "update_base_class/2 with valid data updates the base_class" do
+      base_class = base_class_fixture()
       update_attrs = %{class: "some updated class", base_hp: 43, base_ap: 43, base_movement: 43}
 
-      assert {:ok, %Character{} = character} = Data.update_character(character, update_attrs)
-      assert character.class == "some updated class"
-      assert character.base_hp == 43
-      assert character.base_ap == 43
-      assert character.base_movement == 43
+      assert {:ok, %BaseClass{} = base_class} =
+               Content.update_base_class(base_class, update_attrs)
+
+      assert base_class.class == "some updated class"
+      assert base_class.base_hp == 43
+      assert base_class.base_ap == 43
+      assert base_class.base_movement == 43
     end
 
-    test "update_character/2 with invalid data returns error changeset" do
-      character = character_fixture()
-      assert {:error, %Ecto.Changeset{}} = Data.update_character(character, @invalid_attrs)
-      assert character == Data.get_character!(character.id)
+    test "update_base_class/2 with invalid data returns error changeset" do
+      base_class = base_class_fixture()
+      assert {:error, %Ecto.Changeset{}} = Content.update_base_class(base_class, @invalid_attrs)
+      assert base_class == Content.get_base_class!(base_class.id)
     end
 
-    test "delete_character/1 deletes the character" do
-      character = character_fixture()
-      assert {:ok, %Character{}} = Data.delete_character(character)
-      assert_raise Ecto.NoResultsError, fn -> Data.get_character!(character.id) end
+    test "delete_base_class/1 deletes the base_class" do
+      base_class = base_class_fixture()
+      assert {:ok, %BaseClass{}} = Content.delete_base_class(base_class)
+      assert_raise Ecto.NoResultsError, fn -> Content.get_base_class!(base_class.id) end
     end
 
-    test "change_character/1 returns a character changeset" do
-      character = character_fixture()
-      assert %Ecto.Changeset{} = Data.change_character(character)
+    test "change_base_class/1 returns a base_class changeset" do
+      base_class = base_class_fixture()
+      assert %Ecto.Changeset{} = Content.change_base_class(base_class)
     end
   end
 end

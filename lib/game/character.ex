@@ -174,28 +174,29 @@ defmodule Game.Character do
   TODO: These methods (get_max_ap and get_max_hp) should be replaced
   once we have logic to store the characters' max_hp and max_hp somewhere safe
   """
-  # def get_max_hp(%__MODULE__{class: :fighter}), do: 20
-  # def get_max_hp(%__MODULE__{class: :mage}), do: 15
-  # def get_max_hp(%__MODULE__{}), do: 15
-  def get_max_hp(%__MODULE__{max_hp: max_hp}), do: max_hp
+  def get_max_hp(%__MODULE__{max_hp: max_hp} = character) do
+    max_hp
+  end
 
-  # def get_max_ap(%__MODULE__{class: :fighter}), do: 3
-  # def get_max_ap(%__MODULE__{class: :mage}), do: 3
-  def get_max_ap(%__MODULE__{max_ap: max_ap}), do: max_ap
+  # def get_max_hp(%__MODULE__{max_hp: max_hp}), do: max_hp
 
-  def from_character_data(%Game.Data.Character{} = base_character) do
+  def get_max_ap(%__MODULE__{max_ap: max_ap} = character) do
+    max_ap
+  end
+
+  def from_character_data(%Game.Content.BaseClass{} = base_class) do
     %__MODULE__{
-      id: base_character.id,
-      name: String.capitalize(base_character.class),
-      class: base_character.class,
-      hp: base_character.base_hp,
-      max_hp: base_character.base_hp,
-      ap: base_character.base_ap,
-      max_ap: base_character.base_ap,
-      movement_range: base_character.base_movement,
+      id: base_class.id,
+      name: String.capitalize(base_class.class),
+      class: base_class.class,
+      hp: base_class.base_hp,
+      max_hp: base_class.base_hp,
+      ap: base_class.base_ap,
+      max_ap: base_class.base_ap,
+      movement_range: base_class.base_movement,
       position: {0, 0},
       cards: %{
-        draw: Game.BaseDecks.BaseDeck.get_cards(base_character.deck),
+        draw: Game.BaseDecks.BaseDeck.get_cards(base_class.deck),
         hand: [],
         discard: []
       }

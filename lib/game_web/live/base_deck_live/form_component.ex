@@ -91,7 +91,7 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
     base_deck =
       case @base_deck.id do
         index when is_integer(index) ->
-          Game.BaseDecks.get_base_deck(index)
+          Game.BaseDecks.get_base_deck!(index)
           |> Game.Repo.preload(:base_deck_cards)
 
         nil ->
@@ -103,6 +103,7 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
       case base_deck.id do
         index when is_integer(index) ->
           @base_deck
+          # base_deck
           |> Game.BaseDecks.BaseDeck.get_cards()
           |> Enum.map(& &1.id)
 
