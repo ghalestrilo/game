@@ -6,7 +6,9 @@ defmodule Game.Card do
 
   @effect_types %{
     "damage" => CardEffects.Damage,
-    "heal" => CardEffects.Heal
+    "heal" => CardEffects.Heal,
+    "draw" => CardEffects.Draw,
+    "discard" => CardEffects.Discard
   }
 
   defstruct [
@@ -37,7 +39,7 @@ defmodule Game.Card do
     :scaling
   ]
 
-  @type card_effect() :: {:damage, integer()} | {:heal, integer()}
+  @type card_effect() :: {:damage, integer()} | {:heal, integer()} | {:draw, integer()} | {:discard, integer()}
 
   @type t() :: %__MODULE__{
           id: integer(),

@@ -8,12 +8,31 @@ defmodule GameWeb.GameLive do
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      {game_pid, game_state} = initialize_game()
-
       {:ok,
-       assign(socket, game_pid: game_pid, game_state: game_state, action_log: [], modal: nil)}
+       assign(socket,
+         game_pid: nil,
+         game_state: %{
+           grid: nil,
+           characters: [],
+           combat: %Game.CombatState{
+             state: :running,
+             __constants__: %{
+               players: []
+             },
+             queue: [],
+             grid: nil,
+             current_turn: %{
+               starting_position: nil,
+               player: nil,
+               card: nil
+             }
+           }
+         },
+         action_log: [],
+         modal: nil
+       )}
     else
-      {:ok, assign(socket, game_pid: nil, game_state: nil, action_log: [], modal: nil)}
+      {:ok, assign(socket, game_state: nil, action_log: [], modal: nil)}
     end
   end
 
@@ -75,11 +94,11 @@ defmodule GameWeb.GameLive do
     |> List.to_tuple()
   end
 
-  @impl true
-  def handle_event("reset", _params, socket) do
-    {game_pid, game_state} = initialize_game()
-    {:noreply, assign(socket, game_pid: game_pid, game_state: game_state, action_log: [])}
-  end
+  # @impl true
+  # def handle_event("reset", _params, socket) do
+  #   {game_pid, game_state} = initialize_game()
+  #   {:noreply, assign(socket, game_pid: game_pid, game_state: game_state, action_log: [])}
+  # end
 
   defp find_character(characters, position) do
     Enum.find(characters, fn char -> char.position == position end)
@@ -102,58 +121,6 @@ defmodule GameWeb.GameLive do
   defp get_class_bg("rogue"), do: "!bg-[url('/images/cat-rogue.png')]"
   defp get_class_bg("warlock"), do: "!bg-[url('/images/cat-warlock.png')]"
   defp get_class_bg(_), do: "!bg-none"
-
-  defp initialize_game() do
-    {:ok, game_pid} = Game.start_link()
-    # Get characters from fixtures with their decks
-    warrior = Fixtures.warrior()
-    mage = Fixtures.mage()
-
-    # Set positions that work well in a hex grid
-    warrior = %{warrior | position: {0, 0, 0}}
-    mage = %{mage | position: {2, -1, -1}}
-
-    # Draw initial cards for warrior only (first player)
-    # The mage will draw cards when their turn starts
-    warrior_with_cards = Game.Character.draw_cards(warrior, 5)
-    # No cards initially for second player
-    mage_with_cards = mage
-
-    updated_players = [warrior_with_cards, mage_with_cards]
-
-    # Create a proper hex grid with radius 2 (creates a balanced grid)
-    grid = Game.Grid.new({2, 2, 2})
-
-    # Update the grid with our characters
-    grid = Game.Grid.update_character(grid, warrior_with_cards)
-    grid = Game.Grid.update_character(grid, mage_with_cards)
-
-    # Create combat struct with proper state
-    combat = %Game.CombatState{
-      state: :running,
-      __constants__: %{
-        players: updated_players
-      },
-      queue: updated_players,
-      grid: grid,
-      current_turn: %{
-        starting_position: warrior_with_cards.position,
-        player: warrior_with_cards,
-        card: nil
-      }
-    }
-
-    # Create the initial game state with our combat struct
-    game_state = %{
-      grid: grid,
-      characters: updated_players,
-      combat: combat
-    }
-
-    # Set the game state in the GenServer
-    :ok = GenServer.call(game_pid, {:set_state, game_state})
-    {game_pid, game_state}
-  end
 
   def handle_event("pick_card", params, socket) do
     current_turn = socket.assigns.game_state.combat.current_turn
@@ -271,14 +238,6 @@ defmodule GameWeb.GameLive do
 
         {:noreply, socket}
     end
-  end
-
-  def handle_event("modal", %{"action" => "load_game"}, socket) do
-    {:noreply, assign(socket, modal: :load_game)}
-  end
-
-  def handle_event("close_modal", _params, socket) do
-    {:noreply, assign(socket, modal: nil)}
   end
 
   def handle_event("load_game_state", %{"game_state" => encoded_state}, socket) do

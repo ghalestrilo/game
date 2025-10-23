@@ -280,4 +280,28 @@ defmodule Game.Combat do
 
     {:error, "Invalid state"}
   end
+
+  def get_available_card_effects() do
+    [
+      "damage",
+      "heal",
+      "draw",
+      "discard"
+      # "summon",
+      # "stealth",
+      # "stun",
+      # "burn",
+      # "cleanse",
+      # "dodge",
+      # "growth",
+      # "move",
+      # "poison",
+      # "position",
+      # "regen",
+      # "root",
+      # "shield",
+      # "slow",
+      # "taunt"
+    ]
+  end
 end

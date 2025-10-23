@@ -21,39 +21,6 @@
     </button>
   </div>
 
-  <%= if @modal == :load_game do %>
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-      <div class="bg-white p-8 rounded-lg shadow-xl max-w-md w-full">
-        <h2 class="text-2xl font-bold mb-4">Load Game State</h2>
-        <p class="mb-4">Paste your encoded game state below:</p>
-
-        <form phx-submit="load_game_state">
-          <textarea
-            name="game_state"
-            class="w-full h-40 p-2 border border-gray-300 rounded mb-4"
-            placeholder="Paste encoded game state here..."
-          ></textarea>
-
-          <div class="flex justify-end space-x-3">
-            <button
-              type="button"
-              phx-click="close_modal"
-              class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-            >
-              Load
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  <% end %>
-
   <%= if @game_state do %>
     <!-- Combat State Panel -->
     <div class="w-full flex flex-row gap-8">

@@ -56,7 +56,7 @@ defmodule GameWeb.BaseCardLive.FormComponent do
                 value={effect["type"]}
                 type="select"
                 label="Effect Type"
-                options={@effect_types}
+                options={Game.Combat.get_available_card_effects()}
               />
               <.input
                 class="flex-1 w-full"

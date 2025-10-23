@@ -17,7 +17,7 @@ defmodule Game.Character do
             # Hex grid position {q, r, s}
             position: nil,
             # List of active status effects
-            status_effects: nil,
+            status_effects: [],
             # Movement range in tiles
             movement_range: nil,
             # Team identifier
