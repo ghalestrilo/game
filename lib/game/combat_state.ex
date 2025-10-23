@@ -145,8 +145,6 @@ defmodule Game.CombatState do
       combat
       |> put_in([:state], :running)
       |> put_in([:current_turn], new_turn(next_player))
-      # Restore AP using constants after creating turn
-      |> restore_max_ap(next_player.id)
       |> draw_cards_for_player(next_player, 5)
 
     # Find the player in queue, not in constants
@@ -159,6 +157,7 @@ defmodule Game.CombatState do
           | player: updated_next_player
         }
     }
+    |> restore_max_ap()
   end
 
   def update_grid_for_player(%{current_turn: %{player: player}} = combat) do
@@ -304,19 +303,25 @@ defmodule Game.CombatState do
   end
 
   @doc """
-  Gets original player data from the constants
+  Gets original character data from the constants
   """
-  def get_original_player_data(%CombatState{__constants__: %{players: players}}, player_id) do
+  def get_original_character_data(%CombatState{__constants__: %{players: players}}, player_id) do
     Enum.find(players, &(&1.id == player_id))
   end
 
   @doc """
   Restores a player's max AP from the original player data in __constants__
   """
-  def restore_max_ap(%CombatState{current_turn: %{player: player}} = combat, player_id) do
-    current_player_initial_data = get_original_player_data(combat, player_id)
-    updated_player = %{player | ap: current_player_initial_data.ap}
-    %{combat | current_turn: %{combat.current_turn | player: updated_player}}
+  def restore_max_ap(%CombatState{current_turn: %{player: character}} = combat) do
+    updated_character = %{character | ap: Game.Character.get_max_ap(character)}
+
+    queue =
+      Enum.map(combat.queue, fn
+        %{id: character.id} -> updated_character
+        character -> character
+      end)
+
+    %{combat | current_turn: %{combat.current_turn | player: updated_character}}
   end
 
   defimpl Jason.Encoder, for: Game.CombatState do
