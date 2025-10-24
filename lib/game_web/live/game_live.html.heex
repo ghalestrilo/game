@@ -87,7 +87,7 @@
                     ),
                     # If it's the current turn, highlight the hex cell
                     if(
-                      find_character(@game_state.combat.queue, {q, r, s}) ==
+                      find_character(Game.CombatState.get_current_queue(@game_state.combat), {q, r, s}) ==
                         @game_state.combat.current_turn.player,
                       do: "!bg-green-200",
                       else: ""
@@ -95,7 +95,7 @@
                   ]
                 }
               >
-                <%= if character = find_character(@game_state.combat.queue, {q, r, s}) do %>
+                <%= if character = find_character(Game.CombatState.get_current_queue(@game_state.combat), {q, r, s}) do %>
                   <div class={character_class(character)} data-character-id={character.id}>
                     <div class="character-name !mt-10 px-2 py-1 rounded-[8px] bg-black opacity-[0.6]">
                       {character.name}

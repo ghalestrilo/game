@@ -116,7 +116,7 @@ defmodule Game.Combat do
         {:move, player, target_position}
       ) do
     cond do
-      not CombatState.is_players_turn?(queue, player) ->
+      not CombatState.is_players_turn?(combat, player) ->
         {:error, "Not player's turn"}
 
       Grid.distance(grid, starting_position, target_position) > player.movement_range ->
