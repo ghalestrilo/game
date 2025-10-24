@@ -18,13 +18,13 @@ defmodule Game.TurnQueue do
   @doc """
   Moves the current player to the end of the queue and returns the updated queue
   """
-  def rotate([current | rest], updated_player) do
-    rest ++ [updated_player]
+  def rotate([current | rest]) do
+    rest ++ [current]
   end
 
-  @doc """
-  Returns true if it's the given player's turn
-  """
-  def is_players_turn?([current | _], %{id: id}) when is_integer(id), do: current.id == id
-  def is_players_turn?(_, _), do: false
+  # @doc """
+  # Returns true if it's the given player's turn
+  # """
+  # def is_players_turn?([current | _], %{id: id}) when is_integer(id), do: current.id == id
+  # def is_players_turn?(_, _), do: false
 end

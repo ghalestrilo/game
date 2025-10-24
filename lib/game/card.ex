@@ -39,7 +39,8 @@ defmodule Game.Card do
     :scaling
   ]
 
-  @type card_effect() :: {:damage, integer()} | {:heal, integer()} | {:draw, integer()} | {:discard, integer()}
+  @type card_effect() ::
+          {:damage, integer()} | {:heal, integer()} | {:draw, integer()} | {:discard, integer()}
 
   @type t() :: %__MODULE__{
           id: integer(),
@@ -111,10 +112,10 @@ defmodule Game.Card do
   end
 
   # Helper function to apply multiple card effects
-  defp apply_card_effects(combat_state, effects, target) when is_list(effects) do
+  defp apply_card_effects(initial_combat_state, effects, target) when is_list(effects) do
     effects
     |> temporary_hack_filter_only_allowed_effects()
-    |> Enum.reduce(combat_state, fn effect, combat_state ->
+    |> Enum.reduce(initial_combat_state, fn effect, combat_state ->
       effect
       |> get_structured_effect()
       |> CardEffect.process(target, combat_state)
@@ -135,6 +136,7 @@ defmodule Game.Card do
   defp temporary_hack_filter_only_allowed_effects(effects) do
     Enum.filter(effects, fn effect ->
       if Map.has_key?(@effect_types, effect["type"]) do
+        Logger.info("Processing Card Effect: #{inspect(effect)}")
         true
       else
         Logger.warn("Effect not implemented, ignoring: #{inspect(effect)}")

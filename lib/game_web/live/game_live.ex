@@ -155,7 +155,7 @@ defmodule GameWeb.GameLive do
     with {:ok, position} <- parse_target_position(params["target_position"]),
          {:ok, combat} <- process_game_action(socket, {:play_card, position}) do
       # Get next player for debugging
-      [next_player | _] = combat.queue
+      [next_player | _] = Game.CombatState.get_current_queue(combat)
 
       action =
         "#{socket.assigns.game_state.combat.current_turn.player.name} played card: #{card.name}"

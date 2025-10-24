@@ -130,6 +130,14 @@ defmodule Game.Character do
   end
 
   @doc """
+  Discards a player's entire hand into their discard pile
+  """
+  def discard_hand(%__MODULE__{cards: cards} = character) do
+    # Preserve any cards that might be needed for tests
+    %__MODULE__{character | cards: %{cards | hand: [], discard: cards.discard ++ cards.hand}}
+  end
+
+  @doc """
   Shuffles discard pile into draw pile
   """
   def shuffle_discard_into_draw(character) do

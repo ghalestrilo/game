@@ -9,7 +9,7 @@ defmodule Game.Combat do
   require Logger
   alias Game.Card
   alias Game.CombatState
-  alias Game.{Character, Grid, TurnQueue}
+  alias Game.{Character, Grid}
 
   def new, do: %CombatState{}
 
@@ -82,8 +82,9 @@ defmodule Game.Combat do
       queue: characters,
       grid: grid
     }
-    |> CombatState.set_current_player(Enum.at(characters, 0))
-    |> CombatState.setup_next_player_turn()
+    # |> CombatState.set_current_player(Enum.at(characters, 0))
+    |> CombatState.initialize_queue()
+    |> CombatState.setup_player_turn()
   end
 
   @doc """
@@ -115,7 +116,7 @@ defmodule Game.Combat do
         {:move, player, target_position}
       ) do
     cond do
-      not TurnQueue.is_players_turn?(queue, player) ->
+      not CombatState.is_players_turn?(queue, player) ->
         {:error, "Not player's turn"}
 
       Grid.distance(grid, starting_position, target_position) > player.movement_range ->
@@ -152,7 +153,7 @@ defmodule Game.Combat do
     position = Grid.get_object(grid, target_position)
 
     cond do
-      not TurnQueue.is_players_turn?(queue, player) ->
+      not CombatState.is_players_turn?(combat, player) ->
         {:error, "Not player's turn"}
 
       not Character.has_enough_ap?(player, card.cost) ->
@@ -191,7 +192,7 @@ defmodule Game.Combat do
 
   def process_action(%CombatState{state: :running} = combat, {:pick_card, player, card}) do
     cond do
-      not TurnQueue.is_players_turn?(combat.queue, player) ->
+      not CombatState.is_players_turn?(combat, player) ->
         {:error, "Not player's turn"}
 
       not Enum.any?(player.cards.hand, fn c -> c.id == card.id end) ->
@@ -234,16 +235,16 @@ defmodule Game.Combat do
   def process_action(%CombatState{state: state, queue: queue} = combat, {:skip_turn, player})
       when state != :game_over do
     cond do
-      not TurnQueue.is_players_turn?(queue, player) ->
+      not CombatState.is_players_turn?(combat, player) ->
         {:error, "Not player's turn"}
 
       true ->
         result =
           combat
-          |> CombatState.set_current_player(player)
-          |> CombatState.discard_player_hand()
           |> CombatState.rotate_queue()
-          |> CombatState.setup_next_player_turn()
+          |> CombatState.setup_player_turn()
+
+        # |> CombatState.setup_next_player_turn()
 
         {:ok, result}
     end

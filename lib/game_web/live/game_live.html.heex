@@ -42,7 +42,7 @@
         <div class="mt-4">
           <h3 class="text-lg font-bold mb-2">Turn Queue</h3>
           <ul class="text-sm">
-            <%= for character <- @game_state.combat.queue do %>
+            <%= for character <- Game.CombatState.get_current_queue(@game_state.combat) do %>
               <li class="my-2 p-2 border border-gray-100 rounded">
                 <div class="pb-1 flex gap-1">
                   <span

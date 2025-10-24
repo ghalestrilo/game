@@ -54,15 +54,9 @@ defmodule Game.CombatState do
       when not is_nil(player) do
     combat
     |> draw_cards_for_player(player, 5)
-    |> update_current_turn_player()
   end
 
   def initialize_turn(combat), do: combat
-
-  def update_current_turn_player(%CombatState{current_turn: %{player: player}} = combat) do
-    updated_player = Enum.find(combat.queue, &(&1.id == player.id))
-    %{combat | current_turn: %{combat.current_turn | player: updated_player}}
-  end
 
   # Helper functions for refactored code
 
@@ -111,52 +105,25 @@ defmodule Game.CombatState do
     %{combat | current_turn: %{combat.current_turn | player: player}}
   end
 
-  # Handle the case when player is in current_turn.player
-  # Handle any combat state with a card
-  def discard_selected_card(combat, card) do
-    player = combat.current_turn.player
-    updated_player = Character.discard_card(player, card)
-    %{combat | current_turn: %{combat.current_turn | player: updated_player}}
-  end
+  # def rotate_queue(%{current_turn: %{player: player}, queue: queue} = combat) do
+  #   [next_player | updated_queue] = TurnQueue.rotate(get_current_queue(combat))
 
-  def discard_player_hand(%{current_turn: %{player: player}} = combat) do
-    # In original tests, hands weren't discarded after every card play
-    # So for test compatibility, we'll keep the hand
-    %{combat | current_turn: %{combat.current_turn | player: player}}
-  end
+  #   %{
+  #     combat
+  #     | queue: updated_queue,
+  #       current_turn: %{
+  #         combat.current_turn
+  #         | player: next_player,
+  #           starting_position: next_player.position
+  #       }
+  #   }
+  # end
 
-  def rotate_queue(%{current_turn: %{player: player}, queue: queue} = combat) do
-    updated_queue = TurnQueue.rotate(queue, player)
-    [next_player | _] = updated_queue
-
-    %{
-      combat
-      | queue: updated_queue,
-        current_turn: %{
-          combat.current_turn
-          | player: next_player,
-            starting_position: next_player.position
-        }
-    }
-  end
-
-  def setup_next_player_turn(%{current_turn: %{player: next_player}} = combat) do
-    updated_combat =
-      combat
-      |> put_in([:state], :running)
-      |> put_in([:current_turn], new_turn(next_player))
-      |> draw_cards_for_player(next_player, 5)
-
-    # Find the player in queue, not in constants
-    updated_next_player = Enum.find(updated_combat.queue, &(&1.id == next_player.id))
-
-    %{
-      updated_combat
-      | current_turn: %{
-          updated_combat.current_turn
-          | player: updated_next_player
-        }
-    }
+  def setup_player_turn(%{current_turn: %{player: next_player}} = combat) do
+    combat
+    |> put_in([:state], :running)
+    |> put_in([:current_turn], new_turn(next_player))
+    |> draw_cards_for_player(next_player, 5)
     |> restore_max_ap()
   end
 
@@ -184,7 +151,18 @@ defmodule Game.CombatState do
     end
   end
 
-  def setup_next_turn(%{current_turn: %{player: player}, queue: queue} = combat) do
+  def initialize_queue(%{queue: queue} = combat) do
+    [next_player | remaining_queue] = queue
+
+    %{
+      combat
+      | queue: remaining_queue,
+        state: :running,
+        current_turn: new_turn(next_player)
+    }
+  end
+
+  def rotate_queue(%{current_turn: %{player: player}, queue: queue} = combat) do
     # Then rotate the queue and pop the current player
     [next_player | remaining_queue] = queue ++ [player]
 
@@ -206,38 +184,16 @@ defmodule Game.CombatState do
   end
 
   def update_player(
-        %CombatState{grid: grid, queue: queue} = combat,
+        %CombatState{grid: grid} = combat,
         target,
         current_player
       ) do
-    # Update the grid with the target's new state
-    updated_grid = Grid.update_character(grid, target)
-
-    # Update the queue - rotate after current player's action
-    updated_queue = TurnQueue.rotate(queue, current_player)
-    # If target was also updated and it's not the current player, update their state in queue
-    updated_queue =
-      if target.id != current_player.id do
-        TurnQueue.update_character(updated_queue, target)
-      else
-        updated_queue
-      end
-
-    %{
-      combat
-      | grid: updated_grid,
-        queue: updated_queue
-    }
+    %{combat | grid: Grid.update_character(grid, target), current_turn: %{player: current_player}}
   end
 
-  def update_player_in_list(players, updated_player) do
-    Enum.map(players, fn player ->
-      if player.id == updated_player.id, do: updated_player, else: player
-    end)
-  end
-
-  def check_game_over(%CombatState{queue: queue} = combat) do
-    queue
+  def check_game_over(combat) do
+    combat
+    |> get_current_queue()
     |> Enum.map(& &1.team)
     |> Enum.uniq()
     |> length()
@@ -252,12 +208,14 @@ defmodule Game.CombatState do
   Draws cards for a player at the start of their turn up to the default hand size of 5
   If draw pile doesn't have enough cards, reshuffles discard pile into draw pile first
   """
-  def draw_cards_for_player(combat, player, count \\ 5) do
-    player
-    |> discard_hand()
-    |> maybe_reshuffle_discard(count)
-    |> draw_cards(count)
-    |> update_player_in_combat(combat)
+  def draw_cards_for_player(combat, player_character, count \\ 5) do
+    updated_character =
+      player_character
+      |> Character.discard_hand()
+      |> maybe_reshuffle_discard(count)
+      |> draw_cards(count)
+
+    combat |> put_in([:current_turn, :player], updated_character)
   end
 
   def maybe_reshuffle_discard(player, count) do
@@ -277,21 +235,6 @@ defmodule Game.CombatState do
     updated_queue = TurnQueue.update_character(combat.queue, updated_player)
 
     %{combat | queue: updated_queue}
-  end
-
-  @doc """
-  Discards a player's entire hand into their discard pile
-  """
-  def discard_hand(player) do
-    # Preserve any cards that might be needed for tests
-    %{
-      player
-      | cards: %{
-          player.cards
-          | hand: [],
-            discard: player.cards.discard ++ player.cards.hand
-        }
-    }
   end
 
   def new_turn(%Character{position: position, id: _id} = player) do
@@ -314,12 +257,6 @@ defmodule Game.CombatState do
   """
   def restore_max_ap(%CombatState{current_turn: %{player: character}} = combat) do
     updated_character = %{character | ap: Game.Character.get_max_ap(character)}
-
-    # queue =
-    #   Enum.map(combat.queue, fn
-    #     %{id: id} when id == character.id -> updated_character
-    #     character -> character
-    #   end)
 
     %{combat | current_turn: %{combat.current_turn | player: updated_character}}
   end
@@ -354,7 +291,7 @@ defmodule Game.CombatState do
 
     [updated_player | updated_queue] =
       Enum.map(all_characters, fn
-        ^target -> updated_target
+        possible_target when target.id == possible_target.id -> updated_target
         not_target -> not_target
       end)
 
@@ -364,4 +301,15 @@ defmodule Game.CombatState do
   end
 
   def get_current_player(%{current_turn: %{player: player}}), do: player
+
+  def get_current_queue(%CombatState{current_turn: %{player: player}, queue: queue}) do
+    [player] ++ queue
+  end
+
+  def is_players_turn?(
+        %CombatState{current_turn: %{player: %Character{id: current_character_id}}},
+        %Character{id: id}
+      ) do
+    current_character_id == id
+  end
 end
