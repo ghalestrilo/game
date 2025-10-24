@@ -8,26 +8,29 @@ defmodule GameWeb.GameLive do
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
+      game_state = %{
+        grid: nil,
+        characters: [],
+        combat: %Game.CombatState{
+          state: :running,
+          __constants__: %{
+            players: []
+          },
+          queue: [],
+          grid: nil,
+          current_turn: %{
+            starting_position: nil,
+            player: nil,
+            card: nil
+          }
+        }
+      }
+
       {:ok,
        assign(socket,
          game_pid: nil,
-         game_state: %{
-           grid: nil,
-           characters: [],
-           combat: %Game.CombatState{
-             state: :running,
-             __constants__: %{
-               players: []
-             },
-             queue: [],
-             grid: nil,
-             current_turn: %{
-               starting_position: nil,
-               player: nil,
-               card: nil
-             }
-           }
-         },
+         game_state: game_state,
+         initial_game_state: game_state,
          action_log: [],
          modal: nil
        )}
@@ -55,7 +58,12 @@ defmodule GameWeb.GameLive do
           # Set the game state in the GenServer
           :ok = GenServer.call(game_pid, {:set_state, game_state})
 
-          {:noreply, assign(socket, game_pid: game_pid, game_state: game_state)}
+          {:noreply,
+           assign(socket,
+             game_pid: game_pid,
+             game_state: game_state,
+             initial_game_state: game_state
+           )}
 
         {:error, reason} ->
           {:noreply,
@@ -94,11 +102,16 @@ defmodule GameWeb.GameLive do
     |> List.to_tuple()
   end
 
-  # @impl true
-  # def handle_event("reset", _params, socket) do
-  #   {game_pid, game_state} = initialize_game()
-  #   {:noreply, assign(socket, game_pid: game_pid, game_state: game_state, action_log: [])}
-  # end
+  @impl true
+  def handle_event("reset", _params, socket) do
+    # {game_pid, game_state} = initialize_game()
+    {:noreply,
+     assign(socket,
+       # game_pid: game_pid,
+       game_state: socket.assigns.initial_game_state,
+       action_log: []
+     )}
+  end
 
   defp find_character(characters, position) do
     Enum.find(characters, fn char -> char.position == position end)
