@@ -56,7 +56,7 @@ defmodule Game.CombatState do
     |> draw_cards_for_player(player, 5)
   end
 
-  def initialize_turn(combat), do: combat
+  # def initialize_turn(combat), do: combat
 
   # Helper functions for refactored code
 
@@ -103,24 +103,6 @@ defmodule Game.CombatState do
     }
   end
 
-  def set_current_player(combat, player) do
-    %{combat | current_turn: %{combat.current_turn | player: player}}
-  end
-
-  # def rotate_queue(%{current_turn: %{player: player}, queue: queue} = combat) do
-  #   [next_player | updated_queue] = TurnQueue.rotate(get_current_queue(combat))
-
-  #   %{
-  #     combat
-  #     | queue: updated_queue,
-  #       current_turn: %{
-  #         combat.current_turn
-  #         | player: next_player,
-  #           starting_position: next_player.position
-  #       }
-  #   }
-  # end
-
   def setup_player_turn(%{current_turn: %{player: next_player}} = combat) do
     combat
     |> put_in([:state], :running)
@@ -134,23 +116,11 @@ defmodule Game.CombatState do
   end
 
   def check_target_death(combat, target) do
-    if Character.is_dead?(target) do
-      # Remove player and check for game over condition
-      combat_without_target = remove_player(combat, target)
-
-      # Get the teams of remaining players
-      remaining_teams = Enum.map(combat_without_target.queue, & &1.team) |> Enum.uniq()
-
-      # Check for game over condition - single team remains
-      if length(remaining_teams) <= 1 do
-        %CombatState{combat_without_target | state: :game_over}
-      else
-        combat_without_target
-      end
-    else
-      # Target is still alive, return original combat state
-      combat
-    end
+    update_player(
+      combat,
+      get_current_player(combat),
+      %{target | dead: Character.is_dead?(target)}
+    )
   end
 
   def initialize_queue(%{queue: queue} = combat) do
@@ -190,18 +160,21 @@ defmodule Game.CombatState do
         target,
         current_player
       ) do
-    %{combat | grid: Grid.update_character(grid, target), current_turn: %{player: current_player}}
+    combat
+    |> put_in([:grid], Grid.update_character(grid, target))
+    |> put_in([:current_turn, :player], current_player)
   end
 
   def check_game_over(combat) do
     combat
     |> get_current_queue()
+    |> Enum.filter(&(&1.dead == false))
     |> Enum.map(& &1.team)
+    |> dbg()
     |> Enum.uniq()
     |> length()
     |> case do
       n when n <= 1 -> %CombatState{combat | state: :game_over}
-      # Explicitly set to running for test compatibility
       _ -> %CombatState{combat | state: :running}
     end
   end
@@ -233,13 +206,17 @@ defmodule Game.CombatState do
   end
 
   def update_player_in_combat(updated_player, combat) do
-    # Only update the queue, never update the constants
-    updated_queue = TurnQueue.update_character(combat.queue, updated_player)
+    [player | updated_queue] =
+      combat
+      |> get_current_queue()
+      |> TurnQueue.update_character(updated_player)
 
-    %{combat | queue: updated_queue}
+    combat
+    |> put_in([:current_turn, :player], player)
+    |> put_in([:queue], updated_queue)
   end
 
-  def new_turn(%Character{position: position, id: _id} = player) do
+  def new_turn(%Character{position: position} = player) do
     %{
       starting_position: position,
       player: player,
@@ -263,30 +240,6 @@ defmodule Game.CombatState do
     %{combat | current_turn: %{combat.current_turn | player: updated_character}}
   end
 
-  defimpl Jason.Encoder, for: Game.CombatState do
-    def encode(combat_state, opts) do
-      # Convert the struct to a map
-      combat_map = Map.from_struct(combat_state)
-
-      # Format the starting_position in current_turn
-      current_turn =
-        if combat_map.current_turn do
-          Map.update!(combat_map.current_turn, :starting_position, fn
-            tuple when is_tuple(tuple) -> Tuple.to_list(tuple)
-            other -> other
-          end)
-        else
-          combat_map.current_turn
-        end
-
-      # Put the updated current_turn back
-      combat_map = Map.put(combat_map, :current_turn, current_turn)
-
-      # Encode the updated map
-      Jason.Encode.map(combat_map, opts)
-    end
-  end
-
   # TODO: move to Game.Card.Targeting which should process different targeting strategies
   def update_target(combat_state, target, updated_target) do
     all_characters = [get_current_player(combat_state)] ++ combat_state.queue
@@ -303,6 +256,7 @@ defmodule Game.CombatState do
   end
 
   def get_current_player(%{current_turn: %{player: player}}), do: player
+  def get_current_turn(%{current_turn: turn}), do: turn
 
   def get_current_queue(%CombatState{current_turn: %{player: player}, queue: queue}) do
     [player] ++ queue

@@ -79,9 +79,9 @@
                       Grid.distance(
                         @game_state.combat.grid,
                         {q, r, s},
-                        @game_state.combat.current_turn.starting_position
+                        Game.CombatState.get_current_turn(@game_state.combat).starting_position
                       ) <=
-                        @game_state.combat.current_turn.player.movement_range,
+                        Game.CombatState.get_current_player(@game_state.combat).movement_range,
                       do: "bg-yellow-50",
                       else: ""
                     ),

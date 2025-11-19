@@ -46,15 +46,7 @@ defmodule Game.Combat do
     padded_radius = max_radius + 1
     grid = Game.Grid.new({padded_radius, padded_radius, padded_radius})
 
-    # Validate that all positions in the initial_state are within the grid radius
-    Enum.each(positions, fn position ->
-      normalized_position = Game.Grid.normalize(position)
-
-      unless Map.has_key?(grid.tiles, normalized_position) do
-        raise "Position #{inspect(position)} is outside the grid radius"
-      end
-    end)
-
+    # Validate positions in grid
     Enum.each(positions, fn position ->
       normalized_position = Game.Grid.normalize(position)
 
@@ -82,7 +74,6 @@ defmodule Game.Combat do
       queue: characters,
       grid: grid
     }
-    # |> CombatState.set_current_player(Enum.at(characters, 0))
     |> CombatState.initialize_queue()
     |> CombatState.setup_player_turn()
   end

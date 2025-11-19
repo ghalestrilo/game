@@ -21,7 +21,8 @@ defmodule Game.Character do
             # Movement range in tiles
             movement_range: nil,
             # Team identifier
-            team: nil
+            team: nil,
+            dead: false
 
   @type t() :: %__MODULE__{
           id: integer(),
