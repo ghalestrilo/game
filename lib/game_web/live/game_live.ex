@@ -167,9 +167,6 @@ defmodule GameWeb.GameLive do
       ) do
     with {:ok, position} <- parse_target_position(params["target_position"]),
          {:ok, combat} <- process_game_action(socket, {:play_card, position}) do
-      # Get next player for debugging
-      [next_player | _] = Game.CombatState.get_current_queue(combat)
-
       action =
         "#{socket.assigns.game_state.combat.current_turn.player.name} played card: #{card.name}"
 
@@ -229,12 +226,7 @@ defmodule GameWeb.GameLive do
           assigns: %{game_state: %{combat: %{current_turn: %{player: player}}}}
         } = socket
       ) do
-    # Print current player's card counts for debugging
-
     with {:ok, combat} <- process_game_action(socket, {:skip_turn, player}) do
-      # Get next player for debugging
-      [next_player | _] = combat.queue
-
       action = "#{player.name} skipped their turn"
       updated_log = [action | socket.assigns.action_log]
 
@@ -250,6 +242,27 @@ defmodule GameWeb.GameLive do
           |> put_flash(:error, "#{error}")
 
         {:noreply, socket}
+    end
+  end
+
+  def handle_event("enter_shop", _params, socket) do
+    if socket.assigns.game_state.combat.state == :game_over && socket.assigns.game_pid do
+      # Transition to shop
+      case Game.enter_shop(socket.assigns.game_pid) do
+        {:ok, updated_state} ->
+          {:noreply,
+           socket
+           |> assign(game_state: updated_state, modal: nil)
+           |> put_flash(:info, "Welcome to the shop!")}
+
+        {:error, reason} ->
+          {:noreply,
+           socket
+           |> put_flash(:error, "Failed to enter shop: #{reason}")
+           |> assign(modal: nil)}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Combat must be over to enter shop")}
     end
   end
 
