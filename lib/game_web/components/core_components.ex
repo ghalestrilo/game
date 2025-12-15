@@ -623,6 +623,8 @@ defmodule GameWeb.CoreComponents do
   attr :card, Game.Card, required: true
   attr :index, :integer
   attr :selected, :boolean, default: false
+  attr :on_click, :string, default: "pick_card"
+  attr :click_target, :any, default: nil
 
   def card(assigns) do
     # For some reason phx-blur does not work. Investigate...
@@ -632,9 +634,10 @@ defmodule GameWeb.CoreComponents do
         "rounded-lg border border-zinc-300 bg-white shadow-md w-72 flex flex-col p-4 transition-[all] duration-140 ease-in-out",
         if(@selected, do: "!bg-yellow-50 -mt-4 mb-4", else: "")
       ]}
-      phx-click="pick_card"
-      phx-blur="pick_card"
+      phx-click={@on_click}
+      phx-blur={@on_click}
       phx-value-card_index={@index}
+      phx-target={@click_target}
     >
       <div class="flex items-center justify-between mb-2">
         <span class="font-bold text-lg text-zinc-800">{@card.name}</span>

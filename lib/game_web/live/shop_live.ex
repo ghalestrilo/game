@@ -22,10 +22,18 @@ defmodule GameWeb.ShopLive do
             selected={false}
             index={index}
             card={card}
+            on_click="select_shop_card"
+            click_target={@myself}
           />
         <% end %>
       </div>
     </div>
     """
+  end
+
+  @impl true
+  def handle_event("select_shop_card", params, socket) do
+    send(self(), {:parent_event, "select_shop_card", params})
+    {:noreply, socket}
   end
 end

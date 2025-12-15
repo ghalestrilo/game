@@ -359,6 +359,17 @@ defmodule GameWeb.GameLive do
     end
   end
 
+  def handle_event("select_shop_card", %{"card_index" => card_index}, socket) do
+    # For now, just return to combat view
+    # TODO: Add the selected card to a player's deck
+    updated_game_state = Map.put(socket.assigns.game_state, :current_view, :combat)
+
+    {:noreply,
+     socket
+     |> assign(game_state: updated_game_state)
+     |> put_flash(:info, "Card selected! Returning to combat...")}
+  end
+
   defp process_game_action(socket, action) do
     with {:ok, updated_combat} <-
            Game.Combat.process_action(
