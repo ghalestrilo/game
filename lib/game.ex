@@ -61,6 +61,14 @@ defmodule Game do
     GenServer.call(game_pid, :get_state)
   end
 
+  @doc """
+  Enters the shop state after combat is over.
+  Returns {:ok, updated_state} or {:error, reason}
+  """
+  def enter_shop(game_pid) do
+    GenServer.call(game_pid, :enter_shop)
+  end
+
   # Callbacks
 
   def handle_call({:init_combat, characters, grid}, _from, _state) do
@@ -159,5 +167,36 @@ defmodule Game do
 
   def handle_call({:set_state, new_state}, _from, _state) do
     {:reply, :ok, new_state}
+  end
+
+  def handle_call(:enter_shop, _from, state) do
+    if state.combat.state == :game_over do
+      # Generate 4 shop cards
+      shop_cards = generate_shop_cards(4)
+
+      # Update combat state to shop mode
+      updated_combat = %{state.combat | state: :shop, shop_cards: shop_cards}
+      updated_state = %{state | combat: updated_combat}
+
+      {:reply, {:ok, updated_state}, updated_state}
+    else
+      {:reply, {:error, "Can only enter shop after combat is over"}, state}
+    end
+  end
+
+  # Helper function to generate random shop cards
+  defp generate_shop_cards(count) do
+    # For now, we'll create a mix of different card types
+    all_cards = [
+      Game.Fixtures.attack_card(),
+      Game.Fixtures.heal_card(),
+      Game.Fixtures.fireball_card(),
+      Game.Fixtures.expensive_card()
+    ]
+
+    all_cards
+    |> Enum.take(count)
+    |> Enum.with_index()
+    |> Enum.map(fn {card, idx} -> %{card | id: idx + 1000} end)
   end
 end

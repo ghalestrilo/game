@@ -28,7 +28,9 @@ defmodule Game.CombatState do
               player: nil,
               starting_position: {0, 0, 0},
               card: nil
-            }
+            },
+            # Shop-related state
+            shop_cards: []
 
   @type t() :: %__MODULE__{
           state: atom(),
@@ -39,7 +41,8 @@ defmodule Game.CombatState do
             player: Character.t() | nil,
             starting_position: {0, 0, 0},
             card: Card.t() | nil
-          }
+          },
+          shop_cards: list(Card.t())
         }
 
   defdelegate process_card(combat, target, card), to: Game.Card

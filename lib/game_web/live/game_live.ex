@@ -9,6 +9,7 @@ defmodule GameWeb.GameLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       game_state = %{
+        current_view: :combat,
         grid: nil,
         characters: [],
         combat: %Game.CombatState{
@@ -50,6 +51,7 @@ defmodule GameWeb.GameLive do
           combat_state = Game.Combat.initialize_from_char_params_list(initial_state)
 
           game_state = %{
+            current_view: :combat,
             grid: combat_state.grid,
             characters: combat_state.__constants__.players,
             combat: combat_state
@@ -245,17 +247,78 @@ defmodule GameWeb.GameLive do
     end
   end
 
+  def handle_event("win_match", _params, socket) do
+    if socket.assigns.game_state.combat.current_turn.player do
+      current_player = socket.assigns.game_state.combat.current_turn.player
+      winning_team = current_player.team
+
+      # Mark all characters from other teams as dead
+      updated_queue =
+        Enum.map(socket.assigns.game_state.combat.queue, fn char ->
+          if char.team != winning_team do
+            %{char | dead: true, hp: 0}
+          else
+            char
+          end
+        end)
+
+      # Update current player if they're not on the winning team
+      updated_current_player =
+        if current_player.team != winning_team do
+          %{current_player | dead: true, hp: 0}
+        else
+          current_player
+        end
+
+      # Set combat state to game_over
+      updated_combat = %{
+        socket.assigns.game_state.combat
+        | state: :game_over,
+          queue: updated_queue,
+          current_turn: %{
+            socket.assigns.game_state.combat.current_turn
+            | player: updated_current_player
+          }
+      }
+
+      updated_game_state = %{socket.assigns.game_state | combat: updated_combat}
+
+      # Sync the updated state to the GenServer
+      if socket.assigns.game_pid do
+        :ok = GenServer.call(socket.assigns.game_pid, {:set_state, updated_game_state})
+      end
+
+      action = "#{current_player.name}'s team (#{winning_team}) wins the match!"
+      updated_log = [action | socket.assigns.action_log]
+
+      {:noreply,
+       assign(socket,
+         game_state: updated_game_state,
+         action_log: updated_log
+       )}
+    else
+      {:noreply, put_flash(socket, :error, "No active player")}
+    end
+  end
+
   def handle_event("enter_shop", _params, socket) do
-    if socket.assigns.game_state.combat.state == :game_over && socket.assigns.game_pid do
+    if dbg(socket.assigns.game_state.combat.state) == :game_over && dbg(socket.assigns.game_pid) do
       # Transition to shop
       case Game.enter_shop(socket.assigns.game_pid) do
         {:ok, updated_state} ->
+          dbg({:ok, updated_state})
+
+          # Add current_view: :shop to the updated state
+          updated_state = Map.put(updated_state, :current_view, :shop)
+
           {:noreply,
            socket
            |> assign(game_state: updated_state, modal: nil)
            |> put_flash(:info, "Welcome to the shop!")}
 
         {:error, reason} ->
+          dbg({:error, reason})
+
           {:noreply,
            socket
            |> put_flash(:error, "Failed to enter shop: #{reason}")
@@ -274,6 +337,7 @@ defmodule GameWeb.GameLive do
 
         # Create the game state with our combat struct
         game_state = %{
+          current_view: :combat,
           grid: grid,
           characters: characters,
           combat: combat
@@ -317,5 +381,10 @@ defmodule GameWeb.GameLive do
     else
       _ -> {:error, "Invalid target position"}
     end
+  end
+
+  @impl true
+  def handle_info({:parent_event, event_name, params}, socket) do
+    handle_event(event_name, params, socket)
   end
 end
