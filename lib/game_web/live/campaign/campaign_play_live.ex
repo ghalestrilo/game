@@ -268,13 +268,36 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
   end
 
   @impl true
-  def handle_event("select_shop_card", %{"card_index" => _card_index}, socket) do
+  def handle_event("select_shop_card", params, socket) do
+    # Debug: print that we received the event
+    dbg({:select_shop_card_called, params})
+
     # TODO: Add the selected card to player's deck
-    updated_game_state = Map.put(socket.assigns.game_state, :current_view, :combat)
+
+    # Get the campaign state
+    campaign = socket.assigns.game_state.campaign
+
+    # Print the campaign state before reinitializing combat
+    dbg({:campaign, campaign})
+    dbg({:deck, campaign.character.cards.deck})
+
+    # Reinitialize combat based on the most recent campaign state
+    combat_state = initialize_combat_from_campaign(campaign)
+
+    updated_game_state = %{
+      socket.assigns.game_state
+      | current_view: :combat,
+        combat: combat_state
+    }
+
+    # Update the GenServer state
+    if socket.assigns.game_pid do
+      :ok = GenServer.call(socket.assigns.game_pid, {:set_state, updated_game_state})
+    end
 
     {:noreply,
      socket
-     |> assign(game_state: updated_game_state)
+     |> assign(game_state: updated_game_state, action_log: [])
      |> put_flash(:info, "Card selected! Returning to combat...")}
   end
 
@@ -313,8 +336,10 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
     # Create a simple encounter: player vs wolf
     # Format: {{q, r, s}, class, team}
     initial_state = [
-      {{0, 0, 0}, player_class, 1},      # Player at center, team 1
-      {{2, -1, -1}, :wolf, 2}             # Wolf enemy, team 2
+      # Player at center, team 1
+      {{0, 0, 0}, player_class, 1},
+      # Wolf enemy, team 2
+      {{2, -1, -1}, :wolf, 2}
     ]
 
     # Use the existing initialization function
