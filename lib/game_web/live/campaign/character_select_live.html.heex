@@ -1,0 +1,46 @@
+<div class="flex flex-col h-screen p-8">
+  <.header>
+    Select Your Character
+    <:subtitle>Choose a character to begin your campaign</:subtitle>
+  </.header>
+
+  <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <%= for base_class <- @base_classes do %>
+      <div
+        class="border border-zinc-300 dark:border-zinc-700 rounded-lg p-6 hover:border-zinc-500 dark:hover:border-zinc-400 cursor-pointer transition-colors"
+        phx-click="select_character"
+        phx-value-id={base_class.id}
+      >
+        <h3 class="text-xl font-bold capitalize mb-4"><%= base_class.class %></h3>
+        <div class="space-y-2">
+          <div class="flex justify-between">
+            <span class="text-zinc-600 dark:text-zinc-400">HP:</span>
+            <span class="font-semibold"><%= base_class.base_hp %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-zinc-600 dark:text-zinc-400">AP:</span>
+            <span class="font-semibold"><%= base_class.base_ap %></span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-zinc-600 dark:text-zinc-400">Movement:</span>
+            <span class="font-semibold"><%= base_class.base_movement %></span>
+          </div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <%= if @game_state.campaign.character do %>
+    <div class="mt-8 p-4 bg-green-100 dark:bg-green-900 rounded-lg">
+      <p class="text-center font-semibold">
+        Selected: <%= @game_state.campaign.character.name %>
+      </p>
+    </div>
+  <% end %>
+
+  <div class="mt-8">
+    <.link navigate={~p"/"} class="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100">
+      &larr; Back to Home
+    </.link>
+  </div>
+</div>
