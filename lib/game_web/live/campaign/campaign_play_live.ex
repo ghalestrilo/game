@@ -6,11 +6,10 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
   alias Game.Content
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(params, _session, socket) do
     if connected?(socket) do
-      # For now, create a simple test encounter
-      # TODO: Get campaign state from session or database
-      campaign = create_test_campaign()
+      # Get campaign state from params or create test campaign
+      campaign = create_campaign_from_params(params)
 
       # Initialize combat from campaign
       combat_state = initialize_combat_from_campaign(campaign)
@@ -285,30 +284,37 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
   end
 
   # Helper functions
-  defp create_test_campaign do
-    # Create a basic campaign with a test character
-    # In production, this would come from the database/session
-    base_class = Content.get_base_class_by_class!("ranger")
+  defp create_campaign_from_params(params) do
+    # Get character class from params, default to ranger if not provided
+    character_class = params["class"] || "ranger"
+    player_name = params["player_name"] || "Hero"
+
+    # Load the character from database
+    base_class = Content.get_base_class_by_class!(character_class)
     player_character = Character.from_character_data(base_class)
 
     %{
       character: player_character,
       player: %{
-        name: "Test Hero"
+        name: player_name
       }
     }
+  end
+
+  defp create_test_campaign do
+    # Fallback for testing
+    create_campaign_from_params(%{})
   end
 
   defp initialize_combat_from_campaign(campaign) do
     # Get the player's class from their character
     player_class = campaign.character.class
 
-    # Create a simple encounter: player vs 2 enemies
+    # Create a simple encounter: player vs wolf
     # Format: {{q, r, s}, class, team}
     initial_state = [
       {{0, 0, 0}, player_class, 1},      # Player at center, team 1
-      {{2, -1, -1}, :fighter, 2},         # Enemy 1, team 2
-      {{-2, 1, 1}, :mage, 2}              # Enemy 2, team 2
+      {{2, -1, -1}, :wolf, 2}             # Wolf enemy, team 2
     ]
 
     # Use the existing initialization function

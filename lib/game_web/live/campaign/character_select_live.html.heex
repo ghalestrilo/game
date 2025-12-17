@@ -56,12 +56,12 @@
         <% end %>
       </p>
       <div class="text-center">
-        <.link
-          navigate={~p"/campaign/play"}
+        <button
+          phx-click="start_campaign"
           class="inline-block px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors"
         >
           Start Campaign
-        </.link>
+        </button>
       </div>
     </div>
   <% end %>

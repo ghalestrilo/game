@@ -41,4 +41,18 @@ defmodule GameWeb.Campaign.CharacterSelectLive do
 
     {:noreply, assign(socket, campaign: updated_campaign)}
   end
+
+  @impl true
+  def handle_event("start_campaign", _params, socket) do
+    campaign = socket.assigns.campaign
+
+    # Encode campaign data for URL
+    # For now, just pass the character class and player name
+    query_params = %{
+      class: campaign.character.class,
+      player_name: campaign.player.name
+    }
+
+    {:noreply, push_navigate(socket, to: ~p"/campaign/play?#{query_params}")}
+  end
 end
