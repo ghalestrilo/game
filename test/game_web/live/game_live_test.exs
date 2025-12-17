@@ -21,7 +21,7 @@ defmodule GameWeb.GameLiveTest do
         |> then(&"[#{&1}]")
 
       # Construct the URI with the `initial_state` query parameter
-      uri = ~p"/game?initial_state=#{serialized_state}"
+      uri = ~p"/sandbox?initial_state=#{serialized_state}"
 
       # Load the game page with the query parameter
       {:ok, view, _html} = live(conn, uri)
@@ -51,7 +51,7 @@ defmodule GameWeb.GameLiveTest do
         |> then(&"[#{&1}]")
 
       # Construct the URI with the `initial_state` query parameter
-      uri = ~p"/game?initial_state=#{serialized_state}"
+      uri = ~p"/sandbox?initial_state=#{serialized_state}"
 
       # Load the game page with the query parameter
       {:ok, view, _html} = live(conn, uri)
@@ -83,7 +83,7 @@ defmodule GameWeb.GameLiveTest do
       conn: conn
     } do
       # Load the game page
-      {:ok, view, _html} = live(conn, ~p"/game")
+      {:ok, view, _html} = live(conn, ~p"/sandbox")
 
       # Verify initial state has warrior as current player with 5 cards
       IO.puts("Rendered HTML: #{view |> element(".card-status-panel") |> render()}")
