@@ -4,6 +4,22 @@
     <:subtitle>Choose a character to begin your campaign</:subtitle>
   </.header>
 
+  <div class="mt-8 mb-6">
+    <label for="player-name" class="block text-sm font-medium mb-2">
+      Player Name
+    </label>
+    <form phx-change="update_player_name">
+      <input
+        type="text"
+        id="player-name"
+        name="player_name"
+        value={@campaign.player.name}
+        placeholder="Enter your name"
+        class="w-full md:w-1/2 px-4 py-2 border border-zinc-300 dark:border-zinc-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-zinc-500 dark:focus:ring-zinc-400 bg-white dark:bg-zinc-900"
+      />
+    </form>
+  </div>
+
   <div class="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
     <%= for base_class <- @base_classes do %>
       <div
@@ -30,10 +46,14 @@
     <% end %>
   </div>
 
-  <%= if @game_state.campaign.character do %>
+  <%= if @campaign.character do %>
     <div class="mt-8 p-4 bg-green-100 dark:bg-green-900 rounded-lg">
       <p class="text-center font-semibold">
-        Selected: <%= @game_state.campaign.character.name %>
+        <%= if @campaign.player.name != "" do %>
+          <%= @campaign.player.name %> selected: <%= @campaign.character.name %>
+        <% else %>
+          Selected: <%= @campaign.character.name %>
+        <% end %>
       </p>
     </div>
   <% end %>

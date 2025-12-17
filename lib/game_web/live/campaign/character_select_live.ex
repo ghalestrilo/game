@@ -10,12 +10,22 @@ defmodule GameWeb.Campaign.CharacterSelectLive do
     {:ok,
      assign(socket,
        base_classes: base_classes,
-       game_state: %{
-         campaign: %{
-           character: nil
+       campaign: %{
+         character: nil,
+         player: %{
+           name: ""
          }
        }
      )}
+  end
+
+  @impl true
+  def handle_event("update_player_name", params, socket) do
+    name = params["player_name"] || params["value"] || ""
+    campaign = socket.assigns.campaign
+    updated_campaign = put_in(campaign[:player][:name], name)
+
+    {:noreply, assign(socket, campaign: updated_campaign)}
   end
 
   @impl true
@@ -23,15 +33,12 @@ defmodule GameWeb.Campaign.CharacterSelectLive do
     base_class = Content.get_base_class!(id) |> Game.Repo.preload(deck: [:cards])
     character = Character.from_character_data(base_class)
 
-    game_state = %{
-      campaign: %{
-        character: character
-      }
-    }
+    campaign = socket.assigns.campaign
+    updated_campaign = put_in(campaign[:character], character)
 
     # Debug output to iex shell
-    dbg(game_state)
+    dbg(updated_campaign)
 
-    {:noreply, assign(socket, game_state: game_state)}
+    {:noreply, assign(socket, campaign: updated_campaign)}
   end
 end
