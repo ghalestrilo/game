@@ -20,6 +20,7 @@ defmodule GameWeb.Router do
     get "/", PageController, :home
     live "/sandbox", GameLive
     live "/campaign/character-select", Campaign.CharacterSelectLive
+    live "/campaign/play", Campaign.CampaignPlayLive
   end
 
   # Other scopes may use custom stacks.

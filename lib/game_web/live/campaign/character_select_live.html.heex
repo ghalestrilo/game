@@ -47,7 +47,7 @@
   </div>
 
   <%= if @campaign.character do %>
-    <div class="mt-8 p-4 bg-green-100 dark:bg-green-900 rounded-lg">
+    <div class="mt-8 p-4 bg-green-100 dark:bg-green-900 rounded-lg flex flex-col gap-4">
       <p class="text-center font-semibold">
         <%= if @campaign.player.name != "" do %>
           <%= @campaign.player.name %> selected: <%= @campaign.character.name %>
@@ -55,6 +55,14 @@
           Selected: <%= @campaign.character.name %>
         <% end %>
       </p>
+      <div class="text-center">
+        <.link
+          navigate={~p"/campaign/play"}
+          class="inline-block px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg transition-colors"
+        >
+          Start Campaign
+        </.link>
+      </div>
     </div>
   <% end %>
 

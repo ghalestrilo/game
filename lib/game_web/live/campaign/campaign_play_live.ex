@@ -1,0 +1,341 @@
+defmodule GameWeb.Campaign.CampaignPlayLive do
+  use GameWeb, :live_view
+  alias Game
+  alias Game.Combat
+  alias Game.Character
+  alias Game.Content
+
+  @impl true
+  def mount(_params, _session, socket) do
+    if connected?(socket) do
+      # For now, create a simple test encounter
+      # TODO: Get campaign state from session or database
+      campaign = create_test_campaign()
+
+      # Initialize combat from campaign
+      combat_state = initialize_combat_from_campaign(campaign)
+
+      game_state = %{
+        current_view: :combat,
+        campaign: campaign,
+        combat: combat_state
+      }
+
+      # Start game GenServer
+      {:ok, game_pid} = Game.start_link()
+      :ok = GenServer.call(game_pid, {:set_state, game_state})
+
+      {:ok,
+       assign(socket,
+         game_pid: game_pid,
+         game_state: game_state,
+         action_log: [],
+         modal: nil
+       )}
+    else
+      {:ok, assign(socket, game_state: nil, action_log: [], modal: nil)}
+    end
+  end
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="campaign-play">
+      <%= if @game_state.current_view == :combat do %>
+        <.live_component
+          module={GameWeb.CombatLive}
+          id="combat"
+          game_state={@game_state}
+          action_log={@action_log}
+          modal={@modal}
+        />
+      <% end %>
+
+      <%= if @game_state.current_view == :shop do %>
+        <.live_component module={GameWeb.ShopLive} id="shop" game_state={@game_state} />
+      <% end %>
+    </div>
+    """
+  end
+
+  # Event handlers - similar to GameLive
+  @impl true
+  def handle_event("reset", _params, socket) do
+    campaign = socket.assigns.game_state.campaign
+    combat_state = initialize_combat_from_campaign(campaign)
+
+    game_state = %{
+      current_view: :combat,
+      campaign: campaign,
+      combat: combat_state
+    }
+
+    :ok = GenServer.call(socket.assigns.game_pid, {:set_state, game_state})
+
+    {:noreply,
+     assign(socket,
+       game_state: game_state,
+       action_log: []
+     )}
+  end
+
+  @impl true
+  def handle_event("pick_card", params, socket) do
+    current_turn = socket.assigns.game_state.combat.current_turn
+    card = current_turn.player.cards.hand |> Enum.at(String.to_integer(params["card_index"]))
+
+    combat =
+      with {:ok, updated_combat} <-
+             process_game_action(socket, {:pick_card, current_turn.player, card}) do
+        updated_combat
+      else
+        {:error, _error} ->
+          socket.assigns.game_state.combat
+      end
+
+    action = "#{current_turn.player.name} selected card: #{card.name}"
+    updated_log = [action | socket.assigns.action_log]
+
+    {:noreply,
+     assign(socket,
+       game_state: %{socket.assigns.game_state | combat: combat},
+       action_log: updated_log
+     )}
+  end
+
+  @impl true
+  def handle_event(
+        "interact",
+        params,
+        %{
+          assigns: %{game_state: %{combat: %{state: :card_selected, current_turn: %{card: card}}}}
+        } = socket
+      ) do
+    with {:ok, position} <- parse_target_position(params["target_position"]),
+         {:ok, combat} <- process_game_action(socket, {:play_card, position}) do
+      action =
+        "#{socket.assigns.game_state.combat.current_turn.player.name} played card: #{card.name}"
+
+      updated_log = [action | socket.assigns.action_log]
+
+      {:noreply,
+       assign(socket,
+         game_state: %{socket.assigns.game_state | combat: combat},
+         action_log: updated_log
+       )}
+    else
+      {:error, error} ->
+        socket =
+          socket
+          |> put_flash(:error, "#{error}")
+
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event(
+        "interact",
+        %{"target_position" => target_position},
+        %{
+          assigns: %{game_state: %{combat: %{state: :running, current_turn: %{player: player}}}}
+        } = socket
+      ) do
+    {:ok, position} = parse_target_position(target_position)
+
+    with {:ok, combat} <- process_game_action(socket, {:move, player, position}) do
+      action = "#{player.name} moved to position #{inspect(position)}"
+      updated_log = [action | socket.assigns.action_log]
+
+      {:noreply,
+       assign(socket,
+         game_state: %{socket.assigns.game_state | combat: combat},
+         action_log: updated_log
+       )}
+    else
+      {:error, error} ->
+        socket =
+          socket
+          |> put_flash(:error, "#{error}")
+
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("interact", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event(
+        "skip_turn",
+        _params,
+        %{
+          assigns: %{game_state: %{combat: %{current_turn: %{player: player}}}}
+        } = socket
+      ) do
+    with {:ok, combat} <- process_game_action(socket, {:skip_turn, player}) do
+      action = "#{player.name} skipped their turn"
+      updated_log = [action | socket.assigns.action_log]
+
+      {:noreply,
+       assign(socket,
+         game_state: %{socket.assigns.game_state | combat: combat},
+         action_log: updated_log
+       )}
+    else
+      {:error, error} ->
+        socket =
+          socket
+          |> put_flash(:error, "#{error}")
+
+        {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("win_match", _params, socket) do
+    if socket.assigns.game_state.combat.current_turn.player do
+      current_player = socket.assigns.game_state.combat.current_turn.player
+      winning_team = current_player.team
+
+      updated_queue =
+        Enum.map(socket.assigns.game_state.combat.queue, fn char ->
+          if char.team != winning_team do
+            %{char | dead: true, hp: 0}
+          else
+            char
+          end
+        end)
+
+      updated_current_player =
+        if current_player.team != winning_team do
+          %{current_player | dead: true, hp: 0}
+        else
+          current_player
+        end
+
+      updated_combat = %{
+        socket.assigns.game_state.combat
+        | state: :game_over,
+          queue: updated_queue,
+          current_turn: %{
+            socket.assigns.game_state.combat.current_turn
+            | player: updated_current_player
+          }
+      }
+
+      updated_game_state = %{socket.assigns.game_state | combat: updated_combat}
+
+      if socket.assigns.game_pid do
+        :ok = GenServer.call(socket.assigns.game_pid, {:set_state, updated_game_state})
+      end
+
+      action = "#{current_player.name}'s team (#{winning_team}) wins the match!"
+      updated_log = [action | socket.assigns.action_log]
+
+      {:noreply,
+       assign(socket,
+         game_state: updated_game_state,
+         action_log: updated_log
+       )}
+    else
+      {:noreply, put_flash(socket, :error, "No active player")}
+    end
+  end
+
+  @impl true
+  def handle_event("enter_shop", _params, socket) do
+    if socket.assigns.game_state.combat.state == :game_over && socket.assigns.game_pid do
+      case Game.enter_shop(socket.assigns.game_pid) do
+        {:ok, updated_state} ->
+          updated_state = Map.put(updated_state, :current_view, :shop)
+
+          {:noreply,
+           socket
+           |> assign(game_state: updated_state, modal: nil)
+           |> put_flash(:info, "Welcome to the shop!")}
+
+        {:error, reason} ->
+          {:noreply,
+           socket
+           |> put_flash(:error, "Failed to enter shop: #{reason}")
+           |> assign(modal: nil)}
+      end
+    else
+      {:noreply, put_flash(socket, :error, "Combat must be over to enter shop")}
+    end
+  end
+
+  @impl true
+  def handle_event("select_shop_card", %{"card_index" => _card_index}, socket) do
+    # TODO: Add the selected card to player's deck
+    updated_game_state = Map.put(socket.assigns.game_state, :current_view, :combat)
+
+    {:noreply,
+     socket
+     |> assign(game_state: updated_game_state)
+     |> put_flash(:info, "Card selected! Returning to combat...")}
+  end
+
+  @impl true
+  def handle_info({:parent_event, event_name, params}, socket) do
+    handle_event(event_name, params, socket)
+  end
+
+  # Helper functions
+  defp create_test_campaign do
+    # Create a basic campaign with a test character
+    # In production, this would come from the database/session
+    base_class = Content.get_base_class_by_class!("ranger")
+    player_character = Character.from_character_data(base_class)
+
+    %{
+      character: player_character,
+      player: %{
+        name: "Test Hero"
+      }
+    }
+  end
+
+  defp initialize_combat_from_campaign(campaign) do
+    # Get the player's class from their character
+    player_class = campaign.character.class
+
+    # Create a simple encounter: player vs 2 enemies
+    # Format: {{q, r, s}, class, team}
+    initial_state = [
+      {{0, 0, 0}, player_class, 1},      # Player at center, team 1
+      {{2, -1, -1}, :fighter, 2},         # Enemy 1, team 2
+      {{-2, 1, 1}, :mage, 2}              # Enemy 2, team 2
+    ]
+
+    # Use the existing initialization function
+    Combat.initialize_from_char_params_list(initial_state)
+  end
+
+  defp process_game_action(socket, action) do
+    with {:ok, updated_combat} <-
+           Combat.process_action(
+             socket.assigns.game_state.combat,
+             action
+           ) do
+      {:ok, updated_combat}
+    else
+      {:error, error} ->
+        {:error, error}
+    end
+  end
+
+  defp parse_target_position(target_position) do
+    with [q, r, s] <-
+           target_position
+           |> String.split("_")
+           |> Enum.map(&String.to_integer/1) do
+      {:ok, {q, r, s}}
+    else
+      _ -> {:error, "Invalid target position"}
+    end
+  end
+end
