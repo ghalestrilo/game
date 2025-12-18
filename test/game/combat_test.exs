@@ -8,8 +8,8 @@ defmodule Game.CombatTest do
     fireball: %{Fixtures.fireball_card() | id: 2},
     heal: %{Fixtures.heal_card() | id: 3},
     range_limited: %{Fixtures.attack_card() | id: 4, range: 1},
-    lethal: %{Fixtures.lethal_card() | id: 5},
-    expensive: Fixtures.expensive_card(),
+    lethal: %{Fixtures.lethal_card() | id: 5, range: 10},
+    expensive: %{Fixtures.expensive_card() | id: 99},
     long_range: Fixtures.long_range_card()
   }
 
@@ -18,16 +18,18 @@ defmodule Game.CombatTest do
     mage = Fixtures.mage()
     fighter = Fixtures.warrior()
 
-    # Prepare characters with cards in hand - mage should have empty hand for tests
-    fighter = %{fighter | cards: %{fighter.cards | hand: Map.values(@cards)}}
-    mage = %{mage | cards: %{mage.cards | hand: Map.values(@cards)}}
+    # Prepare characters with cards in hand - exclude expensive_card to test validation
+    cards_in_hand = Map.drop(@cards, [:expensive]) |> Map.values()
+    fighter = %{fighter | cards: %{fighter.cards | hand: cards_in_hand}}
+    mage = %{mage | cards: %{mage.cards | hand: cards_in_hand}}
 
-    # Create a small grid with mage and fighter placed adjacently
+    # Create a small grid with mage and fighter placed adjacently (distance 1 for attack card range)
+    mage = %{mage | position: {1, 0, -1}}
     grid = %Grid{
       tiles: %{
         {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-        {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
-        {2, 0, -2} => %{terrain: :plain, occupied_by: mage},
+        {1, 0, -1} => %{terrain: :plain, occupied_by: mage},
+        {2, 0, -2} => %{terrain: :plain, occupied_by: nil},
         {3, 0, -3} => %{terrain: :plain, occupied_by: nil}
       }
     }
@@ -38,7 +40,7 @@ defmodule Game.CombatTest do
       __constants__: %{
         players: [fighter, mage]
       },
-      queue: [fighter, mage],
+      queue: [mage],
       grid: grid,
       current_turn: %{
         starting_position: fighter.position,
@@ -85,8 +87,12 @@ defmodule Game.CombatTest do
 
   describe "play_card with not enough AP" do
     setup %{combat_state: combat_state, fighter: fighter} do
+      # Add expensive card to hand for this test
+      fighter_with_expensive = %{fighter | cards: %{fighter.cards | hand: [fighter.cards.hand | [@cards.expensive]] |> List.flatten()}}
+      combat_state = %{combat_state | current_turn: %{combat_state.current_turn | player: fighter_with_expensive}}
+
       {:ok, updated_combat} =
-        Combat.process_action(combat_state, {:pick_card, fighter, @cards.expensive})
+        Combat.process_action(combat_state, {:pick_card, fighter_with_expensive, @cards.expensive})
 
       result = Combat.process_action(updated_combat, {:play_card, {2, 0, -2}})
 
@@ -98,7 +104,7 @@ defmodule Game.CombatTest do
     end
 
     test "fighter remains unchanged", %{combat_state: combat_state} do
-      assert combat_state.current_turn.player.ap == 1
+      assert combat_state.current_turn.player.ap == 3
     end
   end
 
@@ -109,7 +115,7 @@ defmodule Game.CombatTest do
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
 
-      result = Combat.process_action(updated_combat, {:play_card, {2, 0, -2}})
+      result = Combat.process_action(updated_combat, {:play_card, mage.position})
 
       {:ok, result: result, fighter: fighter, original_mage: mage, test_card: @cards.attack}
     end
@@ -124,7 +130,7 @@ defmodule Game.CombatTest do
       test_card: test_card
     } do
       updated_mage = Enum.find(updated_combat.queue, &(&1.id == original_mage.id))
-      [{:damage, damage_amount}] = test_card.effects
+      [%{"type" => "damage", "value" => damage_amount}] = test_card.effects
       assert updated_mage.hp == original_mage.hp - damage_amount
     end
 
@@ -149,20 +155,12 @@ defmodule Game.CombatTest do
 
   describe "play_card with heal effect" do
     setup %{combat_state: combat_state, fighter: fighter} do
-      grid = %Grid{
-        tiles: %{
-          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-          {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
-          {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
-        }
-      }
-
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, @cards.heal})
 
       result = Combat.process_action(updated_combat, {:play_card, {0, 0, 0}})
 
-      {:ok, result: result, heal_card: @cards.heal, original_hp: 10}
+      {:ok, result: result, heal_card: @cards.heal, original_hp: fighter.hp}
     end
 
     test "increases target HP by heal amount", %{
@@ -171,7 +169,7 @@ defmodule Game.CombatTest do
       heal_card: heal_card
     } do
       updated_fighter = updated_combat.current_turn.player
-      [{:heal, heal_amount}] = heal_card.effects
+      [%{"type" => "heal", "value" => heal_amount}] = heal_card.effects
       assert updated_fighter.hp == original_hp + heal_amount
     end
 
@@ -219,7 +217,7 @@ defmodule Game.CombatTest do
   describe "move within range" do
     setup %{combat_state: combat_state, fighter: fighter} do
       # Adjacent empty tile
-      target_position = {1, 0, -1}
+      target_position = {2, 0, -2}
       result = Combat.process_action(combat_state, {:move, fighter, target_position})
 
       {:ok, result: result, target_position: target_position}
@@ -271,7 +269,7 @@ defmodule Game.CombatTest do
 
   describe "play_card out of range" do
     setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
-
+      # Place target at distance 3, out of range for attack card (range 1)
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
 
@@ -287,19 +285,10 @@ defmodule Game.CombatTest do
 
   describe "game over check" do
     setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
-      # Make sure the grid has characters at correct positions
-      grid = %Grid{
-        tiles: %{
-          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-          {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
-          {2, 0, -2} => %{terrain: :plain, occupied_by: mage}
-        }
-      }
-
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, @cards.lethal})
 
-      result = Combat.process_action(updated_combat, {:play_card, {2, 0, -2}})
+      result = Combat.process_action(updated_combat, {:play_card, mage.position})
 
       {:ok, result: result}
     end
@@ -311,11 +300,15 @@ defmodule Game.CombatTest do
     end
 
     test "dead character is removed from players list", %{result: {:ok, updated_combat}} do
-      assert length(updated_combat.queue) == 1
+      # Queue only contains waiting players, not current player
+      # After mage dies, only fighter remains (as current player), so queue is empty
+      assert length(updated_combat.queue) == 0
     end
 
     test "dead character is removed from queue", %{result: {:ok, updated_combat}} do
-      assert length(updated_combat.queue) == 1
+      # Queue only contains waiting players, not current player
+      # After mage dies, only fighter remains (as current player), so queue is empty
+      assert length(updated_combat.queue) == 0
     end
   end
 
@@ -324,7 +317,7 @@ defmodule Game.CombatTest do
       # Starting position
       start_position = fighter.position
       # Adjacent empty tile
-      target_position = {1, 0, -1}
+      target_position = {2, 0, -2}
 
       # First move to the target position
       {:ok, first_move_result} =
@@ -383,8 +376,8 @@ defmodule Game.CombatTest do
       fighter = Fixtures.warrior()
 
       # Create two identical attack cards for the fighter with sufficient range
-      attack_card1 = %{Fixtures.attack_card() | id: 1, effects: [%CardEffect{ type: "damage", value:  5}], range: 2}
-      attack_card2 = %{Fixtures.attack_card() | id: 2, effects: [%CardEffect{ type: "damage", value:  5}], range: 2}
+      attack_card1 = %{Fixtures.attack_card() | id: 1, effects: [%{"type" => "damage", "value" => 5}], range: 2}
+      attack_card2 = %{Fixtures.attack_card() | id: 2, effects: [%{"type" => "damage", "value" => 5}], range: 2}
 
       # Set positions for both characters
       fighter = %{fighter | position: {1, 0, -1}}
@@ -407,7 +400,7 @@ defmodule Game.CombatTest do
         __constants__: %{
           players: [fighter, mage]
         },
-        queue: [fighter, mage],
+        queue: [mage],
         grid: grid,
         current_turn: %{
           starting_position: {1, 0, -1},

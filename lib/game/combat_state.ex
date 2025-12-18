@@ -119,11 +119,15 @@ defmodule Game.CombatState do
   end
 
   def check_target_death(combat, target) do
-    update_player(
-      combat,
-      get_current_player(combat),
-      %{target | dead: Character.is_dead?(target)}
-    )
+    # Get the current version of the target from combat state
+    current_target =
+      get_current_queue(combat)
+      |> Enum.find(fn char -> char.id == target.id end)
+      |> Kernel.||(target)
+
+    updated_target = %{current_target | dead: Character.is_dead?(current_target)}
+    combat
+    |> update_target(target, updated_target)
   end
 
   def initialize_queue(%{queue: queue} = combat) do
@@ -169,16 +173,33 @@ defmodule Game.CombatState do
   end
 
   def check_game_over(combat) do
-    combat
-    |> get_current_queue()
-    |> Enum.filter(&(&1.dead == false))
-    |> Enum.map(& &1.team)
-    |> dbg()
-    |> Enum.uniq()
-    |> length()
-    |> case do
-      n when n <= 1 -> %CombatState{combat | state: :game_over}
-      _ -> %CombatState{combat | state: :running}
+    alive_characters =
+      combat
+      |> get_current_queue()
+      |> Enum.filter(&(&1.dead == false))
+
+    alive_teams =
+      alive_characters
+      |> Enum.map(& &1.team)
+      |> dbg()
+      |> Enum.uniq()
+
+    # Remove dead characters from queue
+    alive_queue = Enum.filter(combat.queue, &(&1.dead == false))
+
+    # Update current_turn if current player is dead
+    updated_current_turn =
+      if combat.current_turn.player && combat.current_turn.player.dead do
+        %{combat.current_turn | player: nil}
+      else
+        combat.current_turn
+      end
+
+    case length(alive_teams) do
+      n when n <= 1 ->
+        %{combat | state: :game_over, queue: alive_queue, current_turn: updated_current_turn}
+      _ ->
+        %{combat | state: :running, queue: alive_queue, current_turn: updated_current_turn}
     end
   end
 

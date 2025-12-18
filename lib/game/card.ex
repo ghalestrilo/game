@@ -98,16 +98,24 @@ defmodule Game.Card do
   def process_card(combat_state, target, card) do
     current_player = CombatState.get_current_player(combat_state)
 
-    combat_state
-    # Process ap cost, hand, etc
-    |> CombatState.update_target(
-      current_player,
-      current_player
-      |> Game.Character.discard_card(card)
-      |> Game.Character.spend_ap(card.cost)
-    )
-    # Process card effects (heal, damage, etc)
-    |> apply_card_effects(card.effects, target)
+    updated_combat =
+      combat_state
+      # Process ap cost, hand, etc
+      |> CombatState.update_target(
+        current_player,
+        current_player
+        |> Game.Character.discard_card(card)
+        |> Game.Character.spend_ap(card.cost)
+      )
+
+    # Get the updated target from the updated combat state
+    updated_target =
+      CombatState.get_current_queue(updated_combat)
+      |> Enum.find(fn char -> char.id == target.id end)
+      |> Kernel.||(target)
+
+    # Process card effects (heal, damage, etc) with the updated target
+    apply_card_effects(updated_combat, card.effects, updated_target)
   end
 
   # Helper function to apply multiple card effects
