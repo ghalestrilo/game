@@ -39,8 +39,7 @@ defmodule Game.Card do
     :scaling
   ]
 
-  @type card_effect() ::
-          {:damage, integer()} | {:heal, integer()} | {:draw, integer()} | {:discard, integer()}
+  @type card_effect() :: [CardEffect]
 
   @type t() :: %__MODULE__{
           id: integer(),

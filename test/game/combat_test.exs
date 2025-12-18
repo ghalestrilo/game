@@ -1,9 +1,10 @@
 defmodule Game.CombatTest do
   use ExUnit.Case, async: true
+  alias Game.Combat.CardEffect
   alias Game.{Combat, Character, Fixtures, Grid, CombatState}
 
   @cards %{
-    attack: %{Fixtures.attack_card() | id: 1, effects: [{:damage, 5}]},
+    attack: %{Fixtures.attack_card() | id: 1},
     fireball: %{Fixtures.fireball_card() | id: 2},
     heal: %{Fixtures.heal_card() | id: 3},
     range_limited: %{Fixtures.attack_card() | id: 4, range: 1},
@@ -18,8 +19,8 @@ defmodule Game.CombatTest do
     fighter = Fixtures.warrior()
 
     # Prepare characters with cards in hand - mage should have empty hand for tests
-    fighter = %{fighter | cards: %{fighter.cards | hand: Map.keys(@cards)}}
-    mage = %{mage | cards: %{mage.cards | hand: Map.keys(@cards)}}
+    fighter = %{fighter | cards: %{fighter.cards | hand: Map.values(@cards)}}
+    mage = %{mage | cards: %{mage.cards | hand: Map.values(@cards)}}
 
     # Create a small grid with mage and fighter placed adjacently
     grid = %Grid{
@@ -397,8 +398,8 @@ defmodule Game.CombatTest do
       fighter = Fixtures.warrior()
 
       # Create two identical attack cards for the fighter with sufficient range
-      attack_card1 = %{Fixtures.attack_card() | id: 1, effects: [{:damage, 5}], range: 2}
-      attack_card2 = %{Fixtures.attack_card() | id: 2, effects: [{:damage, 5}], range: 2}
+      attack_card1 = %{Fixtures.attack_card() | id: 1, effects: [%CardEffect{ type: "damage", value:  5}], range: 2}
+      attack_card2 = %{Fixtures.attack_card() | id: 2, effects: [%CardEffect{ type: "damage", value:  5}], range: 2}
 
       # Set positions for both characters
       fighter = %{fighter | position: {1, 0, -1}}
