@@ -121,6 +121,8 @@ defmodule Game.Card do
     end)
   end
 
+  def get_structured_effect(%CardEffect{} = effect), do: effect
+
   def get_structured_effect(%{"type" => type} = effect) do
     effect_data =
       Enum.reduce(effect, %{}, fn {key, value}, acc ->
@@ -134,7 +136,11 @@ defmodule Game.Card do
 
   defp temporary_hack_filter_only_allowed_effects(effects) do
     Enum.filter(effects, fn effect ->
-      if Map.has_key?(@effect_types, effect["type"]) do
+      type = effect
+      |> get_structured_effect()
+      |> Map.get(:type)
+
+      if Map.has_key?(@effect_types, type) do
         Logger.info("Processing Card Effect: #{inspect(effect)}")
         true
       else

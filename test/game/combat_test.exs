@@ -104,13 +104,6 @@ defmodule Game.CombatTest do
 
   describe "play_card with damage effect" do
     setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
-      grid = %Grid{
-        tiles: %{
-          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-          {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
-          {2, 0, -2} => %{terrain: :plain, occupied_by: mage}
-        }
-      }
 
       # First pick the card
       {:ok, updated_combat} =
@@ -278,14 +271,6 @@ defmodule Game.CombatTest do
 
   describe "play_card out of range" do
     setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
-      grid = %Grid{
-        tiles: %{
-          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-          {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
-          {2, 0, -2} => %{terrain: :plain, occupied_by: nil},
-          {3, 0, -3} => %{terrain: :plain, occupied_by: mage}
-        }
-      }
 
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
