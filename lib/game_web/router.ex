@@ -21,6 +21,9 @@ defmodule GameWeb.Router do
     live "/sandbox", GameLive
     live "/campaign/character-select", Campaign.CharacterSelectLive
     live "/campaign/play", Campaign.CampaignPlayLive
+
+    # Catch-all: redirect any other /campaign/* routes to character select
+    live "/campaign/*path", Campaign.CatchAllLive
   end
 
   # Other scopes may use custom stacks.

@@ -7,32 +7,40 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
 
   @impl true
   def mount(params, _session, socket) do
-    if connected?(socket) do
-      # Get campaign state from params or create test campaign
-      campaign = create_campaign_from_params(params)
-
-      # Initialize combat from campaign
-      combat_state = initialize_combat_from_campaign(campaign)
-
-      game_state = %{
-        current_view: :combat,
-        campaign: campaign,
-        combat: combat_state
-      }
-
-      # Start game GenServer
-      {:ok, game_pid} = Game.start_link()
-      :ok = GenServer.call(game_pid, {:set_state, game_state})
-
+    # Guard: Redirect if required params are missing
+    if is_nil(params["class"]) or params["class"] == "" do
       {:ok,
-       assign(socket,
-         game_pid: game_pid,
-         game_state: game_state,
-         action_log: [],
-         modal: nil
-       )}
+       socket
+       |> put_flash(:error, "Please select a character first")
+       |> push_navigate(to: ~p"/campaign/character-select")}
     else
-      {:ok, assign(socket, game_state: nil, action_log: [], modal: nil)}
+      if connected?(socket) do
+        # Get campaign state from params or create test campaign
+        campaign = create_campaign_from_params(params)
+
+        # Initialize combat from campaign
+        combat_state = initialize_combat_from_campaign(campaign)
+
+        game_state = %{
+          current_view: :combat,
+          campaign: campaign,
+          combat: combat_state
+        }
+
+        # Start game GenServer
+        {:ok, game_pid} = Game.start_link()
+        :ok = GenServer.call(game_pid, {:set_state, game_state})
+
+        {:ok,
+         assign(socket,
+           game_pid: game_pid,
+           game_state: game_state,
+           action_log: [],
+           modal: nil
+         )}
+      else
+        {:ok, assign(socket, game_pid: nil, game_state: nil, action_log: [], modal: nil)}
+      end
     end
   end
 
@@ -40,7 +48,7 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
   def render(assigns) do
     ~H"""
     <div class="campaign-play">
-      <%= if @game_state.current_view == :combat do %>
+      <%= if @game_state && Map.get(@game_state, :current_view) == :combat do %>
         <.live_component
           module={GameWeb.CombatLive}
           id="combat"
@@ -50,8 +58,17 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
         />
       <% end %>
 
-      <%= if @game_state.current_view == :shop do %>
+      <%= if @game_state && Map.get(@game_state, :current_view) == :shop do %>
         <.live_component module={GameWeb.ShopLive} id="shop" game_state={@game_state} />
+      <% end %>
+
+      <%= if is_nil(@game_state) || is_nil(Map.get(@game_state, :current_view)) do %>
+        <div class="flex items-center justify-center h-screen">
+          <div class="text-center">
+            <p class="text-xl mb-4">Loading campaign...</p>
+            <p class="text-sm text-gray-600">If this persists, please return to character selection.</p>
+          </div>
+        </div>
       <% end %>
     </div>
     """
