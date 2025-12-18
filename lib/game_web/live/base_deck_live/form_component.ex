@@ -87,23 +87,22 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
     """
   end
 
-  def mount(params, session, %{assigns: assigns} = socket) do
+  def mount(_params, _session, %{assigns: assigns} = socket) do
     base_deck =
-      case @base_deck.id do
+      case assigns.base_deck.id do
         index when is_integer(index) ->
           Game.BaseDecks.get_base_deck!(index)
           |> Game.Repo.preload(:base_deck_cards)
 
         nil ->
-          @base_deck
+          assigns.base_deck
           |> Game.Repo.preload(:base_deck_cards)
       end
 
-    already_used_card_ids =
+    _already_used_card_ids =
       case base_deck.id do
         index when is_integer(index) ->
-          @base_deck
-          # base_deck
+          assigns.base_deck
           |> Game.BaseDecks.BaseDeck.get_cards()
           |> Enum.map(& &1.id)
 
@@ -158,6 +157,33 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
     save_base_deck(socket, socket.assigns.action, base_deck_params)
   end
 
+  def handle_event("add_base_deck_card", _params, socket) do
+    base_deck_cards =
+      (socket.assigns.form.params["base_deck_cards"] ||
+         socket.assigns.form[:base_deck_cards].value || [])
+      |> Enum.map(fn card -> if is_struct(card), do: Map.from_struct(card), else: card end)
+
+    new_card = %{"card_id" => nil, "count" => 1}
+    updated_cards = base_deck_cards ++ [new_card]
+    params = Map.put(socket.assigns.form.params || %{}, "base_deck_cards", updated_cards)
+    changeset = Game.BaseDecks.change_base_deck(socket.assigns.base_deck, params)
+    {:noreply, assign(socket, form: to_form(changeset))}
+  end
+
+  def handle_event("remove_base_deck_card", %{"idx" => idx}, socket) do
+    idx = String.to_integer(idx)
+
+    base_deck_cards =
+      (socket.assigns.form.params["base_deck_cards"] ||
+         socket.assigns.form[:base_deck_cards].value || [])
+      |> Enum.map(fn card -> if is_struct(card), do: Map.from_struct(card), else: card end)
+
+    updated_cards = List.delete_at(base_deck_cards, idx)
+    params = Map.put(socket.assigns.form.params || %{}, "base_deck_cards", updated_cards)
+    changeset = Game.BaseDecks.change_base_deck(socket.assigns.base_deck, params)
+    {:noreply, assign(socket, form: to_form(changeset))}
+  end
+
   defp save_base_deck(socket, :edit, base_deck_params) do
     case BaseDecks.update_base_deck(socket.assigns.base_deck, base_deck_params) do
       {:ok, base_deck} ->
@@ -190,32 +216,6 @@ defmodule GameWeb.BaseDeckLive.FormComponent do
 
   defp notify_parent(msg), do: send(self(), {__MODULE__, msg})
 
-  def handle_event("add_base_deck_card", _params, socket) do
-    base_deck_cards =
-      (socket.assigns.form.params["base_deck_cards"] ||
-         socket.assigns.form[:base_deck_cards].value || [])
-      |> Enum.map(fn card -> if is_struct(card), do: Map.from_struct(card), else: card end)
-
-    new_card = %{"card_id" => nil, "count" => 1}
-    updated_cards = base_deck_cards ++ [new_card]
-    params = Map.put(socket.assigns.form.params || %{}, "base_deck_cards", updated_cards)
-    changeset = Game.BaseDecks.change_base_deck(socket.assigns.base_deck, params)
-    {:noreply, assign(socket, form: to_form(changeset))}
-  end
-
-  def handle_event("remove_base_deck_card", %{"idx" => idx}, socket) do
-    idx = String.to_integer(idx)
-
-    base_deck_cards =
-      (socket.assigns.form.params["base_deck_cards"] ||
-         socket.assigns.form[:base_deck_cards].value || [])
-      |> Enum.map(fn card -> if is_struct(card), do: Map.from_struct(card), else: card end)
-
-    updated_cards = List.delete_at(base_deck_cards, idx)
-    params = Map.put(socket.assigns.form.params || %{}, "base_deck_cards", updated_cards)
-    changeset = Game.BaseDecks.change_base_deck(socket.assigns.base_deck, params)
-    {:noreply, assign(socket, form: to_form(changeset))}
-  end
 
   defp normalize_base_deck_cards(cards) when is_map(cards) do
     cards

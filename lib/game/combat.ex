@@ -19,7 +19,6 @@ defmodule Game.Combat do
       params
       |> Enum.with_index()
       |> Enum.map(fn {{{q, r, s}, classname, team}, idx} ->
-        character =
           classname
           |> to_string()
           |> Game.Content.get_base_class_by_class!()
@@ -100,7 +99,7 @@ defmodule Game.Combat do
   def process_action(
         %CombatState{
           state: :running,
-          queue: queue,
+          queue: _queue,
           grid: grid,
           current_turn: %{starting_position: starting_position}
         } = combat,
@@ -132,7 +131,7 @@ defmodule Game.Combat do
   def process_action(
         %CombatState{
           state: :card_selected,
-          queue: queue,
+          queue: _queue,
           grid: grid,
           current_turn: %{
             player: player,
@@ -223,7 +222,7 @@ defmodule Game.Combat do
   # - Check if it's the player's turn
   # - Discard their hand
   # - Move to the next player's turn
-  def process_action(%CombatState{state: state, queue: queue} = combat, {:skip_turn, player})
+  def process_action(%CombatState{state: state, queue: _queue} = combat, {:skip_turn, player})
       when state != :game_over do
     cond do
       not CombatState.is_players_turn?(combat, player) ->

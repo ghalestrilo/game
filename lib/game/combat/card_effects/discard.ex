@@ -5,7 +5,6 @@ defmodule Game.Combat.CardEffects.Discard do
   """
 
   alias Game.CombatState
-  alias Game.Character
 
   defstruct type: :discard, value: 0, targeting: nil
 
@@ -18,7 +17,8 @@ defmodule Game.Combat.CardEffects.Discard do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Discard
 
-    def process(%Discard{value: count} = effect, target, %CombatState{} = combat_state) do
+    @impl Game.Combat.CardEffect
+    def process(%Discard{value: count} = _effect, target, %CombatState{} = combat_state) do
       updated_target = discard_random_cards(target, count)
       CombatState.update_target(combat_state, target, updated_target)
     end

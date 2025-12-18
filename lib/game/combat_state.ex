@@ -79,7 +79,7 @@ defmodule Game.CombatState do
     %{combat | grid: updated_grid}
   end
 
-  def refresh_grid(%{current_turn: %{player: current_player}, grid: grid} = combat) do
+  def refresh_grid(%{current_turn: %{player: _current_player}, grid: grid} = combat) do
     updated_grid =
       combat
       |> get_current_queue()

@@ -144,7 +144,7 @@ defmodule Game do
           # Then play the card
           case Combat.process_action(card_selected_combat, {:play_card, target_position}) do
             {:ok, updated_combat} ->
-              current_character =
+              _current_character =
                 Enum.find(updated_combat.queue, &(&1.id == current_character.id))
 
               # Update the character's state in the game state

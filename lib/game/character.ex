@@ -183,13 +183,13 @@ defmodule Game.Character do
   TODO: These methods (get_max_ap and get_max_hp) should be replaced
   once we have logic to store the characters' max_hp and max_hp somewhere safe
   """
-  def get_max_hp(%__MODULE__{max_hp: max_hp} = character) do
+  def get_max_hp(%__MODULE__{max_hp: max_hp} = _character) do
     max_hp
   end
 
   # def get_max_hp(%__MODULE__{max_hp: max_hp}), do: max_hp
 
-  def get_max_ap(%__MODULE__{max_ap: max_ap} = character) do
+  def get_max_ap(%__MODULE__{max_ap: max_ap} = _character) do
     max_ap
   end
 

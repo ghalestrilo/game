@@ -139,7 +139,7 @@ defmodule Game.Card do
         Logger.info("Processing Card Effect: #{inspect(effect)}")
         true
       else
-        Logger.warn("Effect not implemented, ignoring: #{inspect(effect)}")
+        Logger.warning("Effect not implemented, ignoring: #{inspect(effect)}")
         false
       end
     end)
