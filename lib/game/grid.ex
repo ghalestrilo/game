@@ -1,7 +1,5 @@
 defmodule Game.Grid do
   alias __MODULE__
-  alias HexGrid.Map, as: HexMap
-  alias HexGrid.Hex, as: Hex
 
   @type t() :: %__MODULE__{
           tiles: %{

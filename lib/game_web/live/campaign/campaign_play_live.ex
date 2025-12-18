@@ -66,7 +66,9 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
         <div class="flex items-center justify-center h-screen">
           <div class="text-center">
             <p class="text-xl mb-4">Loading campaign...</p>
-            <p class="text-sm text-gray-600">If this persists, please return to character selection.</p>
+            <p class="text-sm text-gray-600">
+              If this persists, please return to character selection.
+            </p>
           </div>
         </div>
       <% end %>
@@ -339,11 +341,6 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
         name: player_name
       }
     }
-  end
-
-  defp create_test_campaign do
-    # Fallback for testing
-    create_campaign_from_params(%{})
   end
 
   defp initialize_combat_from_campaign(campaign) do
