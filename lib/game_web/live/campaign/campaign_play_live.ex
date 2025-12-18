@@ -113,10 +113,14 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
 
     action = "#{current_turn.player.name} selected card: #{card.name}"
     updated_log = [action | socket.assigns.action_log]
+    updated_game_state = %{socket.assigns.game_state | combat: combat}
+
+    # Sync GenServer state if combat ended
+    sync_game_state_if_needed(socket.assigns.game_pid, updated_game_state)
 
     {:noreply,
      assign(socket,
-       game_state: %{socket.assigns.game_state | combat: combat},
+       game_state: updated_game_state,
        action_log: updated_log
      )}
   end
@@ -135,10 +139,14 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
         "#{socket.assigns.game_state.combat.current_turn.player.name} played card: #{card.name}"
 
       updated_log = [action | socket.assigns.action_log]
+      updated_game_state = %{socket.assigns.game_state | combat: combat}
+
+      # Sync GenServer state if combat ended
+      sync_game_state_if_needed(socket.assigns.game_pid, updated_game_state)
 
       {:noreply,
        assign(socket,
-         game_state: %{socket.assigns.game_state | combat: combat},
+         game_state: updated_game_state,
          action_log: updated_log
        )}
     else
@@ -164,10 +172,14 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
     with {:ok, combat} <- process_game_action(socket, {:move, player, position}) do
       action = "#{player.name} moved to position #{inspect(position)}"
       updated_log = [action | socket.assigns.action_log]
+      updated_game_state = %{socket.assigns.game_state | combat: combat}
+
+      # Sync GenServer state if combat ended
+      sync_game_state_if_needed(socket.assigns.game_pid, updated_game_state)
 
       {:noreply,
        assign(socket,
-         game_state: %{socket.assigns.game_state | combat: combat},
+         game_state: updated_game_state,
          action_log: updated_log
        )}
     else
@@ -196,10 +208,14 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
     with {:ok, combat} <- process_game_action(socket, {:skip_turn, player}) do
       action = "#{player.name} skipped their turn"
       updated_log = [action | socket.assigns.action_log]
+      updated_game_state = %{socket.assigns.game_state | combat: combat}
+
+      # Sync GenServer state if combat ended
+      sync_game_state_if_needed(socket.assigns.game_pid, updated_game_state)
 
       {:noreply,
        assign(socket,
-         game_state: %{socket.assigns.game_state | combat: combat},
+         game_state: updated_game_state,
          action_log: updated_log
        )}
     else
@@ -381,6 +397,13 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
       {:ok, {q, r, s}}
     else
       _ -> {:error, "Invalid target position"}
+    end
+  end
+
+  # Syncs the GenServer state when combat ends to ensure shop entry works correctly
+  defp sync_game_state_if_needed(game_pid, game_state) do
+    if game_pid && game_state.combat.state == :game_over do
+      :ok = GenServer.call(game_pid, {:set_state, game_state})
     end
   end
 end
