@@ -1,7 +1,7 @@
 defmodule GameWeb.BaseClassLive.Show do
   use GameWeb, :live_view
 
-  alias Game.Data
+  alias Game.Content
 
   @impl true
   def mount(_params, _session, socket) do

@@ -4,8 +4,6 @@ defmodule GameWeb.CombatLive do
   import GameWeb.CoreComponents
   alias Phoenix.LiveView.JS
   alias Game
-  alias Game.CombatState.StateSave
-  alias Game.Fixtures
 
   @impl true
   def update(assigns, socket) do

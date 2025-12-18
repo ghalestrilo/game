@@ -18,7 +18,8 @@ defmodule Game.Combat.CardEffects.Draw do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Draw
 
-    def process(%Draw{value: count} = effect, target, %CombatState{} = combat_state) do
+    @impl Game.Combat.CardEffect
+    def process(%Draw{value: count} = _effect, target, %CombatState{} = combat_state) do
       updated_target = Character.draw_cards(target, count)
       CombatState.update_target(combat_state, target, updated_target)
     end

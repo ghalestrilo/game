@@ -17,7 +17,8 @@ defmodule Game.Combat.CardEffects.Damage do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Damage
 
-    def process(%Damage{value: amount} = effect, target, %CombatState{} = combat_state) do
+    @impl Game.Combat.CardEffect
+    def process(%Damage{value: amount} = _effect, target, %CombatState{} = combat_state) do
       CombatState.update_target(combat_state, target, Character.apply_damage(target, amount))
     end
 

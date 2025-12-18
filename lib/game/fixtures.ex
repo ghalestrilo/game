@@ -1,5 +1,5 @@
 defmodule Game.Fixtures do
-  alias Game.{Character, Card, Grid, Combat, CombatState}
+  alias Game.{Character, Card, Grid, CombatState}
 
   # Dynamic character creation
   def character(:warrior, id) do

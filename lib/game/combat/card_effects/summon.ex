@@ -6,9 +6,8 @@ defmodule Game.Combat.CardEffects.Summon do
   """
 
   alias Game.CombatState
-  alias Game.Character
 
-  defstruct type: :heal, value: 0, targeting: nil, character: nil
+  defstruct type: :summon, value: 0, targeting: nil, character: nil
 
   @type t() :: %__MODULE__{
           type: atom(),
@@ -19,9 +18,11 @@ defmodule Game.Combat.CardEffects.Summon do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Summon
 
-    def process(%Summon{character: character} = effect, target, %CombatState{} = combat_state) do
+    @impl Game.Combat.CardEffect
+    def process(%Summon{character: _character} = _effect, _target, %CombatState{} = combat_state) do
       # WIP
       # CombatState.update_target(combat_state, target, Character.apply_healing(target, amount))
+      combat_state
     end
 
     @impl Game.Combat.CardEffect
