@@ -43,6 +43,10 @@ defmodule GameWeb.BaseCardLive.FormComponent do
         <div id="effects-list" class="flex gap-2 flex-col items-baseline">
           <%!-- <div id="effects-list gap-2 flex-col"> --%>
           <label>Effects</label>
+          <%= if Enum.empty?(@form[:effects].value || []) do %>
+            <%!-- Hidden input to allow submitting empty effects array --%>
+            <input type="hidden" name={"#{@form.name}[effects][]"} value="" />
+          <% end %>
           <%= for {effect, idx} <- Enum.with_index(@form[:effects].value || []) do %>
             <% effect = if is_tuple(effect), do: elem(effect, 1), else: effect %>
             <div
@@ -141,13 +145,20 @@ defmodule GameWeb.BaseCardLive.FormComponent do
   end
 
   def handle_event("save", %{"base_card" => base_card_params}, socket) do
+    IO.puts("\n=== SAVE EVENT HANDLER ===")
+    IO.inspect(base_card_params, label: "Received params")
+
     base_card_params =
       if Map.has_key?(base_card_params, "effects") do
-        Map.update!(base_card_params, "effects", &normalize_effects/1)
+        normalized = Map.update!(base_card_params, "effects", &normalize_effects/1)
+        IO.inspect(normalized["effects"], label: "Normalized effects")
+        normalized
       else
-        base_card_params
+        IO.puts("No effects key in params, adding empty array")
+        Map.put(base_card_params, "effects", [])
       end
 
+    IO.inspect(base_card_params, label: "Final params")
     save_base_card(socket, socket.assigns.action, base_card_params)
   end
 
@@ -200,18 +211,35 @@ defmodule GameWeb.BaseCardLive.FormComponent do
   #   end
   # end
   defp normalize_effects(effects) when is_map(effects) do
-    effects
-    |> Map.values()
-    |> Enum.map(fn effect ->
-      %{
-        "type" => effect["type"],
-        "value" => parse_int(effect["value"])
-      }
-    end)
+    IO.puts("Normalizing effects map")
+    IO.inspect(effects, label: "Effects map")
+
+    normalized =
+      effects
+      |> Map.values()
+      |> Enum.map(fn effect ->
+        %{
+          "type" => effect["type"],
+          "value" => parse_int(effect["value"])
+        }
+      end)
+
+    IO.inspect(normalized, label: "Normalized map result")
+    normalized
   end
 
-  defp normalize_effects(effects) when is_list(effects), do: effects
-  defp normalize_effects(_), do: []
+  defp normalize_effects(effects) when is_list(effects) do
+    IO.inspect(effects, label: "Effects already a list")
+    # Filter out empty string entries from hidden input
+    result = Enum.reject(effects, &(&1 == ""))
+    IO.inspect(result, label: "Filtered list result")
+    result
+  end
+
+  defp normalize_effects(other) do
+    IO.inspect(other, label: "Normalizing other effects type")
+    []
+  end
 
   defp parse_int(val) when is_binary(val), do: String.to_integer(val)
   defp parse_int(val), do: val

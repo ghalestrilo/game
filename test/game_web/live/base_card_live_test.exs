@@ -7,14 +7,14 @@ defmodule GameWeb.BaseCardLiveTest do
   @create_attrs %{
     name: "some name",
     effects: [],
-    ap: "some ap",
+    ap: 5,
     headline: "some headline",
     rarity: :common
   }
   @update_attrs %{
     name: "some updated name",
     effects: [],
-    ap: "some updated ap",
+    ap: 10,
     headline: "some updated headline",
     rarity: :uncommon
   }
@@ -47,9 +47,19 @@ defmodule GameWeb.BaseCardLiveTest do
              |> form("#base_card-form", base_card: @invalid_attrs)
              |> render_change() =~ "can&#39;t be blank"
 
-      assert index_live
-             |> form("#base_card-form", base_card: @create_attrs)
-             |> render_submit()
+      result =
+        index_live
+        |> form("#base_card-form", base_card: @create_attrs)
+        |> render_submit()
+
+      # Print form content to check for errors
+      if result =~ "base_card-form" do
+        IO.puts("\n=== FORM STILL PRESENT, likely validation error ===")
+        # Look for phx-feedback-for attributes which indicate field errors
+        if result =~ "phx-feedback-for" do
+          IO.puts("Found field validation errors")
+        end
+      end
 
       assert_patch(index_live, ~p"/admin/basecards")
 
