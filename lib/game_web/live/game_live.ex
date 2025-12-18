@@ -1,9 +1,7 @@
 defmodule GameWeb.GameLive do
-  alias Game.Grid
   use GameWeb, :live_view
   alias Game
   alias Game.CombatState.StateSave
-  alias Game.Fixtures
 
   @impl true
   def mount(_params, _session, socket) do
@@ -104,24 +102,11 @@ defmodule GameWeb.GameLive do
     |> List.to_tuple()
   end
 
-  @impl true
-  def handle_event("reset", _params, socket) do
-    # {game_pid, game_state} = initialize_game()
-    {:noreply,
-     assign(socket,
-       # game_pid: game_pid,
-       game_state: socket.assigns.initial_game_state,
-       action_log: []
-     )}
-  end
-
-  defp find_character(characters, position) do
+  def find_character(characters, position) do
     Enum.find(characters, fn char -> char.position == position end)
   end
 
-  # defp character_class(%{class: :mage}), do: "character mage"
-  # defp character_class(%{class: :fighter}), do: "character warrior"
-  defp character_class(%{class: class}),
+  def character_class(%{class: class}),
     do: "character !bg-cover !bg-no-repeat #{get_class_bg(to_string(class))}"
 
   defp get_class_bg("bard"), do: "!bg-[url('/images/cat-bard.png')]"
@@ -137,6 +122,17 @@ defmodule GameWeb.GameLive do
   defp get_class_bg("warlock"), do: "!bg-[url('/images/cat-warlock.png')]"
   defp get_class_bg(_), do: "!bg-none"
 
+  @impl true
+  def handle_event("reset", _params, socket) do
+    # {game_pid, game_state} = initialize_game()
+    {:noreply,
+     assign(socket,
+       # game_pid: game_pid,
+       game_state: socket.assigns.initial_game_state,
+       action_log: []
+     )}
+  end
+
   def handle_event("pick_card", params, socket) do
     current_turn = socket.assigns.game_state.combat.current_turn
     card = current_turn.player.cards.hand |> Enum.at(String.to_integer(params["card_index"]))
@@ -146,7 +142,7 @@ defmodule GameWeb.GameLive do
              process_game_action(socket, {:pick_card, current_turn.player, card}) do
         updated_combat
       else
-        {:error, error} ->
+        {:error, _error} ->
           socket.assigns.game_state.combat
       end
 
@@ -217,7 +213,7 @@ defmodule GameWeb.GameLive do
     end
   end
 
-  def handle_event("interact", params, socket) do
+  def handle_event("interact", _params, socket) do
     {:noreply, socket}
   end
 
@@ -359,7 +355,7 @@ defmodule GameWeb.GameLive do
     end
   end
 
-  def handle_event("select_shop_card", %{"card_index" => card_index}, socket) do
+  def handle_event("select_shop_card", %{"card_index" => _card_index}, socket) do
     # For now, just return to combat view
     # TODO: Add the selected card to a player's deck
     updated_game_state = Map.put(socket.assigns.game_state, :current_view, :combat)

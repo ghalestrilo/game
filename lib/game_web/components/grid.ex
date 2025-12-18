@@ -30,4 +30,18 @@ defmodule GameWeb.Grid do
     IO.inspect(rendered_html, label: "Rendered HTML in GameWeb.Grid")
     rendered_html
   end
+
+  def hex_points(q, r) do
+    # Adjust tile size as needed
+    size = 10
+    angle = :math.pi() / 3
+
+    for i <- 0..5 do
+      angle_offset = angle * i
+      x = size * :math.cos(angle_offset) + q * size * 1.5
+      y = size * :math.sin(angle_offset) + r * size * :math.sqrt(3)
+      "#{x},#{y}"
+    end
+    |> Enum.join(" ")
+  end
 end
