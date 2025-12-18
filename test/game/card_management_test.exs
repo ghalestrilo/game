@@ -184,9 +184,9 @@ defmodule Game.CardManagementTest do
   describe "combat card management" do
     setup do
       # Create cards
-      card1 = %Game.Card{id: "card1", name: "Card 1", cost: 1, effects: [{:damage, 1}]}
-      card2 = %Game.Card{id: "card2", name: "Card 2", cost: 1, effects: [{:damage, 2}]}
-      card3 = %Game.Card{id: "card3", name: "Card 3", cost: 1, effects: [{:heal, 3}]}
+      card1 = %Game.Card{id: "card1", name: "Card 1", cost: 1, effects: [%{"type" => "damage", "value" => 1}]}
+      card2 = %Game.Card{id: "card2", name: "Card 2", cost: 1, effects: [%{"type" => "damage", "value" => 2}]}
+      card3 = %Game.Card{id: "card3", name: "Card 3", cost: 1, effects: [%{"type" => "heal", "value" => 3}]}
 
       # Create player with cards
       player = %Character{
@@ -275,12 +275,7 @@ defmodule Game.CardManagementTest do
       }
 
       # Update combat with the modified player
-      updated_combat = %{
-        combat
-        | players: [player_with_ranged_card, Enum.at(combat.players, 1)],
-          queue: [player_with_ranged_card, Enum.at(combat.queue, 1)],
-          current_turn: %{combat.current_turn | player: player_with_ranged_card}
-      }
+      updated_combat = CombatState.replace_player(combat, player_with_ranged_card)
 
       # First pick the card
       assert {:ok, card_selected_combat} =
@@ -325,14 +320,13 @@ defmodule Game.CardManagementTest do
       player = %{player | cards: %{draw: [], hand: [], discard: [first_card]}}
 
       # Update combat state with modified player
-      combat = %{
-        combat
-        | players: [player, Enum.at(combat.players, 1)],
-          queue: [player, Enum.at(combat.queue, 1)]
-      }
+      combat = CombatState.replace_player(combat, player)
 
       # Draw cards
-      updated_combat = Combat.draw_cards_for_player(combat, player, 1)
+      updated_combat =
+        combat
+        |> CombatState.draw_cards_for_player(player, 1)
+        |> CombatState.update_players_and_queue()
 
       # Find updated player
       updated_player = Enum.find(updated_combat.queue, &(&1.id == player.id))
@@ -366,15 +360,14 @@ defmodule Game.CardManagementTest do
       }
 
       # Update combat state with modified player
-      modified_combat = %{
-        combat
-        | players: [modified_player, Enum.at(combat.players, 1)],
-          queue: [modified_player, Enum.at(combat.queue, 1)]
-      }
+      modified_combat = CombatState.replace_player(combat, modified_player)
 
       # Draw up to default hand size of 5
       # Since we only have 3 cards total, all should be drawn
-      updated_combat = Combat.draw_cards_for_player(modified_combat, modified_player, 5)
+      updated_combat =
+        modified_combat
+        |> CombatState.draw_cards_for_player(modified_player, 5)
+        |> CombatState.update_players_and_queue()
 
       # Find updated player
       updated_player = Enum.find(updated_combat.queue, &(&1.id == player.id))

@@ -271,4 +271,25 @@ defmodule Game.CombatState do
       ) do
     current_character_id == id
   end
+
+  @doc """
+  Replaces a player in the combat state by ID, updating both queue and current_turn if necessary.
+  Useful for test setup scenarios.
+  """
+  def replace_player(%CombatState{queue: queue, current_turn: current_turn} = combat, updated_player) do
+    # Update queue
+    updated_queue = Enum.map(queue, fn p ->
+      if p.id == updated_player.id, do: updated_player, else: p
+    end)
+
+    # Update current_turn if this is the current player
+    updated_current_turn =
+      if current_turn.player && current_turn.player.id == updated_player.id do
+        %{current_turn | player: updated_player}
+      else
+        current_turn
+      end
+
+    %{combat | queue: updated_queue, current_turn: updated_current_turn}
+  end
 end
