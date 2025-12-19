@@ -140,7 +140,8 @@ defmodule Game.Combat do
         } = combat,
         {:play_card, target_position}
       ) do
-    position = Grid.get_object(grid, target_position)
+    targeting_type = get_card_targeting_type(card)
+    position_result = Grid.get_object(grid, target_position)
 
     cond do
       not CombatState.is_players_turn?(combat, player) ->
@@ -149,31 +150,64 @@ defmodule Game.Combat do
       not Character.has_enough_ap?(player, card.cost) ->
         {:error, "Not enough AP"}
 
-      is_nil(position) ->
-        {:error, "There's nothing targetable in this tile"}
+      Grid.distance(grid, player.position, target_position) > card.range ->
+        {:error, "Out of range"}
 
-      elem(position, 0) == :ok ->
-        {:ok, target} = position
-
+      # Handle tile targeting (e.g., summon)
+      targeting_type == :tile ->
         cond do
-          # Targeting another character
-          Grid.distance(grid, player.position, target.position) > card.range ->
-            {:error, "Out of range"}
+          is_nil(position_result) ->
+            {:error, "Invalid tile position"}
 
-          target != nil ->
-            # First set state back to :running so we can chain card plays
-            combat_with_running_state = %{combat | state: :running}
+          elem(position_result, 0) == :ok ->
+            {:ok, target} = position_result
 
-            result =
-              combat_with_running_state
-              |> CombatState.process_card(target, card)
-              |> CombatState.check_target_death(target)
-              |> CombatState.refresh_grid()
-              |> CombatState.check_game_over()
+            if target != nil do
+              {:error, "Tile must be empty"}
+            else
+              # Process card with tile position as target
+              combat_with_running_state = %{combat | state: :running}
 
-            {:ok, result}
+              result =
+                combat_with_running_state
+                |> CombatState.process_card(target_position, card)
+                |> CombatState.refresh_grid()
+                |> CombatState.check_game_over()
 
-          # Invalid target (empty tile)
+              {:ok, result}
+            end
+
+          true ->
+            {:error, "Invalid tile"}
+        end
+
+      # Handle character targeting
+      true ->
+        cond do
+          is_nil(position_result) ->
+            {:error, "There's nothing targetable in this tile"}
+
+          elem(position_result, 0) == :ok ->
+            {:ok, target} = position_result
+
+            cond do
+              target == nil ->
+                {:error, "No character at this position"}
+
+              true ->
+                # First set state back to :running so we can chain card plays
+                combat_with_running_state = %{combat | state: :running}
+
+                result =
+                  combat_with_running_state
+                  |> CombatState.process_card(target, card)
+                  |> CombatState.check_target_death(target)
+                  |> CombatState.refresh_grid()
+                  |> CombatState.check_game_over()
+
+                {:ok, result}
+            end
+
           true ->
             {:error, "Invalid target"}
         end
@@ -277,8 +311,9 @@ defmodule Game.Combat do
       "damage",
       "heal",
       "draw",
+      "summon",
+      "shield",
       "discard"
-      # "summon",
       # "stealth",
       # "stun",
       # "burn",
@@ -290,9 +325,23 @@ defmodule Game.Combat do
       # "position",
       # "regen",
       # "root",
-      # "shield",
       # "slow",
       # "taunt"
     ]
+  end
+
+  # Determines the targeting type required by a card based on its effects
+  defp get_card_targeting_type(card) do
+    # Check if any effect requires tile targeting
+    has_tile_targeting =
+      Enum.any?(card.effects || [], fn effect ->
+        case effect do
+          %{"type" => "summon"} -> true
+          %{type: :summon} -> true
+          _ -> false
+        end
+      end)
+
+    if has_tile_targeting, do: :tile, else: :character
   end
 end

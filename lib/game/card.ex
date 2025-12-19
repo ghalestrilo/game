@@ -8,7 +8,9 @@ defmodule Game.Card do
     "damage" => CardEffects.Damage,
     "heal" => CardEffects.Heal,
     "draw" => CardEffects.Draw,
-    "discard" => CardEffects.Discard
+    "discard" => CardEffects.Discard,
+    "shield" => CardEffects.Shield,
+    "summon" => CardEffects.Summon
   }
 
   defstruct [
@@ -108,11 +110,18 @@ defmodule Game.Card do
         |> Game.Character.spend_ap(card.cost)
       )
 
-    # Get the updated target from the updated combat state
+    # For tile targeting (like summon), target is a position tuple
+    # For character targeting, target is a character struct
     updated_target =
-      CombatState.get_current_queue(updated_combat)
-      |> Enum.find(fn char -> char.id == target.id end)
-      |> Kernel.||(target)
+      if is_tuple(target) do
+        # Target is a position, pass it through
+        target
+      else
+        # Target is a character, get the updated version from combat state
+        CombatState.get_current_queue(updated_combat)
+        |> Enum.find(fn char -> char.id == target.id end)
+        |> Kernel.||(target)
+      end
 
     # Process card effects (heal, damage, etc) with the updated target
     apply_card_effects(updated_combat, card.effects, updated_target)
