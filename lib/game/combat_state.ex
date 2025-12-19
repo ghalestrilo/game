@@ -181,7 +181,6 @@ defmodule Game.CombatState do
     alive_teams =
       alive_characters
       |> Enum.map(& &1.team)
-      |> dbg()
       |> Enum.uniq()
 
     # Remove dead characters from queue

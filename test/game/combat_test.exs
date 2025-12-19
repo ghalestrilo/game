@@ -1,6 +1,5 @@
 defmodule Game.CombatTest do
   use ExUnit.Case, async: true
-  alias Game.Combat.CardEffect
   alias Game.{Combat, Character, Fixtures, Grid, CombatState}
 
   @cards %{
@@ -268,7 +267,7 @@ defmodule Game.CombatTest do
   end
 
   describe "play_card out of range" do
-    setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
+    setup %{combat_state: combat_state, fighter: fighter, mage: _mage} do
       # Place target at distance 3, out of range for attack card (range 1)
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
@@ -475,6 +474,96 @@ defmodule Game.CombatTest do
 
       # Verify the game is still running after both attacks
       assert second_attack_result.state == :running
+    end
+  end
+
+  describe "play_card with unimplemented effect" do
+    setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
+      # Create a card with both implemented (damage) and unimplemented (poison) effects
+      mixed_card = %{
+        Fixtures.attack_card()
+        | id: 100,
+          effects: [
+            %{"type" => "damage", "value" => 3},
+            %{"type" => "poison", "value" => 2},
+            %{"type" => "unimplemented_effect", "value" => 5}
+          ]
+      }
+
+      # Add card to fighter's hand
+      fighter_with_card = %{fighter | cards: %{fighter.cards | hand: [mixed_card]}}
+      combat_state = %{combat_state | current_turn: %{combat_state.current_turn | player: fighter_with_card}}
+
+      {:ok, combat_state: combat_state, fighter: fighter_with_card, mage: mage, mixed_card: mixed_card}
+    end
+
+    test "card plays successfully and ignores unimplemented effects", %{
+      combat_state: combat_state,
+      fighter: fighter,
+      mage: mage,
+      mixed_card: mixed_card
+    } do
+      # Pick the card with mixed effects
+      {:ok, updated_combat} = Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
+
+      # Play the card on the mage
+      result = Combat.process_action(updated_combat, {:play_card, mage.position})
+
+      # Should succeed despite unimplemented effects
+      assert {:ok, _final_combat} = result
+    end
+
+    test "implemented effects are applied correctly", %{
+      combat_state: combat_state,
+      fighter: fighter,
+      mage: mage,
+      mixed_card: mixed_card
+    } do
+      original_mage_hp = mage.hp
+
+      # Pick and play the card
+      {:ok, updated_combat} = Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
+      {:ok, final_combat} = Combat.process_action(updated_combat, {:play_card, mage.position})
+
+      # Get updated mage
+      updated_mage = Enum.find(final_combat.queue, &(&1.id == mage.id))
+
+      # Damage effect should be applied (3 damage)
+      assert updated_mage.hp == original_mage_hp - 3
+    end
+
+    test "unimplemented effects do not cause errors", %{
+      combat_state: combat_state,
+      fighter: fighter,
+      mage: mage,
+      mixed_card: mixed_card
+    } do
+      # Pick and play the card
+      {:ok, updated_combat} = Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
+      result = Combat.process_action(updated_combat, {:play_card, mage.position})
+
+      # Should not return an error
+      refute match?({:error, _}, result)
+      assert match?({:ok, _}, result)
+    end
+
+    test "card is moved to discard pile after playing", %{
+      combat_state: combat_state,
+      fighter: fighter,
+      mage: mage,
+      mixed_card: mixed_card
+    } do
+      # Pick and play the card
+      {:ok, updated_combat} = Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
+      {:ok, final_combat} = Combat.process_action(updated_combat, {:play_card, mage.position})
+
+      updated_fighter = final_combat.current_turn.player
+
+      # Card should be in discard pile
+      assert Enum.any?(updated_fighter.cards.discard, fn c -> c.id == mixed_card.id end)
+
+      # Card should not be in hand
+      refute Enum.any?(updated_fighter.cards.hand, fn c -> c.id == mixed_card.id end)
     end
   end
 end

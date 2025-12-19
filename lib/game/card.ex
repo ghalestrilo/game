@@ -153,11 +153,16 @@ defmodule Game.Card do
 
   defp temporary_hack_filter_only_allowed_effects(effects) do
     Enum.filter(effects, fn effect ->
-      type = effect
-      |> get_structured_effect()
-      |> Map.get(:type)
+      # Extract type directly from effect without calling get_structured_effect
+      # to avoid KeyError for unimplemented effects
+      type =
+        case effect do
+          %{"type" => t} -> t
+          %{type: t} -> t
+          _ -> nil
+        end
 
-      if Map.has_key?(@effect_types, type) do
+      if type && Map.has_key?(@effect_types, type) do
         Logger.info("Processing Card Effect: #{inspect(effect)}")
         true
       else
