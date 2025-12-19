@@ -304,25 +304,34 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
 
   @impl true
   def handle_event("select_shop_card", params, socket) do
-    # Debug: print that we received the event
-    dbg({:select_shop_card_called, params})
+    # Get the selected card from shop
+    card_index = String.to_integer(params["card_index"])
+    selected_card = Enum.at(socket.assigns.game_state.combat.shop_cards, card_index)
 
-    # TODO: Add the selected card to player's deck
-
-    # Get the campaign state
+    # Get the campaign state and add the selected card to the character's deck
     campaign = socket.assigns.game_state.campaign
 
-    # Print the campaign state before reinitializing combat
-    dbg({:campaign, campaign})
-    dbg({:deck, campaign.character.cards.deck})
+    # Add the selected card to the character's draw pile (deck)
+    character = campaign.character
+    new_card_id = length(character.cards.draw)
+    new_card = %{selected_card | id: new_card_id}
 
-    # Reinitialize combat based on the most recent campaign state
-    combat_state = initialize_combat_from_campaign(campaign)
+    updated_character = %{
+      character
+      | cards: %{character.cards | draw: [new_card | character.cards.draw]}
+    }
+
+    # Update the campaign with the modified character
+    updated_campaign = %{campaign | character: updated_character}
+
+    # Reinitialize combat based on the updated campaign state
+    combat_state = initialize_combat_from_campaign(updated_campaign)
 
     updated_game_state = %{
       socket.assigns.game_state
       | current_view: :combat,
-        combat: combat_state
+        combat: combat_state,
+        campaign: updated_campaign
     }
 
     # Update the GenServer state
@@ -333,7 +342,7 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
     {:noreply,
      socket
      |> assign(game_state: updated_game_state, action_log: [])
-     |> put_flash(:info, "Card selected! Returning to combat...")}
+     |> put_flash(:info, "Card added to deck! Starting new combat...")}
   end
 
   @impl true
@@ -360,20 +369,83 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
   end
 
   defp initialize_combat_from_campaign(campaign) do
-    # Get the player's class from their character
-    player_class = campaign.character.class
+    # Use the campaign character (with its updated deck) and reset HP/AP
+    char = campaign.character
 
-    # Create a simple encounter: player vs wolf
-    # Format: {{q, r, s}, class, team}
-    initial_state = [
-      # Player at center, team 1
-      {{0, 0, 0}, player_class, 1},
-      # Wolf enemy, team 2
-      {{2, -1, -1}, :wolf, 2}
+    player_character =
+      char
+      |> Map.put(:hp, Character.get_max_hp(char))
+      |> Map.put(:ap, Character.get_max_ap(char))
+      |> Map.put(:position, {0, 0, 0})
+      |> Map.put(:team, 1)
+      |> Map.put(:id, 0)
+      |> Map.put(:dead, false)
+      # Reset card piles but keep the deck (draw pile)
+      |> Map.update!(:cards, fn cards ->
+        %{
+          draw: Enum.shuffle(cards.draw),
+          hand: [],
+          discard: []
+        }
+      end)
+      |> Character.draw_cards(5)
+
+    # Create wolf enemy from database
+    wolf_character =
+      :wolf
+      |> to_string()
+      |> Content.get_base_class_by_class!()
+      |> Character.from_character_data()
+      |> Character.shuffle_deck()
+      |> Map.put(:position, {2, -1, -1})
+      |> Map.put(:team, 2)
+      |> Map.put(:id, 1)
+      |> Character.draw_cards(5)
+
+    characters = [player_character, wolf_character]
+
+    # Create grid
+    positions = [{0, 0, 0}, {2, -1, -1}]
+
+    max_radius =
+      positions
+      |> Enum.map(&Game.Grid.normalize/1)
+      |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end)
+      |> Enum.max()
+
+    padded_radius = max_radius + 1
+    grid = Game.Grid.new({padded_radius, padded_radius, padded_radius})
+
+    # Update the grid with the characters
+    grid = Enum.reduce(characters, grid, &Game.Grid.update_character(&2, &1))
+
+    # Create combat struct
+    shop_cards = generate_shop_cards(4)
+
+    %Game.CombatState{
+      state: :running,
+      __constants__: %{players: characters},
+      queue: characters,
+      grid: grid,
+      shop_cards: shop_cards
+    }
+    |> Game.CombatState.initialize_queue()
+    |> Game.CombatState.setup_player_turn()
+  end
+
+  # Helper function to generate random shop cards
+  defp generate_shop_cards(count) do
+    all_cards = [
+      Game.Fixtures.attack_card(),
+      Game.Fixtures.heal_card(),
+      Game.Fixtures.fireball_card(),
+      Game.Fixtures.expensive_card()
     ]
 
-    # Use the existing initialization function
-    Combat.initialize_from_char_params_list(initial_state)
+    all_cards
+    |> Enum.take(count)
+    |> Enum.with_index()
+    |> Enum.map(fn {card, idx} -> %{card | id: idx + 1000} end)
   end
 
   defp process_game_action(socket, action) do

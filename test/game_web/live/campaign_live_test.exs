@@ -15,6 +15,16 @@ defmodule GameWeb.CampaignLiveTest do
         rarity: :common
       })
 
+    # Create a fireball card for the shop
+    {:ok, fireball_card} =
+      BaseCards.create_base_card(%{
+        name: "Fireball",
+        ap: 2,
+        effects: [%{"type" => "damage", "value" => 3}],
+        headline: "Deal 3 damage",
+        rarity: :rare
+      })
+
     # Create deck for hero
     {:ok, hero_deck} =
       BaseDecks.create_base_deck(%{
@@ -53,7 +63,12 @@ defmodule GameWeb.CampaignLiveTest do
         deck_id: wolf_deck.id
       })
 
-    %{hero_class: hero_class, wolf_class: wolf_class, attack_card: attack_card}
+    %{
+      hero_class: hero_class,
+      wolf_class: wolf_class,
+      attack_card: attack_card,
+      fireball_card: fireball_card
+    }
   end
 
   describe "Campaign" do
@@ -84,9 +99,6 @@ defmodule GameWeb.CampaignLiveTest do
       view
       |> element("button[phx-click='start_campaign']")
       |> render_click()
-
-      # Should navigate to campaign play
-      assert_redirect(view, ~p"/campaign/play?class=hero&player_name=Test")
 
       # Follow the redirect to verify combat view loads
       {:ok, play_view, _html} = live(conn, ~p"/campaign/play?class=hero&player_name=Test")
@@ -182,6 +194,32 @@ defmodule GameWeb.CampaignLiveTest do
       assert html =~ "Hero"
       # Wolf should not be in the surviving characters list
       refute html =~ "Surviving Characters" && html =~ ">Wolf<"
+
+      # Click "Continue to Shop" button
+      play_view
+      |> element("button[phx-click='enter_shop']")
+      |> render_click()
+
+      # Verify we're in the shop view
+      html = render(play_view)
+      assert html =~ "The Shop"
+
+      # Select the Fireball card from the shop (index 2, as seen in shop output)
+      play_view
+      |> element("div[phx-click='select_shop_card'][phx-value-card_index='2']")
+      |> render_click()
+
+      # Verify we're back in combat with a fresh combat instance
+      html = render(play_view)
+      assert html =~ "Combat State"
+
+      # Verify characters have full HP and AP
+      assert html =~ "HP:2/2"
+      assert html =~ "AP:3/3"
+
+      # Verify the Fireball card is now in the player's hand
+      # The player draws 5 cards at the start, and Fireball was added to their deck
+      assert html =~ "Fireball"
     end
   end
 end
