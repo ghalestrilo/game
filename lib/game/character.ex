@@ -61,10 +61,29 @@ defmodule Game.Character do
   def has_enough_ap?(_, _), do: false
 
   @doc """
-  Applies damage to a character
+  Applies damage to a character, accounting for shield status effects
   """
   def apply_damage(character, amount) do
-    %{character | hp: character.hp - amount}
+    shield = get_status_effect(character, :shield)
+
+    case shield do
+      %{value: shield_value} when shield_value > 0 ->
+        if shield_value >= amount do
+          # Shield absorbs all damage
+          updated_shield = %{shield | value: shield_value - amount}
+          update_status_effect(character, updated_shield)
+        else
+          # Shield absorbs some damage, rest goes to HP
+          remaining_damage = amount - shield_value
+          character
+          |> remove_status_effect(:shield)
+          |> then(&%{&1 | hp: &1.hp - remaining_damage})
+        end
+
+      _ ->
+        # No shield, apply full damage
+        %{character | hp: character.hp - amount}
+    end
   end
 
   @doc """
@@ -72,6 +91,41 @@ defmodule Game.Character do
   """
   def apply_healing(character, amount) do
     %{character | hp: min(character.hp + amount, get_max_hp(character))}
+  end
+
+  @doc """
+  Adds a status effect to a character
+  """
+  def add_status_effect(character, status_effect) do
+    %{character | status_effects: [status_effect | character.status_effects]}
+  end
+
+  @doc """
+  Gets a status effect by type from a character
+  Returns nil if not found
+  """
+  def get_status_effect(character, type) do
+    Enum.find(character.status_effects, fn effect -> effect.type == type end)
+  end
+
+  @doc """
+  Updates an existing status effect
+  """
+  def update_status_effect(character, updated_effect) do
+    updated_effects =
+      Enum.map(character.status_effects, fn effect ->
+        if effect.type == updated_effect.type, do: updated_effect, else: effect
+      end)
+
+    %{character | status_effects: updated_effects}
+  end
+
+  @doc """
+  Removes a status effect by type from a character
+  """
+  def remove_status_effect(character, type) do
+    updated_effects = Enum.reject(character.status_effects, fn effect -> effect.type == type end)
+    %{character | status_effects: updated_effects}
   end
 
   @doc """
