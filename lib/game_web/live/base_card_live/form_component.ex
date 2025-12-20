@@ -67,8 +67,8 @@ defmodule GameWeb.BaseCardLive.FormComponent do
                 name={"#{@form.name}[effects][#{idx}][value]"}
                 id={"#{@form.id}_effects_#{idx}_value"}
                 value={effect["value"]}
-                type="number"
-                label="Effect Value"
+                type={if effect["type"] == "summon", do: "text", else: "number"}
+                label={if effect["type"] == "summon", do: "Class Name", else: "Effect Value"}
               />
               <button
                 type="button"
@@ -220,7 +220,7 @@ defmodule GameWeb.BaseCardLive.FormComponent do
       |> Enum.map(fn effect ->
         %{
           "type" => effect["type"],
-          "value" => parse_int(effect["value"])
+          "value" => parse_effect_value(effect["type"], effect["value"])
         }
       end)
 
@@ -241,6 +241,9 @@ defmodule GameWeb.BaseCardLive.FormComponent do
     []
   end
 
-  defp parse_int(val) when is_binary(val), do: String.to_integer(val)
-  defp parse_int(val), do: val
+  # Parse effect value based on type - summon uses strings, others use integers
+  defp parse_effect_value("summon", val) when is_binary(val), do: val
+  defp parse_effect_value("summon", val), do: to_string(val)
+  defp parse_effect_value(_type, val) when is_binary(val), do: String.to_integer(val)
+  defp parse_effect_value(_type, val), do: val
 end

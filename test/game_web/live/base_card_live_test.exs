@@ -99,6 +99,102 @@ defmodule GameWeb.BaseCardLiveTest do
     end
   end
 
+  describe "Summon Card" do
+    test "saves new summon card with string value", %{conn: conn} do
+      {:ok, index_live, _html} = live(conn, ~p"/admin/basecards")
+
+      assert index_live |> element("a", "New Base card") |> render_click() =~
+               "New Base card"
+
+      assert_patch(index_live, ~p"/admin/basecards/new")
+
+      # Add an effect by clicking the add effect button
+      index_live
+      |> element("button", "＋ Add Effect")
+      |> render_click()
+
+      # Fill in the basic card details and the summon effect
+      index_live
+      |> form("#base_card-form",
+        base_card: %{
+          name: "Summon Minion",
+          ap: "3",
+          headline: "Summon a minion to fight for you",
+          rarity: :rare,
+          effects: %{
+            "0" => %{
+              "type" => "summon",
+              "value" => "minion"
+            }
+          }
+        }
+      )
+      |> render_change()
+
+      # Submit the form
+      result =
+        index_live
+        |> form("#base_card-form")
+        |> render_submit()
+
+      # Print form content to check for errors
+      if result =~ "base_card-form" do
+        IO.puts("\n=== SUMMON CARD FORM STILL PRESENT, likely validation error ===")
+
+        if result =~ "phx-feedback-for" do
+          IO.puts("Found field validation errors")
+        end
+      end
+
+      assert_patch(index_live, ~p"/admin/basecards")
+
+      html = render(index_live)
+      assert html =~ "Base card created successfully"
+      assert html =~ "Summon Minion"
+    end
+
+    test "displays summon card in listing", %{conn: conn} do
+      # First create a summon card
+      {:ok, index_live, _html} = live(conn, ~p"/admin/basecards")
+
+      index_live |> element("a", "New Base card") |> render_click()
+
+      # Add an effect by clicking the add effect button
+      index_live
+      |> element("button", "＋ Add Effect")
+      |> render_click()
+
+      # Fill in the form with summon effect
+      index_live
+      |> form("#base_card-form",
+        base_card: %{
+          name: "Summon Wolf",
+          ap: "2",
+          headline: "Summon a wolf ally",
+          rarity: :common,
+          effects: %{
+            "0" => %{
+              "type" => "summon",
+              "value" => "wolf"
+            }
+          }
+        }
+      )
+      |> render_change()
+
+      index_live
+      |> form("#base_card-form")
+      |> render_submit()
+
+      # Navigate back to index
+      {:ok, _index_live, html} = live(conn, ~p"/admin/basecards")
+
+      # Verify the summon card appears in the listing
+      assert html =~ "Summon Wolf"
+      assert html =~ "Summon a wolf ally"
+    end
+  end
+
   describe "Show" do
     setup [:create_base_card]
 
