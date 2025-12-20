@@ -79,6 +79,15 @@ defmodule GameWeb.CombatLive do
                         class={"#{if ap > character.ap, do: "bg-gray-300", else: "bg-yellow-300"} flex-1 h-1 rounded-[2px]"}
                       />
                     </div>
+                    <div class="pb-1 flex gap-1">
+                      <span
+                        :for={shield <- 1..(case Game.Character.get_status_effect(character, :shield) do
+                          %{value: value} -> value
+                          _ -> 0
+                        end)}
+                        class="bg-blue-300 flex-1 h-1 rounded-[2px]"
+                      />
+                    </div>
                     {inspect(character)}
                   </li>
                 <% end %>
