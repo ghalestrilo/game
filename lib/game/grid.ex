@@ -96,6 +96,7 @@ defmodule Game.Grid do
   def get_object(%Grid{tiles: tiles}, position) do
     case Map.get(tiles, position) do
       %{occupied_by: character} when not is_nil(character) -> {:ok, character}
+      %{occupied_by: nil} -> {:ok, nil}
       _ -> nil
     end
   end

@@ -81,7 +81,7 @@ defmodule GameWeb.CombatLive do
                     </div>
                     <div class="pb-1 flex gap-1">
                       <span
-                        :for={shield <- 1..(case Game.Character.get_status_effect(character, :shield) do
+                        :for={_shield <- 1..(case Game.Character.get_status_effect(character, :shield) do
                           %{value: value} -> value
                           _ -> 0
                         end)}

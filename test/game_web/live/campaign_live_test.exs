@@ -221,5 +221,191 @@ defmodule GameWeb.CampaignLiveTest do
       # The player draws 5 cards at the start, and Fireball was added to their deck
       assert html =~ "Fireball"
     end
+
+    test "druid summons wolf then defeats enemy wolf and shop appears", %{
+      conn: conn,
+      wolf_class: _wolf_class
+    } do
+      # Create a kill card that deals 999 damage
+      {:ok, kill_card} =
+        BaseCards.create_base_card(%{
+          name: "Kill",
+          ap: 1,
+          effects: [%{"type" => "damage", "value" => 999}],
+          headline: "Instant death",
+          rarity: :legendary
+        })
+
+      # Create a summon wolf card
+      {:ok, summon_wolf_card} =
+        BaseCards.create_base_card(%{
+          name: "Summon Wolf",
+          ap: 1,
+          effects: [%{"type" => "summon", "value" => "wolf"}],
+          headline: "Summon a wolf ally",
+          rarity: :rare
+        })
+
+      # Create deck for druid with only kill and summon cards
+      {:ok, druid_deck} =
+        BaseDecks.create_base_deck(%{
+          "name" => "Druid Deck",
+          "base_deck_cards" => [
+            %{"card_id" => kill_card.id, "count" => 5},
+            %{"card_id" => summon_wolf_card.id, "count" => 5}
+          ]
+        })
+
+      # Create druid base class
+      {:ok, druid_class} =
+        Content.create_base_class(%{
+          class: "druid",
+          base_hp: 10,
+          base_ap: 5,
+          base_movement: 2,
+          deck_id: druid_deck.id
+        })
+
+      # Navigate to character select and start campaign
+      {:ok, view, _html} = live(conn, ~p"/campaign/character-select")
+
+      view
+      |> form("form[phx-change='update_player_name']", %{player_name: "DruidTest"})
+      |> render_change()
+
+      view
+      |> element("div[phx-click='select_character'][phx-value-id='#{druid_class.id}']")
+      |> render_click()
+
+      view
+      |> element("button[phx-click='start_campaign']")
+      |> render_click()
+
+      # Follow redirect to combat
+      {:ok, play_view, _html} = live(conn, ~p"/campaign/play?class=druid&player_name=DruidTest")
+      html = render(play_view)
+
+      # Verify initial combat state: Druid vs Wolf
+      assert html =~ "Druid"
+      assert html =~ "Wolf"
+
+      # Turn 1: Druid summons a wolf
+      # Try each card until we successfully summon (some cards might be kill cards)
+      summon_result = Enum.reduce_while(0..4, nil, fn idx, _acc ->
+        # Check if the card at this index still exists (might have been played already)
+        cards = play_view |> render() |> String.match?(~r/phx-value-card_index="#{idx}"/)
+        if not cards do
+          {:halt, :ok}  # Card was already played, we're done
+        else
+          # Pick the card at this index
+          play_view
+          |> element("div[phx-click='pick_card'][phx-value-card_index='#{idx}']")
+          |> render_click()
+
+          # Try to play it on empty tile adjacent to druid
+          result = play_view
+          |> element("div[phx-click='interact'][phx-value-target_position='1_0_-1']")
+          |> render_click()
+
+          # Check if it succeeded (no error flash)
+          if result =~ "Tile must be empty" or result =~ "No character at this position" do
+            {:cont, nil}
+          else
+            {:halt, :ok}
+          end
+        end
+      end)
+
+      assert summon_result == :ok, "None of the 5 cards could be played as summon"
+
+      html = render(play_view)
+
+      # Verify a wolf was summoned - should now have 2 wolves total (1 enemy + 1 summoned)
+      # The summoned wolf should appear in the queue or on the grid
+      wolf_count = html |> String.split("Wolf") |> length() |> Kernel.-(1)
+      assert wolf_count >= 2, "Expected at least 2 wolves (1 enemy + 1 summoned), found #{wolf_count}"
+
+      # Skip turn to end Druid's turn
+      play_view
+      |> element("button[phx-click='skip_turn']")
+      |> render_click()
+
+      # Turn 2: Enemy Wolf's turn - skip
+      play_view
+      |> element("button[phx-click='skip_turn']")
+      |> render_click()
+
+      # Turn 3: Summoned Wolf's turn - skip
+      play_view
+      |> element("button[phx-click='skip_turn']")
+      |> render_click()
+
+      # Turn 4: Druid kills the enemy wolf
+      # Try each card until we successfully attack (avoid summon cards)
+      kill_result = Enum.reduce_while(0..4, nil, fn idx, _acc ->
+        # First check if game is already over
+        current_html = render(play_view)
+        if current_html =~ "game_over" do
+          {:halt, :ok}  # Game is over, we succeeded
+        else
+          # Check if the card at this index still exists
+          cards = current_html =~ ~r/phx-value-card_index="#{idx}"/
+          if not cards do
+            {:cont, nil}  # No more cards at this index
+          else
+            # Pick the card at this index
+            play_view
+            |> element("div[phx-click='pick_card'][phx-value-card_index='#{idx}']")
+            |> render_click()
+
+            # Try to play it on enemy wolf at {2, -1, -1}
+            result = play_view
+            |> element("div[phx-click='interact'][phx-value-target_position='2_-1_-1']")
+            |> render_click()
+
+            # Check if game is over after playing
+            cond do
+              result =~ "game_over" ->
+                {:halt, :ok}
+              result =~ "Tile must be empty" or result =~ "No character at this position" ->
+                {:cont, nil}
+              true ->
+                # Succeeded but game not over yet
+                {:halt, :ok}
+            end
+          end
+        end
+      end)
+
+      assert kill_result == :ok, "Could not find kill card to attack enemy wolf"
+
+      # Render to get the updated state
+      html = render(play_view)
+
+      # Verify game over state
+      assert html =~ "game_over"
+
+      # Verify game over modal appears
+      assert html =~ "Combat Complete!"
+
+      # Verify shop button appears
+      assert html =~ "Continue to Shop"
+      assert html =~ "enter_shop"
+
+      # Verify Druid and summoned wolf survived
+      assert html =~ "Surviving Characters"
+      assert html =~ "Druid"
+
+      # Enemy wolf should not be in surviving characters
+      # This is tricky because we have multiple wolves, but the enemy wolf should be dead
+      # The summoned wolf should still be alive
+      # We can verify by checking that we have exactly 2 surviving characters (Druid + summoned wolf)
+      surviving_section = String.split(html, "Surviving Characters") |> Enum.at(1, "")
+      druid_count = surviving_section |> String.split("Druid") |> length() |> Kernel.-(1)
+      wolf_count_surviving = surviving_section |> String.split("Wolf") |> length() |> Kernel.-(1)
+
+      assert druid_count == 1, "Expected 1 Druid in surviving characters"
+      assert wolf_count_surviving == 1, "Expected 1 Wolf (summoned) in surviving characters"
+    end
   end
 end

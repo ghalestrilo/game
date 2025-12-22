@@ -171,4 +171,54 @@ defmodule Game.Card do
       end
     end)
   end
+
+  @doc """
+  Determines the targeting type for a card based on its effects.
+  Returns :tile for cards with summon effects, :character otherwise.
+  """
+  def get_targeting_type(%__MODULE__{effects: effects}) do
+    has_tile_targeting =
+      Enum.any?(effects || [], fn effect ->
+        case effect do
+          %{"type" => "summon"} -> true
+          %{type: :summon} -> true
+          _ -> false
+        end
+      end)
+
+    if has_tile_targeting, do: :tile, else: :character
+  end
+
+  @doc """
+  Validates whether a target cell is valid for playing this card.
+
+  For :tile targeting cards (like summon):
+  - Target must be a valid position on the grid
+  - Target cell must be empty
+
+  For :character targeting cards:
+  - Target must resolve to a character
+  """
+  def is_target_cell_valid?(%__MODULE__{} = card, target_position, combat_state) do
+    targeting_type = get_targeting_type(card)
+    position_result = Game.Grid.get_object(combat_state.grid, target_position)
+
+    case targeting_type do
+      :tile ->
+        # For tile targeting, we need an empty tile
+        case position_result do
+          {:ok, nil} -> {:ok, nil}  # Empty tile is valid
+          {:ok, _character} -> {:error, "Tile must be empty"}
+          nil -> {:error, "Invalid tile position"}
+        end
+
+      :character ->
+        # For character targeting, we need a character at the position
+        case position_result do
+          {:ok, character} when not is_nil(character) -> {:ok, character}
+          {:ok, nil} -> {:error, "No character at this position"}
+          nil -> {:error, "There's nothing targetable in this tile"}
+        end
+    end
+  end
 end

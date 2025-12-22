@@ -140,9 +140,6 @@ defmodule Game.Combat do
         } = combat,
         {:play_card, target_position}
       ) do
-    targeting_type = get_card_targeting_type(card)
-    position_result = Grid.get_object(grid, target_position)
-
     cond do
       not CombatState.is_players_turn?(combat, player) ->
         {:error, "Not player's turn"}
@@ -153,63 +150,31 @@ defmodule Game.Combat do
       Grid.distance(grid, player.position, target_position) > card.range ->
         {:error, "Out of range"}
 
-      # Handle tile targeting (e.g., summon)
-      targeting_type == :tile ->
-        cond do
-          is_nil(position_result) ->
-            {:error, "Invalid tile position"}
-
-          elem(position_result, 0) == :ok ->
-            {:ok, target} = position_result
-
-            if target != nil do
-              {:error, "Tile must be empty"}
-            else
-              # Process card with tile position as target
-              combat_with_running_state = %{combat | state: :running}
-
-              result =
-                combat_with_running_state
-                |> CombatState.process_card(target_position, card)
-                |> CombatState.refresh_grid()
-                |> CombatState.check_game_over()
-
-              {:ok, result}
-            end
-
-          true ->
-            {:error, "Invalid tile"}
-        end
-
-      # Handle character targeting
       true ->
-        cond do
-          is_nil(position_result) ->
-            {:error, "There's nothing targetable in this tile"}
+        # Use Card module to validate the target
+        case Game.Card.is_target_cell_valid?(card, target_position, combat) do
+          {:ok, target} ->
+            # Reset state to :running
+            combat_with_running_state = %{combat | state: :running}
 
-          elem(position_result, 0) == :ok ->
-            {:ok, target} = position_result
+            # For tile targeting, target is nil (we pass the position to process_card)
+            # For character targeting, target is the character struct
+            target_for_processing = if is_nil(target), do: target_position, else: target
 
-            cond do
-              target == nil ->
-                {:error, "No character at this position"}
+            result =
+              combat_with_running_state
+              |> CombatState.process_card(target_for_processing, card)
+              |> then(fn combat ->
+                # Only check target death for character targeting
+                if is_nil(target), do: combat, else: CombatState.check_target_death(combat, target)
+              end)
+              |> CombatState.refresh_grid()
+              |> CombatState.check_game_over()
 
-              true ->
-                # First set state back to :running so we can chain card plays
-                combat_with_running_state = %{combat | state: :running}
+            {:ok, result}
 
-                result =
-                  combat_with_running_state
-                  |> CombatState.process_card(target, card)
-                  |> CombatState.check_target_death(target)
-                  |> CombatState.refresh_grid()
-                  |> CombatState.check_game_over()
-
-                {:ok, result}
-            end
-
-          true ->
-            {:error, "Invalid target"}
+          {:error, reason} ->
+            {:error, reason}
         end
     end
   end
@@ -330,18 +295,4 @@ defmodule Game.Combat do
     ]
   end
 
-  # Determines the targeting type required by a card based on its effects
-  defp get_card_targeting_type(card) do
-    # Check if any effect requires tile targeting
-    has_tile_targeting =
-      Enum.any?(card.effects || [], fn effect ->
-        case effect do
-          %{"type" => "summon"} -> true
-          %{type: :summon} -> true
-          _ -> false
-        end
-      end)
-
-    if has_tile_targeting, do: :tile, else: :character
-  end
 end
