@@ -10,6 +10,7 @@ defmodule Game.CombatState.StateSave do
   alias Game.Character
   alias Game.Card
   alias Game.Grid
+  require Logger
 
   # A constant key used for the encoding/decoding process
   @secret_key_base "game_combat_state_serialization_key"
@@ -133,7 +134,7 @@ defmodule Game.CombatState.StateSave do
       {:ok, combat_state}
     else
       {:error, reason} ->
-        IO.inspect(reason, label: "Decode error")
+        Logger.info(reason, label: "Decode error")
         {:error, reason}
     end
   end
@@ -241,7 +242,7 @@ defmodule Game.CombatState.StateSave do
         {:ok, decoded}
 
       {:error, %Jason.DecodeError{position: pos} = error} ->
-        IO.inspect(error, label: "JSON decode error")
+        Logger.info(error, label: "JSON decode error")
 
         # Print context around the error position
         start_pos = max(0, pos - 50)

@@ -36,9 +36,6 @@ defmodule GameWeb.Campaign.CharacterSelectLive do
     campaign = socket.assigns.campaign
     updated_campaign = put_in(campaign[:character], character)
 
-    # Debug output to iex shell
-    dbg(updated_campaign)
-
     {:noreply, assign(socket, campaign: updated_campaign)}
   end
 

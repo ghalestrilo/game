@@ -298,11 +298,11 @@ defmodule GameWeb.GameLive do
   end
 
   def handle_event("enter_shop", _params, socket) do
-    if dbg(socket.assigns.game_state.combat.state) == :game_over && dbg(socket.assigns.game_pid) do
+    if socket.assigns.game_state.combat.state == :game_over && socket.assigns.game_pid do
       # Transition to shop
       case Game.enter_shop(socket.assigns.game_pid) do
         {:ok, updated_state} ->
-          dbg({:ok, updated_state})
+          {:ok, updated_state}
 
           # Add current_view: :shop to the updated state
           updated_state = Map.put(updated_state, :current_view, :shop)
@@ -313,7 +313,7 @@ defmodule GameWeb.GameLive do
            |> put_flash(:info, "Welcome to the shop!")}
 
         {:error, reason} ->
-          dbg({:error, reason})
+          {:error, reason}
 
           {:noreply,
            socket

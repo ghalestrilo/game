@@ -7,7 +7,7 @@ defmodule GameWeb.GameLiveTest do
     test "Grid cell count for radius=2 with sideways movement", %{conn: conn} do
       # Define the initial state with sideways movement
       initial_state = [
-        {{0, 0, 0}, :warrior, 1},
+        {{0, 0, 0}, :fighter, 1},
         {{-1, 0, 1}, :mage, 2}
       ]
 
@@ -37,7 +37,7 @@ defmodule GameWeb.GameLiveTest do
     } do
       # Define the initial state as a list of tuples
       initial_state = [
-        {{0, 0, 0}, :warrior, 1},
+        {{0, 0, 0}, :fighter, 1},
         {{1, 1, 0}, :mage, 2}
       ]
 
@@ -61,7 +61,7 @@ defmodule GameWeb.GameLiveTest do
       assert view |> element("[phx-value-target_position=\"1_1_0\"]") |> has_element?()
 
       # Verify that the characters are positioned correctly
-      assert view |> render() =~ "Warrior"
+      assert view |> render() =~ "Fighter"
       assert view |> render() =~ "Mage"
 
       # Validate mage's position visually
@@ -70,8 +70,6 @@ defmodule GameWeb.GameLiveTest do
         |> element("[phx-value-target_position=\"1_1_0\"]")
         |> render()
         |> Floki.attribute("style")
-
-      IO.inspect(mage_position_style, label: "Mage Position Style")
 
       assert mage_position_style == ["transform: translate(45px, 104px)"],
              "Mage position rendering failed"
@@ -87,7 +85,7 @@ defmodule GameWeb.GameLiveTest do
 
       # Verify initial state has warrior as current player with 5 cards
       IO.puts("Rendered HTML: #{view |> element(".card-status-panel") |> render()}")
-      assert view |> element(".card-status-panel") |> render() =~ "Warrior"
+      assert view |> element(".card-status-panel") |> render() =~ "Fighter"
       assert view |> element(".card-status-panel") |> render() =~ "Hand: 5 cards"
 
       # Have the warrior attack himself
@@ -120,7 +118,7 @@ defmodule GameWeb.GameLiveTest do
       |> render_click()
 
       # Verify warrior is now current player
-      assert view |> element(".card-status-panel") |> render() =~ "Warrior"
+      assert view |> element(".card-status-panel") |> render() =~ "Fighter"
 
       # Warrior should also have an empty hand now due to the bug
       hand_content = view |> element(".card-status-panel") |> render()

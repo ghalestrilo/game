@@ -146,19 +146,16 @@ defmodule GameWeb.BaseCardLive.FormComponent do
 
   def handle_event("save", %{"base_card" => base_card_params}, socket) do
     IO.puts("\n=== SAVE EVENT HANDLER ===")
-    IO.inspect(base_card_params, label: "Received params")
 
     base_card_params =
       if Map.has_key?(base_card_params, "effects") do
         normalized = Map.update!(base_card_params, "effects", &normalize_effects/1)
-        IO.inspect(normalized["effects"], label: "Normalized effects")
         normalized
       else
         IO.puts("No effects key in params, adding empty array")
         Map.put(base_card_params, "effects", [])
       end
 
-    IO.inspect(base_card_params, label: "Final params")
     save_base_card(socket, socket.assigns.action, base_card_params)
   end
 
@@ -212,7 +209,6 @@ defmodule GameWeb.BaseCardLive.FormComponent do
   # end
   defp normalize_effects(effects) when is_map(effects) do
     IO.puts("Normalizing effects map")
-    IO.inspect(effects, label: "Effects map")
 
     normalized =
       effects
@@ -224,20 +220,16 @@ defmodule GameWeb.BaseCardLive.FormComponent do
         }
       end)
 
-    IO.inspect(normalized, label: "Normalized map result")
     normalized
   end
 
   defp normalize_effects(effects) when is_list(effects) do
-    IO.inspect(effects, label: "Effects already a list")
     # Filter out empty string entries from hidden input
     result = Enum.reject(effects, &(&1 == ""))
-    IO.inspect(result, label: "Filtered list result")
     result
   end
 
-  defp normalize_effects(other) do
-    IO.inspect(other, label: "Normalizing other effects type")
+  defp normalize_effects(_other) do
     []
   end
 
