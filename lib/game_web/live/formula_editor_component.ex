@@ -194,7 +194,10 @@ defmodule GameWeb.FormulaEditorComponent do
   end
 
   @impl true
-  def handle_event("change_operator", %{"value" => operator}, socket) do
+  def handle_event("change_operator", params, socket) do
+    # Extract operator value from params - could be %{"value" => op} or nested form params
+    operator = extract_operator_value(params, socket.assigns.field, socket.assigns.path)
+
     new_value =
       if operator == "" do
         %{}
@@ -214,6 +217,15 @@ defmodule GameWeb.FormulaEditorComponent do
 
     send(self(), {:formula_updated, socket.assigns.path, new_value})
     {:noreply, socket}
+  end
+
+  defp extract_operator_value(%{"value" => operator}, _field, _path), do: operator
+  defp extract_operator_value(params, field, path) do
+    # Navigate through nested params structure
+    # For root: %{"formula" => %{"operator" => ">"}}
+    # For nested: %{"formula" => %{"0" => %{"operator" => "var"}}}
+    value = get_in(params, [field | Enum.map(path, &to_string/1)] ++ ["operator"])
+    value || ""
   end
 
   def handle_event("add_arg", _params, socket) do
