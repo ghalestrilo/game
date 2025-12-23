@@ -12,6 +12,8 @@ defmodule Game.CombatState do
   alias Game.{Character, Grid, TurnQueue}
   alias __MODULE__
 
+  @derive Jason.Encoder
+
   defstruct state: :initialized,
             # __constants__ is a readonly protected field
             __constants__: %{

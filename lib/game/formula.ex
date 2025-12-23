@@ -70,7 +70,7 @@ defmodule Game.Formula do
   @spec operator_metadata(String.t()) :: map()
   def operator_metadata(operator) do
     case operator do
-      "var" -> %{arity: :variable, args: [:string_or_number], description: "Get variable value"}
+      "var" -> %{arity: :variable, args: [:string_or_number], description: "Get variable value", min_args: 1, max_args: 2}
       "==" -> %{arity: 2, args: [:any, :any], description: "Equal (loose)"}
       "===" -> %{arity: 2, args: [:any, :any], description: "Equal (strict)"}
       "!=" -> %{arity: 2, args: [:any, :any], description: "Not equal (loose)"}
