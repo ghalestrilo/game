@@ -23,8 +23,6 @@ defmodule Game.Card do
     :effects,
     # Range of effect in hex tiles
     :range,
-    # Type of targeting (self, single, AoE, etc.)
-    :targeting,
     # Rarity tier (Common, Uncommon, Rare, etc.)
     :rarity,
     # Elemental affinity (Fire, Ice, Lightning, etc.)
@@ -173,47 +171,141 @@ defmodule Game.Card do
   end
 
   @doc """
-  Determines the targeting type for a card based on its effects.
-  Returns :tile for cards with summon effects, :character otherwise.
+  Determines the targeting type for a card based on its first effect's targeting field.
+  Returns :tile or :character based on the targeting type in the effect.
+  Defaults to :character if no targeting is specified.
   """
-  def get_targeting_type(%__MODULE__{effects: effects}) do
-    has_tile_targeting =
-      Enum.any?(effects || [], fn effect ->
-        case effect do
-          %{"type" => "summon"} -> true
-          %{type: :summon} -> true
-          _ -> false
-        end
-      end)
+  def get_targeting_type(%__MODULE__{effects: effects}) when is_list(effects) do
+    first_effect = List.first(effects)
 
-    if has_tile_targeting, do: :tile, else: :character
+    case first_effect do
+      # Handle CardEffect structs
+      %{targeting: %{"type" => type}} when is_binary(type) ->
+        String.to_atom(type)
+
+      # Handle map effects that need to be structured
+      %{"type" => _effect_type} = effect ->
+        structured_effect = get_structured_effect(effect)
+        case structured_effect do
+          %{targeting: %{"type" => type}} when is_binary(type) -> String.to_atom(type)
+          _ -> :character
+        end
+
+      # No targeting info, default to character
+      _ ->
+        :character
+    end
   end
 
+  def get_targeting_type(%__MODULE__{effects: nil}), do: :character
+
   @doc """
-  Validates whether a target cell is valid for playing this card.
+  Validates whether a target cell is valid for playing this card using JsonLogic rules.
 
-  For :tile targeting cards (like summon):
-  - Target must be a valid position on the grid
-  - Target cell must be empty
+  Builds a data context from the target position including:
+  - occupied: boolean - whether the tile has a character
+  - team: string - the team of the character (if present)
+  - hp: integer - current HP of character (if present)
+  - max_hp: integer - max HP of character (if present)
 
-  For :character targeting cards:
-  - Target must resolve to a character
+  Then evaluates the targeting rule from the first effect using JsonLogic.
   """
-  def is_target_cell_valid?(%__MODULE__{} = card, target_position, combat_state) do
+  def is_target_cell_valid?(%__MODULE__{effects: effects} = card, target_position, combat_state)
+      when is_list(effects) do
+    first_effect = List.first(effects)
+
+    # Get the structured effect to access targeting
+    structured_effect =
+      case first_effect do
+        %{targeting: _} = effect -> effect
+        %{"type" => _} = effect -> get_structured_effect(effect)
+        _ -> nil
+      end
+
     targeting_type = get_targeting_type(card)
     position_result = Game.Grid.get_object(combat_state.grid, target_position)
 
+    # Build the data context for JsonLogic
+    target_data = build_target_data(position_result)
+
+    # Get the targeting rule
+    targeting_rule =
+      case structured_effect do
+        %{targeting: %{"rule" => rule}} -> rule
+        _ -> nil
+      end
+
+    # Evaluate using JsonLogic if rule exists
+    cond do
+      is_nil(targeting_rule) ->
+        # Fallback to old behavior if no rule specified
+        fallback_validation(targeting_type, position_result)
+
+      true ->
+        result = JsonLogic.resolve(targeting_rule, target_data)
+
+        if result do
+          # Rule passed, return appropriate result
+          case targeting_type do
+            :tile -> {:ok, nil}
+            :character ->
+              case position_result do
+                {:ok, character} when not is_nil(character) -> {:ok, character}
+                _ -> {:error, "No character at this position"}
+              end
+          end
+        else
+          {:error, "Target does not match targeting rule"}
+        end
+    end
+  end
+
+  def is_target_cell_valid?(%__MODULE__{effects: nil}, target_position, combat_state) do
+    # No effects, default to character targeting
+    position_result = Game.Grid.get_object(combat_state.grid, target_position)
+    fallback_validation(:character, position_result)
+  end
+
+  # Build data context for JsonLogic evaluation
+  defp build_target_data(position_result) do
+    case position_result do
+      {:ok, nil} ->
+        %{
+          "occupied" => false,
+          "team" => nil,
+          "hp" => nil,
+          "max_hp" => nil
+        }
+
+      {:ok, character} when not is_nil(character) ->
+        %{
+          "occupied" => true,
+          "team" => to_string(character.team),
+          "hp" => Map.get(character, :hp),
+          "max_hp" => Map.get(character, :max_hp)
+        }
+
+      nil ->
+        %{
+          "occupied" => false,
+          "team" => nil,
+          "hp" => nil,
+          "max_hp" => nil
+        }
+    end
+  end
+
+  # Fallback validation for backward compatibility
+  defp fallback_validation(targeting_type, position_result) do
     case targeting_type do
       :tile ->
-        # For tile targeting, we need an empty tile
         case position_result do
-          {:ok, nil} -> {:ok, nil}  # Empty tile is valid
+          {:ok, nil} -> {:ok, nil}
           {:ok, _character} -> {:error, "Tile must be empty"}
           nil -> {:error, "Invalid tile position"}
         end
 
       :character ->
-        # For character targeting, we need a character at the position
         case position_result do
           {:ok, character} when not is_nil(character) -> {:ok, character}
           {:ok, nil} -> {:error, "No character at this position"}

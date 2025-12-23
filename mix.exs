@@ -60,7 +60,8 @@ defmodule Game.MixProject do
       {:bandit, "~> 1.5"},
       {:struct_access, "~> 1.1.2"},
       {:hexgrid, "~> 2.1"},
-      {:git_hooks, "~> 0.8.1"}
+      {:git_hooks, "~> 0.8.1"},
+      {:json_logic, "~> 1.0"}
     ]
   end
 

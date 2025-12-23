@@ -7,12 +7,17 @@ defmodule Game.Combat.CardEffects.Shield do
   alias Game.CombatState
   alias Game.Character
 
-  defstruct type: :shield, value: 0, targeting: nil
+  defstruct type: :shield,
+            value: 0,
+            targeting: %{
+              "type" => "character",
+              "rule" => %{"var" => "occupied"}
+            }
 
   @type t() :: %__MODULE__{
           type: atom(),
           value: integer(),
-          targeting: any()
+          targeting: map() | nil
         }
 
   defimpl Game.Combat.CardEffect do

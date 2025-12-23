@@ -9,12 +9,17 @@ defmodule Game.Combat.CardEffects.Summon do
   alias Game.CombatState
   alias Game.{Character, Content}
 
-  defstruct type: :summon, value: nil, targeting: :tile
+  defstruct type: :summon,
+            value: nil,
+            targeting: %{
+              "type" => "tile",
+              "rule" => %{"!" => %{"var" => "occupied"}}
+            }
 
   @type t() :: %__MODULE__{
           type: atom(),
           value: String.t() | nil,
-          targeting: atom()
+          targeting: map() | nil
         }
 
   defimpl Game.Combat.CardEffect do

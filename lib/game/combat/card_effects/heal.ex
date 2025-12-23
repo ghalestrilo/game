@@ -6,12 +6,17 @@ defmodule Game.Combat.CardEffects.Heal do
   alias Game.CombatState
   alias Game.Character
 
-  defstruct type: :heal, value: 0, targeting: nil
+  defstruct type: :heal,
+            value: 0,
+            targeting: %{
+              "type" => "character",
+              "rule" => %{"var" => "occupied"}
+            }
 
   @type t() :: %__MODULE__{
           type: atom(),
           value: integer(),
-          targeting: any()
+          targeting: map() | nil
         }
 
   defimpl Game.Combat.CardEffect do

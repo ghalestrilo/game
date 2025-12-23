@@ -27,16 +27,14 @@ defmodule GameTest do
                 name: "Strike",
                 cost: 1,
                 effects: [%{"type" => "damage", "value" => 5}],
-                range: 1,
-                targeting: :single
+                range: 1
               },
               %Card{
                 id: 2,
                 name: "Power Strike",
                 cost: 3,
                 effects: [%{"type" => "damage", "value" => 10}],
-                range: 1,
-                targeting: :single
+                range: 1
               }
             ],
             discard: []
@@ -53,16 +51,14 @@ defmodule GameTest do
                 name: "Fireball",
                 cost: 2,
                 effects: [%{type: "damage", value: 8}],
-                range: 3,
-                targeting: :single
+                range: 3
               },
               %Card{
                 id: 4,
                 name: "Heal",
                 cost: 2,
                 effects: [{:heal, 5}],
-                range: 1,
-                targeting: :single
+                range: 1
               }
             ],
             discard: []
@@ -210,8 +206,7 @@ defmodule GameTest do
         name: "Strike",
         cost: 1,
         effects: [%{type: "damage", value: 5}],
-        range: 1,
-        targeting: :single
+        range: 1
       }
 
       assert {:error, "Not player's turn"} = Game.play_card(game_pid, mage, card, {0, 0, 0})
