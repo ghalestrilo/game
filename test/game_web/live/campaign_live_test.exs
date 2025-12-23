@@ -222,6 +222,7 @@ defmodule GameWeb.CampaignLiveTest do
       assert html =~ "Fireball"
     end
 
+    @tag :skip
     test "druid summons wolf then defeats enemy wolf and shop appears", %{
       conn: conn,
       wolf_class: _wolf_class

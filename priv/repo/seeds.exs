@@ -370,3 +370,62 @@ end)
     count: count
   })
 end)
+
+# Create BaseClass records
+alias Game.Content.BaseClass
+
+Repo.insert!(%BaseClass{
+  class: "fighter",
+  base_hp: 20,
+  base_ap: 3,
+  base_movement: 2,
+  deck_id: warrior_deck.id
+})
+
+Repo.insert!(%BaseClass{
+  class: "mage",
+  base_hp: 15,
+  base_ap: 3,
+  base_movement: 1,
+  deck_id: mage_deck.id
+})
+
+Repo.insert!(%BaseClass{
+  class: "ranger",
+  base_hp: 18,
+  base_ap: 3,
+  base_movement: 2,
+  deck_id: ranger_deck.id
+})
+
+Repo.insert!(%BaseClass{
+  class: "rogue",
+  base_hp: 16,
+  base_ap: 4,
+  base_movement: 3,
+  deck_id: rogue_deck.id
+})
+
+Repo.insert!(%BaseClass{
+  class: "cleric",
+  base_hp: 17,
+  base_ap: 3,
+  base_movement: 1,
+  deck_id: cleric_deck.id
+})
+
+Repo.insert!(%BaseClass{
+  class: "paladin",
+  base_hp: 22,
+  base_ap: 2,
+  base_movement: 1,
+  deck_id: paladin_deck.id
+})
+
+Repo.insert!(%BaseClass{
+  class: "druid",
+  base_hp: 16,
+  base_ap: 3,
+  base_movement: 2,
+  deck_id: druid_deck.id
+})

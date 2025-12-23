@@ -41,6 +41,69 @@ defmodule Game.DataCase do
   end
 
   @doc """
+  Seeds the database with required base classes and decks for testing.
+  This should be called in test setup to ensure base game data exists.
+  """
+  def seed_base_classes do
+    alias Game.{BaseCards.BaseCard, BaseDecks.BaseDeck, Content.BaseDeckCard, Content.BaseClass}
+
+    # Create a basic strike card for testing
+    {:ok, strike_card} =
+      Game.Repo.insert(%BaseCard{
+        name: "Strike",
+        headline: "A basic melee attack",
+        ap: 1,
+        effects: [%{"type" => "damage", "value" => 5}],
+        rarity: :common
+      })
+
+    {:ok, fireball_card} =
+      Game.Repo.insert(%BaseCard{
+        name: "Fireball",
+        headline: "Launches a ball of fire",
+        ap: 2,
+        effects: [%{"type" => "damage", "value" => 8}],
+        rarity: :uncommon
+      })
+
+    # Create decks
+    {:ok, fighter_deck} = Game.Repo.insert(%BaseDeck{name: "Fighter Starter"})
+    {:ok, mage_deck} = Game.Repo.insert(%BaseDeck{name: "Mage Starter"})
+
+    # Associate cards with decks
+    Game.Repo.insert!(%BaseDeckCard{
+      deck_id: fighter_deck.id,
+      card_id: strike_card.id,
+      count: 10
+    })
+
+    Game.Repo.insert!(%BaseDeckCard{
+      deck_id: mage_deck.id,
+      card_id: fireball_card.id,
+      count: 10
+    })
+
+    # Create base classes
+    Game.Repo.insert!(%BaseClass{
+      class: "fighter",
+      base_hp: 20,
+      base_ap: 3,
+      base_movement: 2,
+      deck_id: fighter_deck.id
+    })
+
+    Game.Repo.insert!(%BaseClass{
+      class: "mage",
+      base_hp: 15,
+      base_ap: 3,
+      base_movement: 1,
+      deck_id: mage_deck.id
+    })
+
+    :ok
+  end
+
+  @doc """
   A helper that transforms changeset errors into a map of messages.
 
       assert {:error, changeset} = Accounts.create_user(%{password: "short"})

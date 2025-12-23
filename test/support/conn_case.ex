@@ -33,6 +33,7 @@ defmodule GameWeb.ConnCase do
 
   setup tags do
     Game.DataCase.setup_sandbox(tags)
+    Game.DataCase.seed_base_classes()
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 end
