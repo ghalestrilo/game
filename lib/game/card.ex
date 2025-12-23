@@ -217,7 +217,7 @@ defmodule Game.Card do
         case position_result do
           {:ok, character} when not is_nil(character) -> {:ok, character}
           {:ok, nil} -> {:error, "No character at this position"}
-          nil -> {:error, "There's nothing targetable in this tile"}
+          nil -> {:error, "No character at this position"}
         end
     end
   end

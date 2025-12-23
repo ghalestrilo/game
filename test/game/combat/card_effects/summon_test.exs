@@ -35,7 +35,7 @@ defmodule Game.Combat.CardEffects.SummonTest do
         deck_id: summon_deck.id
       })
 
-    warrior = Fixtures.warrior()
+    warrior = Fixtures.fighter()
     mage = Fixtures.mage()
 
     grid = %Grid{

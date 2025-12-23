@@ -15,6 +15,8 @@ defmodule Game.BaseDecksFixtures do
       })
       |> Game.BaseDecks.create_base_deck()
 
+    # Preload associations to match what get_base_deck! returns
     base_deck
+    |> Game.Repo.preload([:base_deck_cards, :cards])
   end
 end

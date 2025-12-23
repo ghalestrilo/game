@@ -7,7 +7,7 @@ defmodule Game.Combat.CardEffects.DamageTest do
 
   describe "Damage effect" do
     setup do
-      warrior = Fixtures.warrior()
+      warrior = Fixtures.fighter()
       mage = %{Fixtures.mage() | hp: 15, position: {1, 0, -1}}
 
       grid = %Grid{
@@ -62,7 +62,7 @@ defmodule Game.Combat.CardEffects.DamageTest do
 
   describe "Damage effect with shield" do
     setup do
-      warrior = Fixtures.warrior()
+      warrior = Fixtures.fighter()
       mage = %{Fixtures.mage() | hp: 15, position: {1, 0, -1}}
 
       grid = %Grid{

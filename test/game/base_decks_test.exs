@@ -12,7 +12,8 @@ defmodule Game.BaseDecksTest do
 
     test "list_basedecks/0 returns all basedecks" do
       base_deck = base_deck_fixture()
-      assert BaseDecks.list_basedecks() == [base_deck]
+      listed = BaseDecks.list_basedecks() |> Game.Repo.preload([:base_deck_cards, :cards])
+      assert listed == [base_deck]
     end
 
     test "get_base_deck!/1 returns the base_deck with given id" do

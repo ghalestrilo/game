@@ -7,7 +7,7 @@ defmodule Game.Combat.CardEffects.ShieldTest do
 
   describe "Shield effect" do
     setup do
-      warrior = Fixtures.warrior()
+      warrior = Fixtures.fighter()
       mage = Fixtures.mage()
 
       grid = %Grid{

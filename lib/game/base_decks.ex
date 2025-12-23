@@ -64,13 +64,21 @@ defmodule Game.BaseDecks do
         |> BaseDeck.changeset(deck_attrs)
         |> Repo.insert()
 
-      with {:ok, deck} <- insert_result,
-           updated_base_deck_cards <- Enum.map(base_deck_cards, &Map.put(&1, "deck_id", deck.id)),
-           update_attrs <- Map.put(deck_attrs, "base_deck_cards", updated_base_deck_cards),
-           {:ok, updated_deck} <- update_base_deck(deck, update_attrs) do
-        updated_deck
+      with {:ok, deck} <- insert_result do
+        # If base_deck_cards is nil or empty, just return the deck
+        if base_deck_cards == nil || base_deck_cards == [] do
+          deck
+        else
+          updated_base_deck_cards = Enum.map(base_deck_cards, &Map.put(&1, "deck_id", deck.id))
+          update_attrs = Map.put(deck_attrs, "base_deck_cards", updated_base_deck_cards)
+
+          case update_base_deck(deck, update_attrs) do
+            {:ok, updated_deck} -> updated_deck
+            {:error, changeset} -> Repo.rollback(changeset)
+          end
+        end
       else
-        error -> Repo.rollback(error)
+        {:error, changeset} -> Repo.rollback(changeset)
       end
     end)
   end

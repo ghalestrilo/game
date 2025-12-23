@@ -8,7 +8,7 @@ defmodule Game.Combat.CardEffects.DiscardTest do
   describe "Discard effect" do
     setup do
       warrior = %{
-        Fixtures.warrior()
+        Fixtures.fighter()
         | cards: %{
             draw: [],
             hand: [
@@ -78,7 +78,7 @@ defmodule Game.Combat.CardEffects.DiscardTest do
       combat_state: combat_state
     } do
       warrior_small_hand = %{
-        Fixtures.warrior()
+        Fixtures.fighter()
         | cards: %{
             draw: [],
             hand: [%{Fixtures.attack_card() | id: 1}],
@@ -102,7 +102,7 @@ defmodule Game.Combat.CardEffects.DiscardTest do
 
     test "process/3 when hand is empty", %{combat_state: combat_state} do
       warrior_empty_hand = %{
-        Fixtures.warrior()
+        Fixtures.fighter()
         | cards: %{
             draw: [],
             hand: [],

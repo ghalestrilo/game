@@ -18,6 +18,7 @@ defmodule Game.BaseDecks.BaseDeck do
     |> cast(attrs, [:name])
     |> cast_assoc(:base_deck_cards, with: &Game.Content.BaseDeckCard.changeset/2)
     |> validate_required([:name])
+    |> unique_constraint(:name)
   end
 
   def get_cards(%Game.BaseDecks.BaseDeck{base_deck_cards: cards}) do

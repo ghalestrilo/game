@@ -7,7 +7,7 @@ defmodule Game.Combat.CardEffects.HealTest do
 
   describe "Heal effect" do
     setup do
-      warrior = %{Fixtures.warrior() | hp: 10}
+      warrior = %{Fixtures.fighter() | hp: 10}
       mage = Fixtures.mage()
 
       grid = %Grid{

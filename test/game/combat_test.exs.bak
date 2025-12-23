@@ -5,7 +5,7 @@ defmodule Game.CombatTest do
 
   setup do
     combat = Fixtures.basic_combat()
-    warrior = Fixtures.warrior()
+    warrior = Fixtures.fighter()
     mage = Fixtures.mage()
     attack_card = Fixtures.attack_card()
     heal_card = Fixtures.heal_card()
@@ -327,7 +327,7 @@ defmodule Game.CombatTest do
 
     test "multiple characters on same team", %{combat: combat, warrior: warrior} do
       # Update grid and combat state
-      warrior2 = Fixtures.warrior2()
+      warrior2 = Fixtures.fighter2()
 
       updated_grid = %{
         combat.grid

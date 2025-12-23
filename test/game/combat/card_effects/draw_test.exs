@@ -8,7 +8,7 @@ defmodule Game.Combat.CardEffects.DrawTest do
   describe "Draw effect" do
     setup do
       warrior = %{
-        Fixtures.warrior()
+        Fixtures.fighter()
         | cards: %{
             draw: [
               %{Fixtures.attack_card() | id: 1},
@@ -76,7 +76,7 @@ defmodule Game.Combat.CardEffects.DrawTest do
 
     test "process/3 when draw pile is empty", %{combat_state: combat_state} do
       warrior_empty_draw = %{
-        Fixtures.warrior()
+        Fixtures.fighter()
         | cards: %{
             draw: [],
             hand: [],

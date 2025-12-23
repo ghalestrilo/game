@@ -2,10 +2,10 @@ defmodule Game.Fixtures do
   alias Game.{Character, Card, Grid, CombatState}
 
   # Dynamic character creation
-  def character(:warrior, id) do
+  def character(:fighter, id) do
     %Character{
       id: id,
-      name: "Warrior",
+      name: "fighter",
       class: :fighter,
       ap: 3,
       hp: 20,
@@ -38,10 +38,10 @@ defmodule Game.Fixtures do
     }
   end
 
-  def warrior do
+  def fighter do
     %Character{
       id: 1,
-      name: "Warrior",
+      name: "fighter",
       class: :fighter,
       ap: 3,
       hp: 20,
@@ -133,7 +133,7 @@ defmodule Game.Fixtures do
   def basic_grid do
     %Grid{
       tiles: %{
-        {0, 0, 0} => %{terrain: :plain, occupied_by: warrior()},
+        {0, 0, 0} => %{terrain: :plain, occupied_by: fighter()},
         {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
         {2, 0, -2} => %{terrain: :plain, occupied_by: mage()},
         {3, 0, -3} => %{terrain: :plain, occupied_by: nil}
@@ -142,28 +142,28 @@ defmodule Game.Fixtures do
   end
 
   def basic_combat do
-    warrior = warrior()
+    fighter = fighter()
     mage = mage()
 
     %CombatState{
       state: :running,
       __constants__: %{
-        players: [warrior, mage]
+        players: [fighter, mage]
       },
-      queue: [warrior, mage],
+      queue: [fighter, mage],
       grid: basic_grid(),
       current_turn: %{
-        starting_position: warrior.position,
-        player: warrior,
+        starting_position: fighter.position,
+        player: fighter,
         card: nil
       }
     }
   end
 
-  def warrior2 do
+  def fighter2 do
     %Character{
       id: 3,
-      name: "Warrior 2",
+      name: "fighter 2",
       class: :fighter,
       ap: 3,
       hp: 20,

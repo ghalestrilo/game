@@ -4,7 +4,7 @@ defmodule GameWeb.BaseDeckLiveTest do
   import Phoenix.LiveViewTest
   import Game.BaseDecksFixtures
 
-  @create_attrs %{name: "some name"}
+  @create_attrs %{name: "new deck name"}
   @update_attrs %{name: "some updated name"}
   @invalid_attrs %{name: nil}
 
@@ -43,7 +43,7 @@ defmodule GameWeb.BaseDeckLiveTest do
 
       html = render(index_live)
       assert html =~ "Base deck created successfully"
-      assert html =~ "some name"
+      assert html =~ "new deck name"
     end
 
     test "updates base_deck in listing", %{conn: conn, base_deck: base_deck} do

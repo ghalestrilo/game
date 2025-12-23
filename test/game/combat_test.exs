@@ -15,7 +15,7 @@ defmodule Game.CombatTest do
   setup do
     # Initialize a mage and a fighter from fixtures
     mage = Fixtures.mage()
-    fighter = Fixtures.warrior()
+    fighter = Fixtures.fighter()
 
     # Prepare characters with cards in hand - exclude expensive_card to test validation
     cards_in_hand = Map.drop(@cards, [:expensive]) |> Map.values()
@@ -372,7 +372,7 @@ defmodule Game.CombatTest do
     setup do
       # Initialize a mage and a fighter from fixtures
       mage = Fixtures.mage()
-      fighter = Fixtures.warrior()
+      fighter = Fixtures.fighter()
 
       # Create two identical attack cards for the fighter with sufficient range
       attack_card1 = %{Fixtures.attack_card() | id: 1, effects: [%{"type" => "damage", "value" => 5}], range: 2}
