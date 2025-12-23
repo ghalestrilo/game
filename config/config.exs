@@ -64,3 +64,17 @@ config :phoenix, :json_library, Jason
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"
+
+{project_path, 0} = System.cmd("pwd", [])
+project_path = String.replace(project_path, ~r/\n/, "/")
+config :git_hooks,
+  hooks: [
+    pre_commit: [
+      tasks: [
+        # {:cmd, "mix format --check-formatted"},
+        # {:cmd, "mix dialyzer"},
+        # {:cmd, "mix test --color"}
+      ]
+    ]
+  ],
+  project_path: project_path

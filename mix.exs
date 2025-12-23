@@ -59,7 +59,8 @@ defmodule Game.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:struct_access, "~> 1.1.2"},
-      {:hexgrid, "~> 2.1"}
+      {:hexgrid, "~> 2.1"},
+      {:git_hooks, "~> 0.8.1"}
     ]
   end
 
