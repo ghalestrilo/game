@@ -42,6 +42,85 @@ defmodule GameWeb.FormulaEditorComponentTest do
     end
   end
 
+  describe "handle_event/3 with browser-style params" do
+    test "handles browser form event for change_operator", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Simulate browser-style form event with nested params structure
+      # This is what Phoenix sends when a form field changes in the browser
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{
+        "_target" => ["formula", "operator"],
+        "formula" => %{"operator" => ">="}
+      })
+
+      # Should successfully update the formula without crashing
+      html = render(view)
+      # >= is HTML-escaped as &gt;=
+      assert html =~ "&gt;="
+
+      # Submit and verify the operator was set correctly
+      view
+      |> form("form", formula: %{"0" => %{"value" => "10"}, "1" => %{"value" => "5"}})
+      |> render_submit()
+
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      assert formula == %{">=" => [10, 5]}
+    end
+  end
+
+  describe "recursive expression tree UI" do
+    test "shows convert to formula button on simple values", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Select > operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => ">"})
+
+      html = render(view)
+      # Should show the ƒx button to convert simple values to formulas
+      assert html =~ "ƒx"
+      assert html =~ "Convert to formula"
+    end
+
+    test "allows converting simple value to nested formula", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Set up a simple comparison
+      send(view.pid, {:formula_updated, [], %{">" => [5, 10]}})
+
+      # Convert first argument to a formula by clicking the ƒx button
+      # This sends a convert_to_formula event
+      send(view.pid, {:formula_updated, [0], %{}})
+
+      html = render(view)
+      # Should now show an operator dropdown for the first argument
+      assert html =~ "formula[0][operator]"
+    end
+
+    test "allows converting nested formula back to simple value", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Set up a nested formula
+      send(view.pid, {:formula_updated, [], %{">" => [%{"var" => ["hp"]}, 10]}})
+
+      html = render(view)
+      # Should show the "123" button to convert back to simple value
+      assert html =~ "123"
+      assert html =~ "Convert to simple value"
+
+      # Convert back to simple value
+      send(view.pid, {:formula_updated, [0], ""})
+
+      html = render(view)
+      # Should now show a simple text input instead of nested formula
+      assert html =~ "formula[0][value]"
+    end
+  end
+
   describe "FormulaEditor component rendering" do
     test "renders with empty formula", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")

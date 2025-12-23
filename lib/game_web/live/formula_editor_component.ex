@@ -70,6 +70,7 @@ defmodule GameWeb.FormulaEditorComponent do
                     path={@path ++ [idx]}
                     field={@field || "formula"}
                     id={"#{@id}-arg-#{idx}"}
+                    myself={@myself}
                   />
                 </div>
               <% end %>
@@ -87,14 +88,26 @@ defmodule GameWeb.FormulaEditorComponent do
         </div>
 
         <%= if @path != [] do %>
-          <button
-            type="button"
-            phx-click="remove_node"
-            phx-target={@myself}
-            class="text-red-600 hover:text-red-800 text-sm"
-          >
-            ✕
-          </button>
+          <div class="flex gap-1">
+            <button
+              type="button"
+              phx-click="convert_to_value"
+              phx-target={@myself}
+              class="text-xs text-gray-600 hover:text-gray-800 px-2 py-1 border border-gray-300 rounded"
+              title="Convert to simple value"
+            >
+              123
+            </button>
+            <button
+              type="button"
+              phx-click="remove_node"
+              phx-target={@myself}
+              class="text-red-600 hover:text-red-800 text-sm px-2"
+              title="Remove"
+            >
+              ✕
+            </button>
+          </div>
         <% end %>
       </div>
     </div>
@@ -126,19 +139,7 @@ defmodule GameWeb.FormulaEditorComponent do
     is_nested_map = is_map(assigns.arg)
 
     cond do
-      # For operators that take formulas as arguments (map, filter, etc.)
-      is_formula_arg ->
-        ~H"""
-        <.live_component
-          module={__MODULE__}
-          id={@id}
-          value={@arg}
-          path={@path}
-          field={@field}
-        />
-        """
-
-      # For var operator, show string input for variable name
+      # For var operator, show string input for variable name (special case, can't be nested)
       is_var_operator ->
         ~H"""
         <input
@@ -150,8 +151,9 @@ defmodule GameWeb.FormulaEditorComponent do
         />
         """
 
-      # If arg is a map (nested formula), render recursively
-      is_nested_map ->
+      # For all other operators, allow arguments to be either simple values or nested formulas
+      # If arg is a map (nested formula), render recursively with operator dropdown
+      is_nested_map or is_formula_arg ->
         ~H"""
         <.live_component
           module={__MODULE__}
@@ -162,16 +164,28 @@ defmodule GameWeb.FormulaEditorComponent do
         />
         """
 
-      # Otherwise, show appropriate input based on type
+      # For simple values, show a toggle to allow conversion to formula
       true ->
         ~H"""
-        <input
-          type="text"
-          name={build_field_name(@field, @path, "value")}
-          value={to_string(@arg)}
-          placeholder={arg_placeholder(@operator, @arg_index)}
-          class="border border-gray-300 rounded px-3 py-2 text-sm w-full"
-        />
+        <div class="flex gap-2 items-start">
+          <input
+            type="text"
+            name={build_field_name(@field, @path, "value")}
+            value={to_string(@arg)}
+            placeholder={arg_placeholder(@operator, @arg_index)}
+            class="border border-gray-300 rounded px-3 py-2 text-sm flex-1"
+          />
+          <button
+            type="button"
+            phx-click="convert_to_formula"
+            phx-value-path={Jason.encode!(@path)}
+            phx-target={@myself}
+            class="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 border border-blue-300 rounded whitespace-nowrap"
+            title="Convert to formula"
+          >
+            ƒx
+          </button>
+        </div>
         """
     end
   end
@@ -219,15 +233,6 @@ defmodule GameWeb.FormulaEditorComponent do
     {:noreply, socket}
   end
 
-  defp extract_operator_value(%{"value" => operator}, _field, _path), do: operator
-  defp extract_operator_value(params, field, path) do
-    # Navigate through nested params structure
-    # For root: %{"formula" => %{"operator" => ">"}}
-    # For nested: %{"formula" => %{"0" => %{"operator" => "var"}}}
-    value = get_in(params, [field | Enum.map(path, &to_string/1)] ++ ["operator"])
-    value || ""
-  end
-
   def handle_event("add_arg", _params, socket) do
     new_args = socket.assigns.args ++ [""]
     new_value = %{socket.assigns.operator => new_args}
@@ -240,10 +245,34 @@ defmodule GameWeb.FormulaEditorComponent do
     {:noreply, socket}
   end
 
+  def handle_event("convert_to_formula", %{"path" => path_json}, socket) do
+    path = Jason.decode!(path_json)
+    # Send message to parent to convert the value at this path to an empty formula
+    send(self(), {:formula_updated, path, %{}})
+    {:noreply, socket}
+  end
+
+  def handle_event("convert_to_value", _params, socket) do
+    # Convert the current formula node back to a simple empty string value
+    send(self(), {:formula_updated, socket.assigns.path, ""})
+    {:noreply, socket}
+  end
+
   @doc """
   Returns a list of all available formula keywords/operators.
   """
   def list_available_keywords do
     Formula.available_operators()
+  end
+
+  # Private helper functions
+
+  defp extract_operator_value(%{"value" => operator}, _field, _path), do: operator
+  defp extract_operator_value(params, field, path) do
+    # Navigate through nested params structure
+    # For root: %{"formula" => %{"operator" => ">"}}
+    # For nested: %{"formula" => %{"0" => %{"operator" => "var"}}}
+    value = get_in(params, [field | Enum.map(path, &to_string/1)] ++ ["operator"])
+    value || ""
   end
 end
