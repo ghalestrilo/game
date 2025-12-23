@@ -219,7 +219,6 @@ defmodule Game.Card do
       case first_effect do
         %{targeting: _} = effect -> effect
         %{"type" => _} = effect -> get_structured_effect(effect)
-        _ -> nil
       end
 
     targeting_type = get_targeting_type(card)
@@ -228,42 +227,25 @@ defmodule Game.Card do
     # Build the data context for JsonLogic
     target_data = build_target_data(position_result)
 
-    # Get the targeting rule
-    targeting_rule =
-      case structured_effect do
-        %{targeting: %{"rule" => rule}} -> rule
-        _ -> nil
-      end
+    # Get the targeting rule from the effect
+    %{targeting: %{"rule" => targeting_rule}} = structured_effect
 
-    # Evaluate using JsonLogic if rule exists
-    cond do
-      is_nil(targeting_rule) ->
-        # Fallback to old behavior if no rule specified
-        fallback_validation(targeting_type, position_result)
+    # Evaluate using JsonLogic
+    result = JsonLogic.resolve(targeting_rule, target_data)
 
-      true ->
-        result = JsonLogic.resolve(targeting_rule, target_data)
-
-        if result do
-          # Rule passed, return appropriate result
-          case targeting_type do
-            :tile -> {:ok, nil}
-            :character ->
-              case position_result do
-                {:ok, character} when not is_nil(character) -> {:ok, character}
-                _ -> {:error, "No character at this position"}
-              end
+    if result do
+      # Rule passed, return appropriate result
+      case targeting_type do
+        :tile -> {:ok, nil}
+        :character ->
+          case position_result do
+            {:ok, character} when not is_nil(character) -> {:ok, character}
+            _ -> {:error, "No character at this position"}
           end
-        else
-          {:error, "Target does not match targeting rule"}
-        end
+      end
+    else
+      {:error, "Target does not match targeting rule"}
     end
-  end
-
-  def is_target_cell_valid?(%__MODULE__{effects: nil}, target_position, combat_state) do
-    # No effects, default to character targeting
-    position_result = Game.Grid.get_object(combat_state.grid, target_position)
-    fallback_validation(:character, position_result)
   end
 
   # Build data context for JsonLogic evaluation
@@ -292,25 +274,6 @@ defmodule Game.Card do
           "hp" => nil,
           "max_hp" => nil
         }
-    end
-  end
-
-  # Fallback validation for backward compatibility
-  defp fallback_validation(targeting_type, position_result) do
-    case targeting_type do
-      :tile ->
-        case position_result do
-          {:ok, nil} -> {:ok, nil}
-          {:ok, _character} -> {:error, "Tile must be empty"}
-          nil -> {:error, "Invalid tile position"}
-        end
-
-      :character ->
-        case position_result do
-          {:ok, character} when not is_nil(character) -> {:ok, character}
-          {:ok, nil} -> {:error, "No character at this position"}
-          nil -> {:error, "No character at this position"}
-        end
     end
   end
 end

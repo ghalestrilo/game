@@ -3,117 +3,47 @@ defmodule Game.CardTest do
   alias Game.{Card, Grid, CombatState, Character}
   alias Game.Combat.CardEffects.{Damage, Heal, Summon}
 
-  describe "get_targeting_type/1" do
-    test "returns :tile for summon cards" do
+  describe "JsonLogic-based targeting" do
+    test "get_targeting_type/1 returns :tile for summon cards" do
+      summon_effect = %Summon{
+        type: :summon,
+        value: "wolf",
+        targeting: %{
+          "type" => "tile",
+          "rule" => %{"!" => %{"var" => "occupied"}}
+        }
+      }
+
       card = %Card{
         id: 1,
         name: "Summon Wolf",
-        effects: [%{"type" => "summon", "value" => "wolf"}],
-        cost: 1,
-        range: 5
+        effects: [summon_effect],
+        cost: 2
       }
 
       assert Card.get_targeting_type(card) == :tile
     end
 
-    test "returns :character for damage cards" do
+    test "get_targeting_type/1 returns :character for damage cards" do
+      damage_effect = %Damage{
+        type: :damage,
+        value: 5,
+        targeting: %{
+          "type" => "character",
+          "rule" => %{"var" => "occupied"}
+        }
+      }
+
       card = %Card{
         id: 1,
         name: "Attack",
-        effects: [%{"type" => "damage", "value" => 5}],
-        cost: 1,
-        range: 5
+        effects: [damage_effect],
+        cost: 1
       }
 
       assert Card.get_targeting_type(card) == :character
     end
 
-    test "returns :character when effects is nil" do
-      card = %Card{
-        id: 1,
-        name: "Test",
-        effects: nil,
-        cost: 1,
-        range: 5
-      }
-
-      assert Card.get_targeting_type(card) == :character
-    end
-  end
-
-  describe "is_target_cell_valid?/3" do
-    test "summon card validates empty tile" do
-      card = %Card{
-        id: 1,
-        name: "Summon Wolf",
-        effects: [%{"type" => "summon", "value" => "wolf"}],
-        cost: 1,
-        range: 5
-      }
-
-      grid = Grid.new({2, 2, 2})
-      combat = %CombatState{grid: grid}
-
-      # Empty tile should be valid
-      assert Card.is_target_cell_valid?(card, {0, 0, 0}, combat) == {:ok, nil}
-    end
-
-    test "summon card rejects occupied tile" do
-      card = %Card{
-        id: 1,
-        name: "Summon Wolf",
-        effects: [%{"type" => "summon", "value" => "wolf"}],
-        cost: 1,
-        range: 5
-      }
-
-      grid = Grid.new({2, 2, 2})
-      character = %Game.Character{id: 1, position: {0, 0, 0}, name: "Test"}
-      grid = Grid.update_character(grid, character)
-      combat = %CombatState{grid: grid}
-
-      # Occupied tile should be invalid (now uses JsonLogic validation)
-      assert Card.is_target_cell_valid?(card, {0, 0, 0}, combat) == {:error, "Target does not match targeting rule"}
-    end
-
-    test "damage card validates character at position" do
-      card = %Card{
-        id: 1,
-        name: "Attack",
-        effects: [%{"type" => "damage", "value" => 5}],
-        cost: 1,
-        range: 5
-      }
-
-      grid = Grid.new({2, 2, 2})
-      character = %Game.Character{id: 1, position: {0, 0, 0}, name: "Test"}
-      grid = Grid.update_character(grid, character)
-      combat = %CombatState{grid: grid}
-
-      # Character at position should be valid
-      {:ok, result} = Card.is_target_cell_valid?(card, {0, 0, 0}, combat)
-      assert result.id == 1
-      assert result.name == "Test"
-    end
-
-    test "damage card rejects empty tile" do
-      card = %Card{
-        id: 1,
-        name: "Attack",
-        effects: [%{"type" => "damage", "value" => 5}],
-        cost: 1,
-        range: 5
-      }
-
-      grid = Grid.new({2, 2, 2})
-      combat = %CombatState{grid: grid}
-
-      # Empty tile should be invalid for damage card (now uses JsonLogic validation)
-      assert Card.is_target_cell_valid?(card, {0, 0, 0}, combat) == {:error, "Target does not match targeting rule"}
-    end
-  end
-
-  describe "JsonLogic-based targeting with effect targeting field" do
     test "damage effect with character targeting validates character present" do
       damage_effect = %Damage{
         type: :damage,
