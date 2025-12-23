@@ -73,7 +73,7 @@ config :git_hooks,
       tasks: [
         # {:cmd, "mix format --check-formatted"},
         # {:cmd, "mix dialyzer"},
-        # {:cmd, "mix test --color"}
+        {:cmd, "mix test --color"}
       ]
     ]
   ],
