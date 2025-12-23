@@ -3,6 +3,7 @@ defmodule GameWeb.BaseCardLiveTest do
 
   import Phoenix.LiveViewTest
   import Game.BaseCardsFixtures
+  require Logger
 
   @create_attrs %{
     name: "some name",
@@ -54,10 +55,10 @@ defmodule GameWeb.BaseCardLiveTest do
 
       # Print form content to check for errors
       if result =~ "base_card-form" do
-        IO.puts("\n=== FORM STILL PRESENT, likely validation error ===")
+        Logger.error("\n=== FORM STILL PRESENT, likely validation error ===")
         # Look for phx-feedback-for attributes which indicate field errors
         if result =~ "phx-feedback-for" do
-          IO.puts("Found field validation errors")
+          Logger.error("Found field validation errors")
         end
       end
 

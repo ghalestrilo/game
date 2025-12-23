@@ -58,6 +58,15 @@ defmodule GameWeb.Router do
     live "/base_classes/:id/show/edit", BaseClassLive.Show, :edit
   end
 
+  # Test routes (only available in test environment)
+  if Mix.env() == :test do
+    scope "/", GameWeb do
+      pipe_through :browser
+
+      live "/formula-editor-test", FormulaEditorTestLive
+    end
+  end
+
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:game, :dev_routes) do
     # If you want to use the LiveDashboard in production, you should put

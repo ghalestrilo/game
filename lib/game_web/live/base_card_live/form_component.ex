@@ -145,14 +145,14 @@ defmodule GameWeb.BaseCardLive.FormComponent do
   end
 
   def handle_event("save", %{"base_card" => base_card_params}, socket) do
-    IO.puts("\n=== SAVE EVENT HANDLER ===")
+    # IO.puts("\n=== SAVE EVENT HANDLER ===")
 
     base_card_params =
       if Map.has_key?(base_card_params, "effects") do
         normalized = Map.update!(base_card_params, "effects", &normalize_effects/1)
         normalized
       else
-        IO.puts("No effects key in params, adding empty array")
+        # IO.puts("No effects key in params, adding empty array")
         Map.put(base_card_params, "effects", [])
       end
 

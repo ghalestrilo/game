@@ -1,0 +1,490 @@
+defmodule GameWeb.FormulaEditorComponentTest do
+  use GameWeb.ConnCase, async: true
+  import Phoenix.LiveViewTest
+  alias GameWeb.FormulaEditorComponent
+
+  defp get_result_json(view) do
+    html = render(view)
+    # Extract JSON from the <pre id="result-json"> tag
+    [_, json] = Regex.run(~r/<pre id="result-json"[^>]*>(.*?)<\/pre>/, html, capture: :all_but_first)
+    Jason.decode!(json)
+  end
+
+  describe "FormulaEditor.list_available_keywords/0" do
+    test "returns list of available operators" do
+      keywords = FormulaEditorComponent.list_available_keywords()
+
+      assert is_list(keywords)
+      assert "var" in keywords
+      assert "==" in keywords
+      assert "and" in keywords
+      assert ">" in keywords
+      assert "+" in keywords
+    end
+
+    test "all keywords have metadata" do
+      keywords = FormulaEditorComponent.list_available_keywords()
+
+      Enum.each(keywords, fn keyword ->
+        metadata = Game.Formula.operator_metadata(keyword)
+        assert is_map(metadata)
+        assert Map.has_key?(metadata, :description)
+        assert Map.has_key?(metadata, :arity)
+      end)
+    end
+  end
+
+  describe "FormulaEditor component rendering" do
+    test "renders with empty formula", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      assert has_element?(view, "select[name='formula[operator]']")
+      assert has_element?(view, "option", "-- Select operator --")
+    end
+
+    test "shows all available operators in dropdown", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      keywords = FormulaEditorComponent.list_available_keywords()
+
+      Enum.each(keywords, fn keyword ->
+        assert has_element?(view, "option[value='#{keyword}']")
+      end)
+    end
+
+    test "renders with existing simple formula", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Simulate having a formula already set
+      send(view.pid, {:formula_updated, [], %{"var" => "hp"}})
+
+      html = render(view)
+      assert html =~ "var"
+    end
+  end
+
+  describe "simple formula editing" do
+    test "creates var formula", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Select var operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => "var"})
+
+      # Enter variable name
+      view
+      |> form("form", formula: %{"0" => %{"value" => "hp"}})
+      |> render_change()
+
+      # Submit form
+      view
+      |> form("form")
+      |> render_submit()
+
+      # Check that the formula was saved correctly
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      # var operator takes a single string argument (not a list)
+      assert formula == %{"var" => ["hp"]}
+    end
+
+    test "creates simple comparison formula", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Select > operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => ">"})
+
+      # Should create default args
+      html = render(view)
+      assert html =~ ">"
+
+      # Enter values for comparison
+      view
+      |> form("form",
+        formula: %{
+          "operator" => ">",
+          "0" => %{"value" => "10"},
+          "1" => %{"value" => "5"}
+        }
+      )
+      |> render_change()
+
+      view
+      |> form("form")
+      |> render_submit()
+
+      # Check the formula was saved correctly
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      assert formula == %{">" => [10, 5]}
+    end
+
+    test "creates logical AND formula", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Select and operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => "and"})
+
+      view
+      |> form("form",
+        formula: %{
+          "operator" => "and",
+          "0" => %{"value" => "true"}
+        }
+      )
+      |> render_change()
+
+      # Add another argument
+      view
+      |> element("button", "+ Add argument")
+      |> render_click()
+
+      html = render(view)
+      assert html =~ "and"
+    end
+  end
+
+  describe "nested formula editing" do
+    test "creates nested comparison with var", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Create > operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => ">"})
+
+      # Submit nested structure directly (UI doesn't support selecting nested operators for > args)
+      view
+      |> form("form",
+        formula: %{
+          "operator" => ">",
+          "0" => %{
+            "operator" => "var",
+            "0" => %{"value" => "hp"}
+          },
+          "1" => %{"value" => "5"}
+        }
+      )
+      |> render_submit()
+
+      # Should create: %{">" => [%{"var" => ["hp"]}, 5]}
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      formula = Jason.decode!(json)
+      assert formula == %{">" => [%{"var" => ["hp"]}, 5]}
+    end
+
+    test "creates complex nested formula with AND and comparisons", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Root: and operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => "and"})
+
+      # Build the full formula (nested operators in args don't have UI dropdowns)
+      view
+      |> form("form",
+        formula: %{
+          "operator" => "and",
+          "0" => %{
+            "operator" => ">",
+            "0" => %{
+              "operator" => "var",
+              "0" => %{"value" => "hp"}
+            },
+            "1" => %{"value" => "0"}
+          },
+          "1" => %{
+            "operator" => "==",
+            "0" => %{
+              "operator" => "var",
+              "0" => %{"value" => "team"}
+            },
+            "1" => %{"value" => "ally"}
+          }
+        }
+      )
+      |> render_submit()
+
+      # Check structure: %{"and" => [%{">" => [%{"var" => ["hp"]}, 0]}, %{"==" => [%{"var" => ["team"]}, "ally"]}]}
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      formula = Jason.decode!(json)
+      assert formula == %{
+        "and" => [
+          %{">" => [%{"var" => ["hp"]}, 0]},
+          %{"==" => [%{"var" => ["team"]}, "ally"]}
+        ]
+      }
+    end
+  end
+
+  describe "formula validation" do
+    test "generates valid map for simple var", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Select var operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => "var"})
+
+      view
+      |> form("form",
+        formula: %{
+          "operator" => "var",
+          "0" => %{"value" => "occupied"}
+        }
+      )
+      |> render_submit()
+
+      # Get the result from the page
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      formula = Jason.decode!(json)
+      assert formula == %{"var" => "occupied"}
+
+      # Verify it's a valid formula by resolving it
+      result = Game.Formula.resolve(formula, %{"occupied" => true})
+      assert result == true
+    end
+
+    test "generates valid map for comparison", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Select > operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => ">"})
+
+      view
+      |> form("form",
+        formula: %{
+          "operator" => ">",
+          "0" => %{"value" => "10"},
+          "1" => %{"value" => "5"}
+        }
+      )
+      |> render_submit()
+
+      # Get the result from the page
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      formula = Jason.decode!(json)
+      assert formula == %{">" => [10, 5]}
+
+      # Verify it's valid
+      result = Game.Formula.resolve(formula)
+      assert result == true
+    end
+
+    test "generates valid map for nested formula", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Select < operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => "<"})
+
+      # Select var for first argument
+      view
+      |> element("select[name='formula[0][operator]']")
+      |> render_change(%{"value" => "var"})
+
+      # Select var for second argument
+      view
+      |> element("select[name='formula[1][operator]']")
+      |> render_change(%{"value" => "var"})
+
+      view
+      |> form("form",
+        formula: %{
+          "operator" => "<",
+          "0" => %{
+            "operator" => "var",
+            "0" => %{"value" => "hp"}
+          },
+          "1" => %{
+            "operator" => "var",
+            "0" => %{"value" => "max_hp"}
+          }
+        }
+      )
+      |> render_submit()
+
+      # Get the result from the page
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      formula = Jason.decode!(json)
+      assert formula == %{"<" => [%{"var" => "hp"}, %{"var" => "max_hp"}]}
+
+      # Verify it's valid
+      result = Game.Formula.resolve(formula, %{"hp" => 5, "max_hp" => 10})
+      assert result == true
+    end
+
+    test "generates valid map for complex nested AND formula", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Select and operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => "and"})
+
+      # First arg: var operator
+      view
+      |> element("select[name='formula[0][operator]']")
+      |> render_change(%{"value" => "var"})
+
+      # Add second argument
+      view
+      |> element("button", "+ Add argument")
+      |> render_click()
+
+      # Second arg: == operator
+      view
+      |> element("select[name='formula[1][operator]']")
+      |> render_change(%{"value" => "=="})
+
+      # First arg of ==: var operator
+      view
+      |> element("select[name='formula[1][0][operator]']")
+      |> render_change(%{"value" => "var"})
+
+      view
+      |> form("form",
+        formula: %{
+          "operator" => "and",
+          "0" => %{
+            "operator" => "var",
+            "0" => %{"value" => "occupied"}
+          },
+          "1" => %{
+            "operator" => "==",
+            "0" => %{
+              "operator" => "var",
+              "0" => %{"value" => "team"}
+            },
+            "1" => %{"value" => "ally"}
+          }
+        }
+      )
+      |> render_submit()
+
+      # Get the result from the page
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      formula = Jason.decode!(json)
+
+      assert formula == %{
+               "and" => [
+                 %{"var" => "occupied"},
+                 %{"==" => [%{"var" => "team"}, "ally"]}
+               ]
+             }
+
+      # Verify it's valid - should return true when both conditions are true
+      result = Game.Formula.resolve(formula, %{"occupied" => true, "team" => "ally"})
+      assert result == true
+
+      # Should return false when one condition is false
+      result = Game.Formula.resolve(formula, %{"occupied" => true, "team" => "enemy"})
+      assert result == false
+    end
+  end
+
+  describe "type coercion" do
+    test "parses integers correctly", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Select + operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => "+"})
+
+      view
+      |> form("form",
+        formula: %{
+          "operator" => "+",
+          "0" => %{"value" => "10"},
+          "1" => %{"value" => "20"}
+        }
+      )
+      |> render_submit()
+
+      # Get the result from the page
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      formula = Jason.decode!(json)
+      assert formula == %{"+" => [10, 20]}
+
+      result = Game.Formula.resolve(formula)
+      assert result == 30
+    end
+
+    test "parses floats correctly", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Select / operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => "/"})
+
+      view
+      |> form("form",
+        formula: %{
+          "operator" => "/",
+          "0" => %{"value" => "5.5"},
+          "1" => %{"value" => "2.0"}
+        }
+      )
+      |> render_submit()
+
+      # Get the result from the page
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      formula = Jason.decode!(json)
+      assert formula == %{"/" => [5.5, 2.0]}
+
+      result = Game.Formula.resolve(formula)
+      assert result == 2.75
+    end
+
+    test "keeps strings as strings", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # Select == operator
+      view
+      |> element("select[name='formula[operator]']")
+      |> render_change(%{"value" => "=="})
+
+      # Submit nested structure with var (UI doesn't support selecting nested operators for == args)
+      view
+      |> form("form",
+        formula: %{
+          "operator" => "==",
+          "0" => %{
+            "operator" => "var",
+            "0" => %{"value" => "name"}
+          },
+          "1" => %{"value" => "Hero"}
+        }
+      )
+      |> render_submit()
+
+      # Get the result from the page
+      assert has_element?(view, "#result-json")
+      formula = get_result_json(view)
+      formula = Jason.decode!(json)
+      assert formula == %{"==" => [%{"var" => ["name"]}, "Hero"]}
+
+      result = Game.Formula.resolve(formula, %{"name" => "Hero"})
+      assert result == true
+    end
+  end
+end
