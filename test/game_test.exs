@@ -1,8 +1,6 @@
 defmodule GameTest do
   use ExUnit.Case
-  alias Game.Combat.CardEffects
-  alias Game.Combat.CardEffect
-  alias Game.{Character, Card, Grid}
+  alias Game.{Card, Grid}
   alias Game.Fixtures
 
   setup do
@@ -145,7 +143,7 @@ defmodule GameTest do
       # Mage's final turn
       # 1. Try to move but fail (not enough movement range)
       assert {:error, "Not enough movement"} = Game.move_character(game_pid, mage, {5, 0, -5})
-      assert {:ok, combat} = Game.move_character(game_pid, mage, {4, 0, -4})
+      assert {:ok, _combat} = Game.move_character(game_pid, mage, {4, 0, -4})
 
       # 2. Play fireball
       fireball = Enum.find(mage.cards.hand, &(&1.id == 3))

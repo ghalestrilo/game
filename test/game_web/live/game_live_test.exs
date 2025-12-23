@@ -142,9 +142,4 @@ defmodule GameWeb.GameLiveTest do
     |> render_click()
   end
 
-  defp click_mage(view) do
-    view
-    |> element("[phx-value-target_position=\"0_-1_-1\"]")
-    |> render_click()
-  end
 end
