@@ -202,13 +202,15 @@ defmodule Game.Card do
   @doc """
   Validates whether a target cell is valid for playing this card using JsonLogic rules.
 
-  Builds a data context from the target position including:
-  - occupied: boolean - whether the tile has a character
-  - team: string - the team of the character (if present)
-  - hp: integer - current HP of character (if present)
-  - max_hp: integer - max HP of character (if present)
+  Builds a data context from the target position and game state including:
+  - target.occupied: boolean - whether the tile has a character
+  - target.team: string - the team of the character (if present)
+  - target.hp: integer - current HP of character (if present)
+  - target.max_hp: integer - max HP of character (if present)
+  - state: JSON-encoded combat state for accessing game variables
 
   Then evaluates the targeting rule from the first effect using JsonLogic.
+  If no targeting rule is defined, falls back to simple validation based on targeting type.
   """
   def is_target_cell_valid?(%__MODULE__{effects: effects} = card, target_position, combat_state)
       when is_list(effects) do
@@ -224,31 +226,66 @@ defmodule Game.Card do
     targeting_type = get_targeting_type(card)
     position_result = Game.Grid.get_object(combat_state.grid, target_position)
 
-    # Build the data context for JsonLogic
-    target_data = build_target_data(position_result)
+    # Check if effect has a targeting rule
+    case structured_effect do
+      %{targeting: %{"rule" => targeting_rule}} ->
+        # Build the data context for JsonLogic
+        data_context = build_data_context(position_result, combat_state)
 
-    # Get the targeting rule from the effect
-    %{targeting: %{"rule" => targeting_rule}} = structured_effect
+        # Evaluate using JsonLogic
+        result = JsonLogic.resolve(targeting_rule, data_context)
 
-    # Evaluate using JsonLogic
-    result = JsonLogic.resolve(targeting_rule, target_data)
-
-    if result do
-      # Rule passed, return appropriate result
-      case targeting_type do
-        :tile -> {:ok, nil}
-        :character ->
-          case position_result do
-            {:ok, character} when not is_nil(character) -> {:ok, character}
-            _ -> {:error, "No character at this position"}
+        if result do
+          # Rule passed, return appropriate result
+          case targeting_type do
+            :tile -> {:ok, nil}
+            :character ->
+              case position_result do
+                {:ok, character} when not is_nil(character) -> {:ok, character}
+                _ -> {:error, "No character at this position"}
+              end
           end
-      end
-    else
-      {:error, "Target does not match targeting rule"}
+        else
+          {:error, "Target does not match targeting rule"}
+        end
+
+      _ ->
+        # No targeting rule defined, use simple validation
+        case targeting_type do
+          :tile ->
+            # For tile targeting, just check if position exists
+            case position_result do
+              {:ok, _} -> {:ok, nil}
+              _ -> {:error, "Invalid tile position"}
+            end
+
+          :character ->
+            # For character targeting, just check if there's a character
+            case position_result do
+              {:ok, character} when not is_nil(character) -> {:ok, character}
+              _ -> {:error, "No character at this position"}
+            end
+        end
     end
   end
 
-  # Build data context for JsonLogic evaluation
+  # Build data context for JsonLogic evaluation including target and game state
+  defp build_data_context(position_result, combat_state) do
+    target_data = build_target_data(position_result)
+
+    # Encode combat state to JSON and decode to get a plain map structure
+    {:ok, state_json} = Jason.encode(combat_state)
+    {:ok, state_map} = Jason.decode(state_json)
+
+    %{
+      "target" => target_data,
+      "state" => %{
+        "combat" => state_map
+      }
+    }
+  end
+
+  # Build target-specific data for JsonLogic evaluation
   defp build_target_data(position_result) do
     case position_result do
       {:ok, nil} ->

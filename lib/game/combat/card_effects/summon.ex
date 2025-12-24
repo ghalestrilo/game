@@ -13,7 +13,7 @@ defmodule Game.Combat.CardEffects.Summon do
             value: nil,
             targeting: %{
               "type" => "tile",
-              "rule" => %{"!" => %{"var" => "occupied"}}
+              "rule" => %{"!" => %{"var" => "target.occupied"}}
             }
 
   @type t() :: %__MODULE__{

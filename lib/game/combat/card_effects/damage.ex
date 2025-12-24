@@ -10,7 +10,7 @@ defmodule Game.Combat.CardEffects.Damage do
             value: 0,
             targeting: %{
               "type" => "character",
-              "rule" => %{"var" => "occupied"}
+              "rule" => %{"var" => "target.occupied"}
             }
 
   @type t() :: %__MODULE__{
