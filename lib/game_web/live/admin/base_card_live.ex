@@ -1,5 +1,7 @@
 defmodule GameWeb.Admin.BaseCardLive do
   use Backpex.LiveResource,
+    per_page_default: 100,
+    init_order: %{by: :name, direction: :asc},
     adapter_config: [
       schema: Game.BaseCards.BaseCard,
       repo: Game.Repo,
@@ -45,6 +47,7 @@ defmodule GameWeb.Admin.BaseCardLive do
       effects: %{
         module: Backpex.Fields.InlineCRUD,
         label: "Effects",
+        orderable: false,
         type: :embed,
         child_fields: [
           type: %{
