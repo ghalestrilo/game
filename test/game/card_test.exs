@@ -5,61 +5,46 @@ defmodule Game.CardTest do
 
   describe "JsonLogic-based targeting" do
     test "get_targeting_type/1 returns :tile for summon cards" do
-      summon_effect = %Summon{
-        type: :summon,
-        value: "wolf",
+      card = %Card{
+        id: 1,
+        name: "Summon Wolf",
+        effects: [%Summon{type: :summon, value: "wolf"}],
+        cost: 2,
         targeting: %{
           "type" => "tile",
           "rule" => %{"!" => %{"var" => "target.occupied"}}
         }
       }
 
-      card = %Card{
-        id: 1,
-        name: "Summon Wolf",
-        effects: [summon_effect],
-        cost: 2
-      }
-
       assert Card.get_targeting_type(card) == :tile
     end
 
     test "get_targeting_type/1 returns :character for damage cards" do
-      damage_effect = %Damage{
-        type: :damage,
-        value: 5,
+      card = %Card{
+        id: 1,
+        name: "Attack",
+        effects: [%Damage{type: :damage, value: 5}],
+        cost: 1,
         targeting: %{
           "type" => "character",
           "rule" => %{"var" => "target.occupied"}
         }
-      }
-
-      card = %Card{
-        id: 1,
-        name: "Attack",
-        effects: [damage_effect],
-        cost: 1
       }
 
       assert Card.get_targeting_type(card) == :character
     end
 
     test "damage effect with character targeting validates character present" do
-      damage_effect = %Damage{
-        type: :damage,
-        value: 5,
+      card = %Card{
+        id: 1,
+        name: "Attack",
+        effects: [%Damage{type: :damage, value: 5}],
+        cost: 1,
+        range: 5,
         targeting: %{
           "type" => "character",
           "rule" => %{"var" => "target.occupied"}
         }
-      }
-
-      card = %Card{
-        id: 1,
-        name: "Attack",
-        effects: [damage_effect],
-        cost: 1,
-        range: 5
       }
 
       grid = Grid.new({2, 2, 2})
@@ -72,20 +57,15 @@ defmodule Game.CardTest do
     end
 
     test "summon effect with tile targeting validates empty tile" do
-      summon_effect = %Summon{
-        type: :summon,
-        value: "wolf",
+      card = %Card{
+        id: 1,
+        name: "Summon Wolf",
+        effects: [%Summon{type: :summon, value: "wolf"}],
+        cost: 2,
         targeting: %{
           "type" => "tile",
           "rule" => %{"!" => %{"var" => "target.occupied"}}
         }
-      }
-
-      card = %Card{
-        id: 1,
-        name: "Summon Wolf",
-        effects: [summon_effect],
-        cost: 2
       }
 
       grid = Grid.new({2, 2, 2})
@@ -95,20 +75,15 @@ defmodule Game.CardTest do
     end
 
     test "summon effect rejects occupied tile using JsonLogic" do
-      summon_effect = %Summon{
-        type: :summon,
-        value: "wolf",
+      card = %Card{
+        id: 1,
+        name: "Summon Wolf",
+        effects: [%Summon{type: :summon, value: "wolf"}],
+        cost: 2,
         targeting: %{
           "type" => "tile",
           "rule" => %{"!" => %{"var" => "target.occupied"}}
         }
-      }
-
-      card = %Card{
-        id: 1,
-        name: "Summon Wolf",
-        effects: [summon_effect],
-        cost: 2
       }
 
       grid = Grid.new({2, 2, 2})
@@ -121,9 +96,11 @@ defmodule Game.CardTest do
     end
 
     test "heal effect with ally-only targeting validates ally characters" do
-      heal_effect = %Heal{
-        type: :heal,
-        value: 10,
+      card = %Card{
+        id: 1,
+        name: "Heal Ally",
+        effects: [%Heal{type: :heal, value: 10}],
+        cost: 2,
         targeting: %{
           "type" => "character",
           "rule" => %{
@@ -133,13 +110,6 @@ defmodule Game.CardTest do
             ]
           }
         }
-      }
-
-      card = %Card{
-        id: 1,
-        name: "Heal Ally",
-        effects: [heal_effect],
-        cost: 2
       }
 
       grid = Grid.new({2, 2, 2})
@@ -153,9 +123,11 @@ defmodule Game.CardTest do
     end
 
     test "heal effect with ally-only targeting rejects enemy characters" do
-      heal_effect = %Heal{
-        type: :heal,
-        value: 10,
+      card = %Card{
+        id: 1,
+        name: "Heal Ally",
+        effects: [%Heal{type: :heal, value: 10}],
+        cost: 2,
         targeting: %{
           "type" => "character",
           "rule" => %{
@@ -165,13 +137,6 @@ defmodule Game.CardTest do
             ]
           }
         }
-      }
-
-      card = %Card{
-        id: 1,
-        name: "Heal Ally",
-        effects: [heal_effect],
-        cost: 2
       }
 
       grid = Grid.new({2, 2, 2})
@@ -184,9 +149,11 @@ defmodule Game.CardTest do
     end
 
     test "damage effect with enemy-only targeting validates enemy characters" do
-      damage_effect = %Damage{
-        type: :damage,
-        value: 5,
+      card = %Card{
+        id: 1,
+        name: "Attack Enemy",
+        effects: [%Damage{type: :damage, value: 5}],
+        cost: 1,
         targeting: %{
           "type" => "character",
           "rule" => %{
@@ -196,13 +163,6 @@ defmodule Game.CardTest do
             ]
           }
         }
-      }
-
-      card = %Card{
-        id: 1,
-        name: "Attack Enemy",
-        effects: [damage_effect],
-        cost: 1
       }
 
       grid = Grid.new({2, 2, 2})
@@ -215,9 +175,11 @@ defmodule Game.CardTest do
     end
 
     test "complex JsonLogic rule for wounded allies only" do
-      heal_effect = %Heal{
-        type: :heal,
-        value: 10,
+      card = %Card{
+        id: 1,
+        name: "Heal Wounded Ally",
+        effects: [%Heal{type: :heal, value: 10}],
+        cost: 2,
         targeting: %{
           "type" => "character",
           "rule" => %{
@@ -230,16 +192,8 @@ defmodule Game.CardTest do
         }
       }
 
-      card = %Card{
-        id: 1,
-        name: "Heal Wounded Ally",
-        effects: [heal_effect],
-        cost: 2
-      }
-
       grid = Grid.new({2, 2, 2})
 
-      # Wounded ally should be valid
       wounded_ally = %Character{
         id: 1,
         position: {0, 0, 0},
@@ -258,9 +212,11 @@ defmodule Game.CardTest do
     end
 
     test "complex JsonLogic rule rejects full health allies" do
-      heal_effect = %Heal{
-        type: :heal,
-        value: 10,
+      card = %Card{
+        id: 1,
+        name: "Heal Wounded Ally",
+        effects: [%Heal{type: :heal, value: 10}],
+        cost: 2,
         targeting: %{
           "type" => "character",
           "rule" => %{
@@ -273,16 +229,8 @@ defmodule Game.CardTest do
         }
       }
 
-      card = %Card{
-        id: 1,
-        name: "Heal Wounded Ally",
-        effects: [heal_effect],
-        cost: 2
-      }
-
       grid = Grid.new({2, 2, 2})
 
-      # Full health ally should be invalid
       healthy_ally = %Character{
         id: 1,
         position: {0, 0, 0},
@@ -300,44 +248,35 @@ defmodule Game.CardTest do
                {:error, "Target does not match targeting rule"}
     end
 
-    test "card with multiple effects uses first effect's targeting type" do
-      damage_effect = %Damage{
-        type: :damage,
-        value: 5,
+    test "card targeting field determines targeting type regardless of effects" do
+      card = %Card{
+        id: 1,
+        name: "Strike and Heal",
+        effects: [
+          %Damage{type: :damage, value: 5},
+          %Heal{type: :heal, value: 2}
+        ],
+        cost: 3,
         targeting: %{
           "type" => "character",
           "rule" => %{"var" => "target.occupied"}
         }
       }
 
-      # Second effect doesn't affect targeting determination
-      heal_effect = %Heal{
-        type: :heal,
-        value: 2,
-        targeting: nil
-      }
-
-      card = %Card{
-        id: 1,
-        name: "Strike and Heal",
-        effects: [damage_effect, heal_effect],
-        cost: 3
-      }
-
       assert Card.get_targeting_type(card) == :character
     end
 
     test "targeting rule can access game state variables using JsonLogic" do
-      # Create a damage effect that only targets enemies and checks current player's team
-      damage_effect = %Damage{
-        type: :damage,
-        value: 5,
+      card = %Card{
+        id: 1,
+        name: "Enemy Strike",
+        effects: [%Damage{type: :damage, value: 5}],
+        cost: 1,
         targeting: %{
           "type" => "character",
           "rule" => %{
             "and" => [
               %{"var" => "target.occupied"},
-              # Target must be on a different team than current player
               %{
                 "!=" => [
                   %{"var" => "target.team"},
@@ -349,19 +288,10 @@ defmodule Game.CardTest do
         }
       }
 
-      card = %Card{
-        id: 1,
-        name: "Enemy Strike",
-        effects: [damage_effect],
-        cost: 1
-      }
-
-      # Setup grid with enemy
       grid = Grid.new({2, 2, 2})
       enemy = %Character{id: 2, position: {0, 0, 0}, name: "Enemy", team: :enemy}
       grid = Grid.update_character(grid, enemy)
 
-      # Setup current player
       player = %Character{id: 1, position: {1, 0, -1}, name: "Player", team: :ally}
 
       combat = %CombatState{
@@ -373,22 +303,21 @@ defmodule Game.CardTest do
         }
       }
 
-      # Should be valid - enemy has different team than current player
       {:ok, result} = Card.is_target_cell_valid?(card, {0, 0, 0}, combat)
       assert result.team == :enemy
     end
 
     test "targeting rule rejects when game state condition fails" do
-      # Create a damage effect that only works if current player has enough AP
-      damage_effect = %Damage{
-        type: :damage,
-        value: 10,
+      card = %Card{
+        id: 1,
+        name: "Heavy Strike",
+        effects: [%Damage{type: :damage, value: 10}],
+        cost: 1,
         targeting: %{
           "type" => "character",
           "rule" => %{
             "and" => [
               %{"var" => "target.occupied"},
-              # Current player must have at least 3 AP
               %{
                 ">=" => [
                   %{"var" => "state.combat.current_turn.player.ap"},
@@ -400,19 +329,10 @@ defmodule Game.CardTest do
         }
       }
 
-      card = %Card{
-        id: 1,
-        name: "Heavy Strike",
-        effects: [damage_effect],
-        cost: 1
-      }
-
-      # Setup grid with enemy
       grid = Grid.new({2, 2, 2})
       enemy = %Character{id: 2, position: {0, 0, 0}, name: "Enemy", team: :enemy}
       grid = Grid.update_character(grid, enemy)
 
-      # Setup current player with insufficient AP
       player = %Character{
         id: 1,
         position: {1, 0, -1},
@@ -431,7 +351,6 @@ defmodule Game.CardTest do
         }
       }
 
-      # Should be invalid - player doesn't have enough AP
       assert Card.is_target_cell_valid?(card, {0, 0, 0}, combat) ==
                {:error, "Target does not match targeting rule"}
     end

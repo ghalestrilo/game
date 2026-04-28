@@ -1,0 +1,31 @@
+# fly.toml app configuration file generated for hexdecks-db on 2026-04-28T10:49:07-03:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'hexdecks-db'
+primary_region = 'gru'
+
+[build]
+  image = 'postgres:16-alpine'
+
+[env]
+  PGDATA = '/data/pgdata'
+  POSTGRES_DB = 'hexdecks_prod'
+  POSTGRES_USER = 'hexdecks'
+
+[[mounts]]
+  source = 'pg_data'
+  destination = '/data'
+
+[[services]]
+  protocol = 'tcp'
+  internal_port = 5432
+
+  [[services.ports]]
+    port = 5432
+
+[[vm]]
+  memory = '256mb'
+  cpu_kind = 'shared'
+  cpus = 1

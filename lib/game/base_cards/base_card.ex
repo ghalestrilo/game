@@ -22,7 +22,7 @@ defmodule Game.BaseCards.BaseCard do
     use StructAccess
     import Ecto.Changeset
 
-    @derive {Jason.Encoder, only: [:type, :value, :aoe, :range, :multi, :scaling, :conditional, :targeting]}
+    @derive {Jason.Encoder, only: [:type, :value, :aoe, :range, :multi, :scaling, :conditional]}
     @primary_key false
     embedded_schema do
       field :type, :string
@@ -32,12 +32,11 @@ defmodule Game.BaseCards.BaseCard do
       field :multi, :integer
       field :scaling, :string
       field :conditional, :map
-      field :targeting, :map
     end
 
     def changeset(effect, attrs) do
       effect
-      |> cast(attrs, [:type, :value, :aoe, :range, :multi, :scaling, :conditional, :targeting])
+      |> cast(attrs, [:type, :value, :aoe, :range, :multi, :scaling, :conditional])
       |> validate_required([:type])
     end
   end
@@ -48,6 +47,7 @@ defmodule Game.BaseCards.BaseCard do
     field :ap, :integer
     field :headline, :string
     field :rarity, Ecto.Enum, values: [:common, :uncommon, :rare, :legendary]
+    field :targeting, :map
 
     timestamps(type: :utc_datetime)
   end
@@ -55,7 +55,7 @@ defmodule Game.BaseCards.BaseCard do
   @doc false
   def changeset(base_card, attrs) do
     base_card
-    |> cast(attrs, [:name, :ap, :headline, :rarity])
+    |> cast(attrs, [:name, :ap, :headline, :rarity, :targeting])
     |> cast_embed(:effects,
       with: &Effect.changeset/2,
       sort_param: :effects_order,

@@ -1,12 +1,9 @@
 defprotocol Game.Combat.CardEffect do
-  defstruct [:type, :value, :targeting]
-
-  @type targeting() :: %{optional(String.t()) => any()} | nil
+  defstruct [:type, :value]
 
   @type t() :: %{
           type: String.t() | atom(),
-          value: any(),
-          targeting: targeting()
+          value: any()
         }
 
   @spec process(t(), any(), CombatState.t()) :: CombatState.t()

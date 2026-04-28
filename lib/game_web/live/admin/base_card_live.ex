@@ -44,6 +44,10 @@ defmodule GameWeb.Admin.BaseCardLive do
           {"Legendary", :legendary}
         ]
       },
+      targeting: %{
+        module: GameWeb.Admin.Fields.TargetingField,
+        label: "Targeting"
+      },
       effects: %{
         module: Backpex.Fields.InlineCRUD,
         label: "Effects",
@@ -59,10 +63,6 @@ defmodule GameWeb.Admin.BaseCardLive do
           value: %{
             module: Backpex.Fields.Text,
             label: "Value"
-          },
-          targeting: %{
-            module: GameWeb.Admin.Fields.TargetingField,
-            label: "Targeting"
           }
         ]
       }
@@ -83,22 +83,13 @@ defmodule GameWeb.Admin.BaseCardLive do
 
   def changeset(item, attrs, _metadata) do
     attrs
-    |> parse_targeting_in_effects()
+    |> parse_targeting()
     |> then(&Game.BaseCards.BaseCard.changeset(item, &1))
   end
 
-  defp parse_targeting_in_effects(%{"effects" => effects} = attrs) when is_list(effects) do
-    parsed =
-      Enum.map(effects, fn
-        %{"targeting" => %{"rule" => rule_params} = targeting} = effect ->
-          %{effect | "targeting" => %{targeting | "rule" => Game.Formula.parse_params(rule_params)}}
-
-        effect ->
-          effect
-      end)
-
-    %{attrs | "effects" => parsed}
+  defp parse_targeting(%{"targeting" => %{"rule" => rule_params} = targeting} = attrs) do
+    %{attrs | "targeting" => %{targeting | "rule" => Game.Formula.parse_params(rule_params)}}
   end
 
-  defp parse_targeting_in_effects(attrs), do: attrs
+  defp parse_targeting(attrs), do: attrs
 end

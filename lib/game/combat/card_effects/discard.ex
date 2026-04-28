@@ -6,17 +6,11 @@ defmodule Game.Combat.CardEffects.Discard do
 
   alias Game.CombatState
 
-  defstruct type: :discard,
-            value: 0,
-            targeting: %{
-              "type" => "character",
-              "rule" => %{"var" => "occupied"}
-            }
+  defstruct type: :discard, value: 0
 
   @type t() :: %__MODULE__{
           type: atom(),
-          value: integer(),
-          targeting: map() | nil
+          value: integer()
         }
 
   defimpl Game.Combat.CardEffect do
