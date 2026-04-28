@@ -35,6 +35,13 @@ defmodule GameWeb.LobbyLive do
   end
 
   @impl true
+  def handle_event("toggle_ready", _params, socket) do
+    user = socket.assigns.current_scope.user
+    Lobby.toggle_ready(socket.assigns.lobby_id, user.id)
+    {:noreply, socket}
+  end
+
+  @impl true
   def handle_info({:lobby_updated, lobby_state}, socket) do
     {:noreply, assign(socket, lobby: lobby_state)}
   end
@@ -56,9 +63,17 @@ defmodule GameWeb.LobbyLive do
       <%= if @lobby do %>
         <ul class="flex flex-col gap-2">
           <%= for player <- @lobby.players do %>
-            <li class="px-4 py-2 bg-secondary rounded"><%= player.email %></li>
+            <li class="px-4 py-2 bg-secondary rounded flex gap-2 items-center">
+              <%= player.email %>
+              <%= if player.ready do %>
+                <span>ready</span>
+              <% end %>
+            </li>
           <% end %>
         </ul>
+        <button phx-click="toggle_ready" class="px-4 py-2 rounded-2 bg-primary text-primary">
+          Ready
+        </button>
         <%= if @lobby.status == :ready do %>
           <p>Both players connected. Game starting soon...</p>
         <% else %>

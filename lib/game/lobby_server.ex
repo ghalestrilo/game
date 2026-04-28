@@ -17,6 +17,10 @@ defmodule Game.LobbyServer do
     GenServer.cast(via(id), {:leave, user_id})
   end
 
+  def toggle_ready(id, user_id) do
+    GenServer.call(via(id), {:toggle_ready, user_id})
+  end
+
   defp via(id), do: {:via, Registry, {Game.LobbyRegistry, id}}
 
   @impl true
@@ -39,13 +43,26 @@ defmodule Game.LobbyServer do
         {:reply, {:error, :full}, state}
 
       true ->
-        player = %{id: user.id, email: user.email}
+        player = %{id: user.id, email: user.email, ready: false}
         new_players = players ++ [player]
         new_status = if length(new_players) == 2, do: :ready, else: :waiting
         new_state = %{state | players: new_players, status: new_status}
         broadcast(new_state)
         {:reply, {:ok, new_state}, new_state}
     end
+  end
+
+  @impl true
+  def handle_call({:toggle_ready, user_id}, _from, state) do
+    new_players =
+      Enum.map(state.players, fn
+        %{id: ^user_id} = p -> %{p | ready: !p.ready}
+        p -> p
+      end)
+
+    new_state = %{state | players: new_players}
+    broadcast(new_state)
+    {:reply, {:ok, new_state}, new_state}
   end
 
   @impl true
