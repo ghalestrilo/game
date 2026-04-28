@@ -25,11 +25,15 @@ defmodule Game.LobbyServer do
     GenServer.call(via(id), {:select_class, user_id, class})
   end
 
+  def reset(id) do
+    GenServer.cast(via(id), :reset)
+  end
+
   defp via(id), do: {:via, Registry, {Game.LobbyRegistry, id}}
 
   @impl true
   def init(id) do
-    {:ok, %{id: id, players: [], status: :waiting}}
+    {:ok, %{id: id, players: [], status: :waiting, game_pid: nil}}
   end
 
   @impl true
@@ -63,12 +67,14 @@ defmodule Game.LobbyServer do
     if is_nil(player) or is_nil(player.class) do
       {:reply, {:ok, state}, state}
     else
-      new_players = Enum.map(state.players, fn
-        %{id: ^user_id} = p -> %{p | ready: !p.ready}
-        p -> p
-      end)
+      new_players =
+        Enum.map(state.players, fn
+          %{id: ^user_id} = p -> %{p | ready: !p.ready}
+          p -> p
+        end)
 
       new_state = %{state | players: new_players}
+      new_state = maybe_start_game(new_state)
       broadcast(new_state)
       {:reply, {:ok, new_state}, new_state}
     end
@@ -95,6 +101,36 @@ defmodule Game.LobbyServer do
     broadcast(new_state)
     {:noreply, new_state}
   end
+
+  @impl true
+  def handle_cast(:reset, state) do
+    new_players = Enum.map(state.players, &%{&1 | ready: false})
+    new_state = %{state | players: new_players, game_pid: nil}
+    broadcast(new_state)
+    {:noreply, new_state}
+  end
+
+  defp maybe_start_game(%{players: players, game_pid: nil} = state) do
+    all_ready = length(players) == 2 and Enum.all?(players, & &1.ready and not is_nil(&1.class))
+
+    if all_ready do
+      [p1, p2] = players
+
+      combat =
+        Game.CombatBuilder.build([
+          %{class: p1.class, team: 1, position: {0, 0, 0}, id: p1.id},
+          %{class: p2.class, team: 2, position: {2, -1, -1}, id: p2.id}
+        ])
+
+      {:ok, game_pid} = Game.start_link()
+      :ok = GenServer.call(game_pid, {:set_state, %{current_view: :combat, combat: combat}})
+      %{state | game_pid: game_pid}
+    else
+      state
+    end
+  end
+
+  defp maybe_start_game(state), do: state
 
   defp broadcast(state) do
     Phoenix.PubSub.broadcast(Game.PubSub, "lobby:#{state.id}", {:lobby_updated, state})

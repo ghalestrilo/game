@@ -56,17 +56,16 @@ defmodule GameWeb.LobbyLive do
   end
 
   @impl true
-  def handle_info({:lobby_updated, lobby_state}, socket) do
-    {:noreply, assign(socket, lobby: lobby_state)}
+  def handle_info({:lobby_updated, %{game_pid: game_pid, id: id} = lobby_state}, socket)
+      when not is_nil(game_pid) do
+    {:noreply,
+     socket
+     |> assign(lobby: lobby_state)
+     |> push_navigate(to: ~p"/multiplayer/#{id}/play")}
   end
 
-  @impl true
-  def terminate(_reason, socket) do
-    with %{lobby_id: id, current_scope: %{user: user}} when not is_nil(user) <- socket.assigns do
-      Lobby.leave(id, user.id)
-    end
-
-    :ok
+  def handle_info({:lobby_updated, lobby_state}, socket) do
+    {:noreply, assign(socket, lobby: lobby_state)}
   end
 
   @impl true

@@ -90,6 +90,7 @@ defmodule GameWeb.Router do
       on_mount: [{GameWeb.UserAuth, :require_authenticated}] do
       live "/multiplayer", MultiplayerLive
       live "/multiplayer/:id", LobbyLive
+      live "/multiplayer/:id/play", MultiplayerPlayLive
     end
 
     post "/users/update-password", UserSessionController, :update_password

@@ -369,83 +369,10 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
   end
 
   defp initialize_combat_from_campaign(campaign) do
-    # Use the campaign character (with its updated deck) and reset HP/AP
-    char = campaign.character
-
-    player_character =
-      char
-      |> Map.put(:hp, Character.get_max_hp(char))
-      |> Map.put(:ap, Character.get_max_ap(char))
-      |> Map.put(:position, {0, 0, 0})
-      |> Map.put(:team, 1)
-      |> Map.put(:id, 0)
-      |> Map.put(:dead, false)
-      # Reset card piles but keep the deck (draw pile)
-      |> Map.update!(:cards, fn cards ->
-        %{
-          draw: Enum.shuffle(cards.draw),
-          hand: [],
-          discard: []
-        }
-      end)
-      |> Character.draw_cards(5)
-
-    # Create wolf enemy from database
-    wolf_character =
-      :wolf
-      |> to_string()
-      |> Content.get_base_class_by_class!()
-      |> Character.from_character_data()
-      |> Character.shuffle_deck()
-      |> Map.put(:position, {2, -1, -1})
-      |> Map.put(:team, 2)
-      |> Map.put(:id, 1)
-      |> Character.draw_cards(5)
-
-    characters = [player_character, wolf_character]
-
-    # Create grid
-    positions = [{0, 0, 0}, {2, -1, -1}]
-
-    max_radius =
-      positions
-      |> Enum.map(&Game.Grid.normalize/1)
-      |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end)
-      |> Enum.max()
-
-    padded_radius = max_radius + 1
-    grid = Game.Grid.new({padded_radius, padded_radius, padded_radius})
-
-    # Update the grid with the characters
-    grid = Enum.reduce(characters, grid, &Game.Grid.update_character(&2, &1))
-
-    # Create combat struct
-    shop_cards = generate_shop_cards(4)
-
-    %Game.CombatState{
-      state: :running,
-      __constants__: %{players: characters},
-      queue: characters,
-      grid: grid,
-      shop_cards: shop_cards
-    }
-    |> Game.CombatState.initialize_queue()
-    |> Game.CombatState.setup_player_turn()
-  end
-
-  # Helper function to generate random shop cards
-  defp generate_shop_cards(count) do
-    all_cards = [
-      Game.Fixtures.attack_card(),
-      Game.Fixtures.heal_card(),
-      Game.Fixtures.fireball_card(),
-      Game.Fixtures.expensive_card()
-    ]
-
-    all_cards
-    |> Enum.take(count)
-    |> Enum.with_index()
-    |> Enum.map(fn {card, idx} -> %{card | id: idx + 1000} end)
+    Game.CombatBuilder.build([
+      %{character: campaign.character, team: 1, position: {0, 0, 0}, id: 0},
+      %{class: "wolf", team: 2, position: {2, -1, -1}, id: 1}
+    ])
   end
 
   defp process_game_action(socket, action) do

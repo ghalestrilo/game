@@ -35,6 +35,13 @@ defmodule Game.Lobby do
     end
   end
 
+  def reset(id) do
+    case Registry.lookup(Game.LobbyRegistry, id) do
+      [{_pid, _}] -> LobbyServer.reset(id)
+      [] -> :ok
+    end
+  end
+
   def leave(id, user_id) do
     case Registry.lookup(Game.LobbyRegistry, id) do
       [{_pid, _}] -> LobbyServer.leave(id, user_id)
