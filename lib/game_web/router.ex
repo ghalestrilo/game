@@ -1,6 +1,8 @@
 defmodule GameWeb.Router do
   use GameWeb, :router
 
+  import Backpex.Router
+
   pipeline :browser do
     plug :accepts, ["html"]
     plug :fetch_session
@@ -34,28 +36,16 @@ defmodule GameWeb.Router do
   scope "/admin", GameWeb do
     pipe_through :browser
 
-    live "/", Admin.AdminMenuLive
+    backpex_routes()
 
-    live "/basecards", BaseCardLive.Index, :index
-    live "/basecards/new", BaseCardLive.Index, :new
-    live "/basecards/:id/edit", BaseCardLive.Index, :edit
+    live_session :admin,
+      on_mount: Backpex.InitAssigns do
+      live "/", Admin.HomeLive
 
-    live "/basecards/:id", BaseCardLive.Show, :show
-    live "/basecards/:id/show/edit", BaseCardLive.Show, :edit
-
-    live "/basedecks", BaseDeckLive.Index, :index
-    live "/basedecks/new", BaseDeckLive.Index, :new
-    live "/basedecks/:id/edit", BaseDeckLive.Index, :edit
-
-    live "/basedecks/:id", BaseDeckLive.Show, :show
-    live "/basedecks/:id/show/edit", BaseDeckLive.Show, :edit
-
-    live "/base_classes", BaseClassLive.Index, :index
-    live "/base_classes/new", BaseClassLive.Index, :new
-    live "/base_classes/:id/edit", BaseClassLive.Index, :edit
-
-    live "/base_classes/:id", BaseClassLive.Show, :show
-    live "/base_classes/:id/show/edit", BaseClassLive.Show, :edit
+      live_resources "/base_cards", Admin.BaseCardLive
+      live_resources "/base_decks", Admin.BaseDeckLive
+      live_resources "/base_classes", Admin.BaseClassLive
+    end
   end
 
   # Test routes (only available in test environment)

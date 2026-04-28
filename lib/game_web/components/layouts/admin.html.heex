@@ -1,0 +1,34 @@
+<Backpex.HTML.Layout.app_shell fluid={@fluid?} live_resource={assigns[:live_resource]}>
+  <:topbar>
+    <Backpex.HTML.Layout.topbar_branding />
+    <Backpex.HTML.Layout.topbar_dropdown class="mr-2 md:mr-0">
+      <:label>
+        <div class="btn btn-square btn-ghost">
+          <Backpex.HTML.CoreComponents.icon name="hero-user" class="size-6" />
+        </div>
+      </:label>
+      <li>
+        <.link href="/" class="text-error flex justify-between hover:bg-base-200">
+          <p>Back to Game</p>
+          <Backpex.HTML.CoreComponents.icon name="hero-arrow-right-on-rectangle" class="size-5" />
+        </.link>
+      </li>
+    </Backpex.HTML.Layout.topbar_dropdown>
+  </:topbar>
+  <:sidebar>
+    <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/base_cards"}>
+      <Backpex.HTML.CoreComponents.icon name="hero-rectangle-stack" class="size-5" />
+      Base Cards
+    </Backpex.HTML.Layout.sidebar_item>
+    <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/base_decks"}>
+      <Backpex.HTML.CoreComponents.icon name="hero-squares-2x2" class="size-5" />
+      Base Decks
+    </Backpex.HTML.Layout.sidebar_item>
+    <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/base_classes"}>
+      <Backpex.HTML.CoreComponents.icon name="hero-user-group" class="size-5" />
+      Base Classes
+    </Backpex.HTML.Layout.sidebar_item>
+  </:sidebar>
+  <Backpex.HTML.Layout.flash_messages flash={@flash} />
+  {render_slot(@inner_block)}
+</Backpex.HTML.Layout.app_shell>
