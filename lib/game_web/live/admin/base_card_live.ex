@@ -64,6 +64,15 @@ defmodule GameWeb.Admin.BaseCardLive do
     ]
   end
 
+  @impl Backpex.LiveResource
+  def filters do
+    [
+      deck: %{
+        module: GameWeb.Admin.Filters.DeckFilter
+      }
+    ]
+  end
+
   def changeset(item, attrs, _metadata) do
     Game.BaseCards.BaseCard.changeset(item, attrs)
   end
