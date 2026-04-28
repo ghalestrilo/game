@@ -26,6 +26,16 @@ defmodule Game do
     GenServer.start_link(__MODULE__, opts)
   end
 
+  def subscribe(game_pid) do
+    Phoenix.PubSub.subscribe(Game.PubSub, topic(game_pid))
+  end
+
+  defp topic(game_pid), do: "game:#{inspect(game_pid)}"
+
+  defp broadcast(game_pid, state) do
+    Phoenix.PubSub.broadcast(Game.PubSub, topic(game_pid), {:game_updated, state})
+  end
+
   # Initialize combat with a random grid with two characters
   def init(_opts) do
     {:ok, @initial_state}
@@ -59,6 +69,10 @@ defmodule Game do
   """
   def get_state(game_pid) do
     GenServer.call(game_pid, :get_state)
+  end
+
+  def process_action(game_pid, action) do
+    GenServer.call(game_pid, {:process_action, action})
   end
 
   @doc """
@@ -167,6 +181,18 @@ defmodule Game do
 
   def handle_call({:set_state, new_state}, _from, _state) do
     {:reply, :ok, new_state}
+  end
+
+  def handle_call({:process_action, action}, _from, state) do
+    case Combat.process_action(state.combat, action) do
+      {:ok, updated_combat} ->
+        new_state = %{state | combat: updated_combat}
+        broadcast(self(), new_state)
+        {:reply, {:ok, new_state}, new_state}
+
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
   end
 
   def handle_call(:enter_shop, _from, state) do
