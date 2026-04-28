@@ -13,6 +13,8 @@ defmodule Game.Card do
     "summon" => CardEffects.Summon
   }
 
+  def effect_types, do: @effect_types
+
   defstruct [
     :id,
     :name,

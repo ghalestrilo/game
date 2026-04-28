@@ -51,8 +51,9 @@ defmodule GameWeb.Admin.BaseCardLive do
         type: :embed,
         child_fields: [
           type: %{
-            module: Backpex.Fields.Text,
-            label: "Type"
+            module: Backpex.Fields.Select,
+            label: "Type",
+            options: Game.Card.effect_types() |> Map.keys() |> Enum.map(&{String.capitalize(&1), &1})
           },
           value: %{
             module: Backpex.Fields.Text,
