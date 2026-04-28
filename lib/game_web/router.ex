@@ -86,6 +86,12 @@ defmodule GameWeb.Router do
       live "/users/settings/confirm-email/:token", UserLive.Settings, :confirm_email
     end
 
+    live_session :require_authenticated_multiplayer,
+      on_mount: [{GameWeb.UserAuth, :require_authenticated}] do
+      live "/multiplayer", MultiplayerLive
+      live "/multiplayer/:id", LobbyLive
+    end
+
     post "/users/update-password", UserSessionController, :update_password
   end
 

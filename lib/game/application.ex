@@ -14,8 +14,8 @@ defmodule Game.Application do
       {Phoenix.PubSub, name: Game.PubSub},
       # Start the Finch HTTP client for sending emails
       {Finch, name: Game.Finch},
-      # Start a worker by calling: Game.Worker.start_link(arg)
-      # {Game.Worker, arg},
+      {Registry, keys: :unique, name: Game.LobbyRegistry},
+      {DynamicSupervisor, strategy: :one_for_one, name: Game.LobbySupervisor},
       # Start to serve requests, typically the last entry
       GameWeb.Endpoint
     ]
