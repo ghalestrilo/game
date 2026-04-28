@@ -93,6 +93,8 @@ defmodule GameWeb do
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
 
+      alias GameWeb.Layouts
+
       # Routes generation with the ~p sigil
       unquote(verified_routes())
     end
