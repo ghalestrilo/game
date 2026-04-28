@@ -17,16 +17,16 @@
   </:topbar>
   <:sidebar>
     <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/base_cards"}>
-      <Backpex.HTML.CoreComponents.icon name="hero-rectangle-stack" class="size-5" />
-      Base Cards
+      <Backpex.HTML.CoreComponents.icon name="hero-rectangle-stack" class="size-5" /> Base Cards
     </Backpex.HTML.Layout.sidebar_item>
     <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/base_decks"}>
-      <Backpex.HTML.CoreComponents.icon name="hero-squares-2x2" class="size-5" />
-      Base Decks
+      <Backpex.HTML.CoreComponents.icon name="hero-squares-2x2" class="size-5" /> Base Decks
     </Backpex.HTML.Layout.sidebar_item>
-    <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/base_classes"}>
-      <Backpex.HTML.CoreComponents.icon name="hero-user-group" class="size-5" />
-      Base Classes
+    <Backpex.HTML.Layout.sidebar_item
+      current_url={@current_url}
+      navigate={~p"/admin/base_classes"}
+    >
+      <Backpex.HTML.CoreComponents.icon name="hero-user-group" class="size-5" /> Base Classes
     </Backpex.HTML.Layout.sidebar_item>
   </:sidebar>
   <Backpex.HTML.Layout.flash_messages flash={@flash} />

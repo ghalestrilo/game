@@ -128,6 +128,7 @@ defmodule Game.CombatState do
       |> Kernel.||(target)
 
     updated_target = %{current_target | dead: Character.is_dead?(current_target)}
+
     combat
     |> update_target(target, updated_target)
   end
@@ -199,6 +200,7 @@ defmodule Game.CombatState do
     case length(alive_teams) do
       n when n <= 1 ->
         %{combat | state: :game_over, queue: alive_queue, current_turn: updated_current_turn}
+
       _ ->
         %{combat | state: :running, queue: alive_queue, current_turn: updated_current_turn}
     end
@@ -298,11 +300,15 @@ defmodule Game.CombatState do
   Replaces a player in the combat state by ID, updating both queue and current_turn if necessary.
   Useful for test setup scenarios.
   """
-  def replace_player(%CombatState{queue: queue, current_turn: current_turn} = combat, updated_player) do
+  def replace_player(
+        %CombatState{queue: queue, current_turn: current_turn} = combat,
+        updated_player
+      ) do
     # Update queue
-    updated_queue = Enum.map(queue, fn p ->
-      if p.id == updated_player.id, do: updated_player, else: p
-    end)
+    updated_queue =
+      Enum.map(queue, fn p ->
+        if p.id == updated_player.id, do: updated_player, else: p
+      end)
 
     # Update current_turn if this is the current player
     updated_current_turn =

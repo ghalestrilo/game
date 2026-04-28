@@ -78,7 +78,6 @@ defmodule GameWeb.GameLiveTest do
   end
 
   describe "Combat sandbox demo" do
-
     @tag :skip
     test "Drawing a card changes turn to next character with a freshly drawn 5-card hand", %{
       conn: conn
@@ -141,5 +140,4 @@ defmodule GameWeb.GameLiveTest do
     |> element("[phx-value-target_position=\"0_0_0\"]")
     |> render_click()
   end
-
 end

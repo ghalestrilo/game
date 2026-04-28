@@ -75,6 +75,7 @@ defmodule Game.Character do
         else
           # Shield absorbs some damage, rest goes to HP
           remaining_damage = amount - shield_value
+
           character
           |> remove_status_effect(:shield)
           |> then(&%{&1 | hp: &1.hp - remaining_damage})

@@ -266,6 +266,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
           %{"==" => [%{"var" => ["team"]}, "ally"]}
         ]
       }
+
       send(view.pid, {:formula_updated, [], nested_formula})
 
       # Submit the form
@@ -367,6 +368,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
           %{"==" => [%{"var" => ["team"]}, "ally"]}
         ]
       }
+
       send(view.pid, {:formula_updated, [], nested_formula})
 
       view

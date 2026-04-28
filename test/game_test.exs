@@ -10,7 +10,6 @@ defmodule GameTest do
   end
 
   describe "full match simulation" do
-
     @tag :skip
 
     test "simulates a complete match with movement and combat", %{game_pid: game_pid} do

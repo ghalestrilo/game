@@ -209,6 +209,7 @@ defmodule Game.Card do
       # Handle map or struct effects that need to be structured
       effect when is_map(effect) ->
         structured_effect = get_structured_effect(effect)
+
         case structured_effect do
           %{targeting: %{"type" => type}} when is_binary(type) -> String.to_atom(type)
           _ -> :character
@@ -261,7 +262,9 @@ defmodule Game.Card do
         if result do
           # Rule passed, return appropriate result
           case targeting_type do
-            :tile -> {:ok, nil}
+            :tile ->
+              {:ok, nil}
+
             :character ->
               case position_result do
                 {:ok, character} when not is_nil(character) -> {:ok, character}

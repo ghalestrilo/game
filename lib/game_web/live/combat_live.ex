@@ -60,7 +60,7 @@ defmodule GameWeb.CombatLive do
                 {@game_state.combat.current_turn.player.name} ({@game_state.combat.current_turn.player.class})
               </div>
             <% end %>
-
+            
     <!-- Turn Queue Panel -->
             <div class="mt-4">
               <h3 class="text-lg font-bold mb-2">Turn Queue</h3>
@@ -69,22 +69,25 @@ defmodule GameWeb.CombatLive do
                   <li class="my-2 p-2 border border-gray-100 rounded">
                     <div class="pb-1 flex gap-1">
                       <span
-                        :for={hp <- 1..(Game.Character.get_max_hp(character))}
+                        :for={hp <- 1..Game.Character.get_max_hp(character)}
                         class={"#{if hp > character.hp, do: "bg-gray-300", else: "bg-green-300"} flex-1 h-1 rounded-[2px]"}
                       />
                     </div>
                     <div class="pb-1 flex gap-1">
                       <span
-                        :for={ap <- 1..(Game.Character.get_max_ap(character))}
+                        :for={ap <- 1..Game.Character.get_max_ap(character)}
                         class={"#{if ap > character.ap, do: "bg-gray-300", else: "bg-yellow-300"} flex-1 h-1 rounded-[2px]"}
                       />
                     </div>
                     <div class="pb-1 flex gap-1">
                       <span
-                        :for={_shield <- 1..(case Game.Character.get_status_effect(character, :shield) do
-                          %{value: value} -> value
-                          _ -> 0
-                        end)}
+                        :for={
+                          _shield <-
+                            1..case Game.Character.get_status_effect(character, :shield) do
+                              %{value: value} -> value
+                              _ -> 0
+                            end
+                        }
                         class="bg-blue-300 flex-1 h-1 rounded-[2px]"
                       />
                     </div>
@@ -94,7 +97,7 @@ defmodule GameWeb.CombatLive do
               </ul>
             </div>
           </div>
-
+          
     <!-- Game board -->
           <div class="game-board flex-1">
             <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
@@ -109,20 +112,23 @@ defmodule GameWeb.CombatLive do
                         # If distance from `:starting_position` is within `:movement_range` highlight the hex cell
                         if(
                           @game_state.combat.current_turn.player &&
-                          Grid.distance(
-                            @game_state.combat.grid,
-                            {q, r, s},
-                            Game.CombatState.get_current_turn(@game_state.combat).starting_position
-                          ) <=
-                            Game.CombatState.get_current_player(@game_state.combat).movement_range,
+                            Grid.distance(
+                              @game_state.combat.grid,
+                              {q, r, s},
+                              Game.CombatState.get_current_turn(@game_state.combat).starting_position
+                            ) <=
+                              Game.CombatState.get_current_player(@game_state.combat).movement_range,
                           do: "bg-yellow-50",
                           else: ""
                         ),
                         # If it's the current turn, highlight the hex cell
                         if(
                           @game_state.combat.current_turn.player &&
-                          find_character(Game.CombatState.get_current_queue(@game_state.combat), {q, r, s}) ==
-                            @game_state.combat.current_turn.player,
+                            find_character(
+                              Game.CombatState.get_current_queue(@game_state.combat),
+                              {q, r, s}
+                            ) ==
+                              @game_state.combat.current_turn.player,
                           do: "!bg-green-200",
                           else: ""
                         )
@@ -212,7 +218,8 @@ defmodule GameWeb.CombatLive do
         <%= if @game_state.combat.current_turn.player do %>
           <div class="card-row mt-4">
             <%= for {card, index} <- Enum.with_index(@game_state.combat.current_turn.player.cards.hand) do %>
-              <div :if={false}
+              <div
+                :if={false}
                 phx-click="pick_card"
                 phx-value-card_index={index}
                 class={[
@@ -230,7 +237,8 @@ defmodule GameWeb.CombatLive do
               <.card
                 selected={card == Map.get(@game_state.combat.current_turn, :card, nil)}
                 index={index}
-                card={card} />
+                card={card}
+              />
             <% end %>
           </div>
         <% end %>
@@ -247,8 +255,8 @@ defmodule GameWeb.CombatLive do
           <p>{Jason.encode!(@game_state)}</p>
         </details>
       </div> --%>
-
-      <!-- Game Over Modal -->
+      
+    <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}
         id="game-over-modal"
@@ -259,7 +267,8 @@ defmodule GameWeb.CombatLive do
           <h2 class="text-3xl font-bold mb-4">Combat Complete!</h2>
 
           <div class="mb-6">
-            <% remaining_teams = @game_state.combat.queue |> Enum.reject(&is_nil/1) |> Enum.map(& &1.team) |> Enum.uniq() %>
+            <% remaining_teams =
+              @game_state.combat.queue |> Enum.reject(&is_nil/1) |> Enum.map(& &1.team) |> Enum.uniq() %>
             <%= if length(remaining_teams) == 1 do %>
               <p class="text-xl mb-2">Team {Enum.at(remaining_teams, 0)} is victorious!</p>
             <% else %>
@@ -274,7 +283,9 @@ defmodule GameWeb.CombatLive do
                 <li class="flex items-center justify-center gap-2">
                   <span class="font-medium">{character.name}</span>
                   <span class="text-gray-600">({character.class})</span>
-                  <span class="text-sm">HP: {character.hp}/{Game.Character.get_max_hp(character)}</span>
+                  <span class="text-sm">
+                    HP: {character.hp}/{Game.Character.get_max_hp(character)}
+                  </span>
                 </li>
               <% end %>
             </ul>

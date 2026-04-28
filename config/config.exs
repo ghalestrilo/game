@@ -68,6 +68,7 @@ import_config "#{config_env()}.exs"
 
 {project_path, 0} = System.cmd("pwd", [])
 project_path = String.replace(project_path, ~r/\n/, "/")
+
 config :git_hooks,
   hooks: [
     pre_commit: [

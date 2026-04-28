@@ -19,14 +19,14 @@ defmodule Game.Combat do
       params
       |> Enum.with_index()
       |> Enum.map(fn {{{q, r, s}, classname, team}, idx} ->
-          classname
-          |> to_string()
-          |> Game.Content.get_base_class_by_class!()
-          |> Game.Character.from_character_data()
-          |> Game.Character.shuffle_deck()
-          |> Map.put(:position, {q, r, s})
-          |> Map.put(:team, team)
-          |> Map.put(:id, idx)
+        classname
+        |> to_string()
+        |> Game.Content.get_base_class_by_class!()
+        |> Game.Character.from_character_data()
+        |> Game.Character.shuffle_deck()
+        |> Map.put(:position, {q, r, s})
+        |> Map.put(:team, team)
+        |> Map.put(:id, idx)
       end)
 
     # Extract all positions from the initial state
@@ -166,7 +166,9 @@ defmodule Game.Combat do
               |> CombatState.process_card(target_for_processing, card)
               |> then(fn combat ->
                 # Only check target death for character targeting
-                if is_nil(target), do: combat, else: CombatState.check_target_death(combat, target)
+                if is_nil(target),
+                  do: combat,
+                  else: CombatState.check_target_death(combat, target)
               end)
               |> CombatState.refresh_grid()
               |> CombatState.check_game_over()
@@ -294,5 +296,4 @@ defmodule Game.Combat do
       # "taunt"
     ]
   end
-
 end

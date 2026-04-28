@@ -116,7 +116,8 @@ defmodule Game.CardTest do
       grid = Grid.update_character(grid, character)
       combat = %CombatState{grid: grid}
 
-      assert Card.is_target_cell_valid?(card, {0, 0, 0}, combat) == {:error, "Target does not match targeting rule"}
+      assert Card.is_target_cell_valid?(card, {0, 0, 0}, combat) ==
+               {:error, "Target does not match targeting rule"}
     end
 
     test "heal effect with ally-only targeting validates ally characters" do
@@ -178,7 +179,8 @@ defmodule Game.CardTest do
       grid = Grid.update_character(grid, enemy)
       combat = %CombatState{grid: grid}
 
-      assert Card.is_target_cell_valid?(card, {0, 0, 0}, combat) == {:error, "Target does not match targeting rule"}
+      assert Card.is_target_cell_valid?(card, {0, 0, 0}, combat) ==
+               {:error, "Target does not match targeting rule"}
     end
 
     test "damage effect with enemy-only targeting validates enemy characters" do
@@ -238,7 +240,15 @@ defmodule Game.CardTest do
       grid = Grid.new({2, 2, 2})
 
       # Wounded ally should be valid
-      wounded_ally = %Character{id: 1, position: {0, 0, 0}, name: "Wounded", team: :ally, hp: 5, max_hp: 10}
+      wounded_ally = %Character{
+        id: 1,
+        position: {0, 0, 0},
+        name: "Wounded",
+        team: :ally,
+        hp: 5,
+        max_hp: 10
+      }
+
       grid = Grid.update_character(grid, wounded_ally)
       current_player = %Character{id: 2, position: {1, 0, -1}, name: "Player", team: :ally}
       combat = %CombatState{grid: grid, current_turn: 0, queue: [current_player, wounded_ally]}
@@ -273,12 +283,21 @@ defmodule Game.CardTest do
       grid = Grid.new({2, 2, 2})
 
       # Full health ally should be invalid
-      healthy_ally = %Character{id: 1, position: {0, 0, 0}, name: "Healthy", team: :ally, hp: 10, max_hp: 10}
+      healthy_ally = %Character{
+        id: 1,
+        position: {0, 0, 0},
+        name: "Healthy",
+        team: :ally,
+        hp: 10,
+        max_hp: 10
+      }
+
       grid = Grid.update_character(grid, healthy_ally)
       current_player = %Character{id: 2, position: {1, 0, -1}, name: "Player", team: :ally}
       combat = %CombatState{grid: grid, current_turn: 0, queue: [current_player, healthy_ally]}
 
-      assert Card.is_target_cell_valid?(card, {0, 0, 0}, combat) == {:error, "Target does not match targeting rule"}
+      assert Card.is_target_cell_valid?(card, {0, 0, 0}, combat) ==
+               {:error, "Target does not match targeting rule"}
     end
 
     test "card with multiple effects uses first effect's targeting type" do
@@ -319,10 +338,12 @@ defmodule Game.CardTest do
             "and" => [
               %{"var" => "target.occupied"},
               # Target must be on a different team than current player
-              %{"!=" => [
-                %{"var" => "target.team"},
-                %{"var" => "state.combat.current_turn.player.team"}
-              ]}
+              %{
+                "!=" => [
+                  %{"var" => "target.team"},
+                  %{"var" => "state.combat.current_turn.player.team"}
+                ]
+              }
             ]
           }
         }
@@ -368,10 +389,12 @@ defmodule Game.CardTest do
             "and" => [
               %{"var" => "target.occupied"},
               # Current player must have at least 3 AP
-              %{">=" => [
-                %{"var" => "state.combat.current_turn.player.ap"},
-                3
-              ]}
+              %{
+                ">=" => [
+                  %{"var" => "state.combat.current_turn.player.ap"},
+                  3
+                ]
+              }
             ]
           }
         }
@@ -390,7 +413,14 @@ defmodule Game.CardTest do
       grid = Grid.update_character(grid, enemy)
 
       # Setup current player with insufficient AP
-      player = %Character{id: 1, position: {1, 0, -1}, name: "Player", team: :ally, ap: 2, max_ap: 5}
+      player = %Character{
+        id: 1,
+        position: {1, 0, -1},
+        name: "Player",
+        team: :ally,
+        ap: 2,
+        max_ap: 5
+      }
 
       combat = %CombatState{
         grid: grid,
@@ -403,7 +433,7 @@ defmodule Game.CardTest do
 
       # Should be invalid - player doesn't have enough AP
       assert Card.is_target_cell_valid?(card, {0, 0, 0}, combat) ==
-             {:error, "Target does not match targeting rule"}
+               {:error, "Target does not match targeting rule"}
     end
   end
 end

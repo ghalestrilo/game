@@ -125,7 +125,7 @@ defmodule GameWeb.FormulaEditorComponent do
       <option value="">-- Select operator --</option>
       <%= for op <- list_available_keywords() do %>
         <option value={op} selected={op == @operator}>
-          <%= op %> - <%= Formula.operator_metadata(op).description %>
+          {op} - {Formula.operator_metadata(op).description}
         </option>
       <% end %>
     </select>
@@ -268,6 +268,7 @@ defmodule GameWeb.FormulaEditorComponent do
   # Private helper functions
 
   defp extract_operator_value(%{"value" => operator}, _field, _path), do: operator
+
   defp extract_operator_value(params, field, path) do
     # Navigate through nested params structure
     # For root: %{"formula" => %{"operator" => ">"}}

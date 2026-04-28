@@ -35,15 +35,23 @@ defmodule Game.Deck do
       count_col_width = 5
 
       # Build separator line
-      separator = "+" <> String.duplicate("-", name_col_width + 2) <> "+" <> String.duplicate("-", count_col_width + 2) <> "+"
+      separator =
+        "+" <>
+          String.duplicate("-", name_col_width + 2) <>
+          "+" <> String.duplicate("-", count_col_width + 2) <> "+"
 
       # Build header
-      header = "| " <> String.pad_trailing("name", name_col_width) <> " | " <> String.pad_trailing("count", count_col_width) <> " |"
+      header =
+        "| " <>
+          String.pad_trailing("name", name_col_width) <>
+          " | " <> String.pad_trailing("count", count_col_width) <> " |"
 
       # Build rows
       rows =
         Enum.map(card_frequencies, fn {name, count} ->
-          "| " <> String.pad_trailing(name, name_col_width) <> " | " <> String.pad_trailing(to_string(count), count_col_width) <> " |"
+          "| " <>
+            String.pad_trailing(name, name_col_width) <>
+            " | " <> String.pad_trailing(to_string(count), count_col_width) <> " |"
         end)
 
       # Combine all parts

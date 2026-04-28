@@ -27,7 +27,11 @@ defmodule Game.Combat.CardEffects.Summon do
     alias Game.{Character, Content, CombatState}
 
     @impl Game.Combat.CardEffect
-    def process(%Summon{value: class_name} = _effect, target_position, %CombatState{} = combat_state)
+    def process(
+          %Summon{value: class_name} = _effect,
+          target_position,
+          %CombatState{} = combat_state
+        )
         when is_tuple(target_position) do
       current_player = CombatState.get_current_player(combat_state)
 
@@ -49,7 +53,11 @@ defmodule Game.Combat.CardEffects.Summon do
       updated_grid = %{
         combat_state.grid
         | tiles:
-            Map.update!(combat_state.grid.tiles, target_position, &%{&1 | occupied_by: summoned_character})
+            Map.update!(
+              combat_state.grid.tiles,
+              target_position,
+              &%{&1 | occupied_by: summoned_character}
+            )
       }
 
       %{combat_state | queue: updated_queue, grid: updated_grid}

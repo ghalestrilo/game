@@ -24,6 +24,7 @@ defmodule Game.CombatTest do
 
     # Create a small grid with mage and fighter placed adjacently (distance 1 for attack card range)
     mage = %{mage | position: {1, 0, -1}}
+
     grid = %Grid{
       tiles: %{
         {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
@@ -87,11 +88,24 @@ defmodule Game.CombatTest do
   describe "play_card with not enough AP" do
     setup %{combat_state: combat_state, fighter: fighter} do
       # Add expensive card to hand for this test
-      fighter_with_expensive = %{fighter | cards: %{fighter.cards | hand: [fighter.cards.hand | [@cards.expensive]] |> List.flatten()}}
-      combat_state = %{combat_state | current_turn: %{combat_state.current_turn | player: fighter_with_expensive}}
+      fighter_with_expensive = %{
+        fighter
+        | cards: %{
+            fighter.cards
+            | hand: [fighter.cards.hand | [@cards.expensive]] |> List.flatten()
+          }
+      }
+
+      combat_state = %{
+        combat_state
+        | current_turn: %{combat_state.current_turn | player: fighter_with_expensive}
+      }
 
       {:ok, updated_combat} =
-        Combat.process_action(combat_state, {:pick_card, fighter_with_expensive, @cards.expensive})
+        Combat.process_action(
+          combat_state,
+          {:pick_card, fighter_with_expensive, @cards.expensive}
+        )
 
       result = Combat.process_action(updated_combat, {:play_card, {2, 0, -2}})
 
@@ -109,7 +123,6 @@ defmodule Game.CombatTest do
 
   describe "play_card with damage effect" do
     setup %{combat_state: combat_state, fighter: fighter, mage: mage} do
-
       # First pick the card
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
@@ -375,8 +388,19 @@ defmodule Game.CombatTest do
       fighter = Fixtures.fighter()
 
       # Create two identical attack cards for the fighter with sufficient range
-      attack_card1 = %{Fixtures.attack_card() | id: 1, effects: [%{"type" => "damage", "value" => 5}], range: 2}
-      attack_card2 = %{Fixtures.attack_card() | id: 2, effects: [%{"type" => "damage", "value" => 5}], range: 2}
+      attack_card1 = %{
+        Fixtures.attack_card()
+        | id: 1,
+          effects: [%{"type" => "damage", "value" => 5}],
+          range: 2
+      }
+
+      attack_card2 = %{
+        Fixtures.attack_card()
+        | id: 2,
+          effects: [%{"type" => "damage", "value" => 5}],
+          range: 2
+      }
 
       # Set positions for both characters
       fighter = %{fighter | position: {1, 0, -1}}
@@ -492,9 +516,14 @@ defmodule Game.CombatTest do
 
       # Add card to fighter's hand
       fighter_with_card = %{fighter | cards: %{fighter.cards | hand: [mixed_card]}}
-      combat_state = %{combat_state | current_turn: %{combat_state.current_turn | player: fighter_with_card}}
 
-      {:ok, combat_state: combat_state, fighter: fighter_with_card, mage: mage, mixed_card: mixed_card}
+      combat_state = %{
+        combat_state
+        | current_turn: %{combat_state.current_turn | player: fighter_with_card}
+      }
+
+      {:ok,
+       combat_state: combat_state, fighter: fighter_with_card, mage: mage, mixed_card: mixed_card}
     end
 
     test "card plays successfully and ignores unimplemented effects", %{
@@ -504,7 +533,8 @@ defmodule Game.CombatTest do
       mixed_card: mixed_card
     } do
       # Pick the card with mixed effects
-      {:ok, updated_combat} = Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
+      {:ok, updated_combat} =
+        Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
 
       # Play the card on the mage
       result = Combat.process_action(updated_combat, {:play_card, mage.position})
@@ -522,7 +552,9 @@ defmodule Game.CombatTest do
       original_mage_hp = mage.hp
 
       # Pick and play the card
-      {:ok, updated_combat} = Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
+      {:ok, updated_combat} =
+        Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
+
       {:ok, final_combat} = Combat.process_action(updated_combat, {:play_card, mage.position})
 
       # Get updated mage
@@ -539,7 +571,9 @@ defmodule Game.CombatTest do
       mixed_card: mixed_card
     } do
       # Pick and play the card
-      {:ok, updated_combat} = Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
+      {:ok, updated_combat} =
+        Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
+
       result = Combat.process_action(updated_combat, {:play_card, mage.position})
 
       # Should not return an error
@@ -554,7 +588,9 @@ defmodule Game.CombatTest do
       mixed_card: mixed_card
     } do
       # Pick and play the card
-      {:ok, updated_combat} = Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
+      {:ok, updated_combat} =
+        Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
+
       {:ok, final_combat} = Combat.process_action(updated_combat, {:play_card, mage.position})
 
       updated_fighter = final_combat.current_turn.player

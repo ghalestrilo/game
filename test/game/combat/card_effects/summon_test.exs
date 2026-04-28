@@ -66,8 +66,7 @@ defmodule Game.Combat.CardEffects.SummonTest do
      summon_effect: summon_effect,
      target_position: target_position,
      warrior: warrior,
-     minion_class: minion_class
-    }
+     minion_class: minion_class}
   end
 
   describe "Summon effect" do

@@ -49,11 +49,11 @@ defmodule GameWeb.Router do
   end
 
   # Test routes (only available in test environment)
-    scope "/", GameWeb do
-      pipe_through :browser
+  scope "/", GameWeb do
+    pipe_through :browser
 
-      live "/formula-editor-test", FormulaEditorTestLive
-    end
+    live "/formula-editor-test", FormulaEditorTestLive
+  end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:game, :dev_routes) do

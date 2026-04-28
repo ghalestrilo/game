@@ -1,5 +1,6 @@
 defmodule GameWeb.Admin.BaseDeckLive do
   use Backpex.LiveResource,
+    init_order: %{by: :name, direction: :asc},
     adapter_config: [
       schema: Game.BaseDecks.BaseDeck,
       repo: Game.Repo,
@@ -23,6 +24,27 @@ defmodule GameWeb.Admin.BaseDeckLive do
         module: Backpex.Fields.Text,
         label: "Name",
         searchable: true
+      },
+      base_deck_cards: %{
+        module: Backpex.Fields.InlineCRUD,
+        label: "Cards",
+        orderable: false,
+        type: :assoc,
+        except: [:index],
+        child_fields: [
+          card_id: %{
+            module: Backpex.Fields.Select,
+            label: "Card",
+            options:
+              Game.Repo.all(Game.BaseCards.BaseCard)
+              |> Enum.map(&{&1.name, &1.id})
+              |> Enum.sort_by(&elem(&1, 0))
+          },
+          count: %{
+            module: Backpex.Fields.Number,
+            label: "Count"
+          }
+        ]
       }
     ]
   end
@@ -56,7 +78,8 @@ defmodule GameWeb.Admin.BaseDeckLive do
     def handle(socket, [item | _], _params) do
       socket
       |> Phoenix.LiveView.push_navigate(
-        to: "/admin/base_cards?filters[deck]=#{item.id}&page=1&order_by=name&order_direction=asc&per_page=100"
+        to:
+          "/admin/base_cards?filters[deck]=#{item.id}&page=1&order_by=name&order_direction=asc&per_page=100"
       )
       |> ok()
     end

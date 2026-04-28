@@ -16,7 +16,11 @@ defmodule Game.BaseDecks.BaseDeck do
   def changeset(base_deck, attrs) do
     base_deck
     |> cast(attrs, [:name])
-    |> cast_assoc(:base_deck_cards, with: &Game.Content.BaseDeckCard.changeset/2)
+    |> cast_assoc(:base_deck_cards,
+      with: &Game.Content.BaseDeckCard.changeset/2,
+      sort_param: :base_deck_cards_order,
+      drop_param: :base_deck_cards_delete
+    )
     |> validate_required([:name])
     |> unique_constraint(:name)
   end

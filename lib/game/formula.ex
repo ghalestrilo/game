@@ -70,37 +70,104 @@ defmodule Game.Formula do
   @spec operator_metadata(String.t()) :: map()
   def operator_metadata(operator) do
     case operator do
-      "var" -> %{arity: :variable, args: [:string_or_number], description: "Get variable value", min_args: 1, max_args: 2}
-      "==" -> %{arity: 2, args: [:any, :any], description: "Equal (loose)"}
-      "===" -> %{arity: 2, args: [:any, :any], description: "Equal (strict)"}
-      "!=" -> %{arity: 2, args: [:any, :any], description: "Not equal (loose)"}
-      "!==" -> %{arity: 2, args: [:any, :any], description: "Not equal (strict)"}
-      "!" -> %{arity: 1, args: [:any], description: "Logical NOT"}
-      "!!" -> %{arity: 1, args: [:any], description: "Truthy"}
-      "if" -> %{arity: :variable, args: [:any], description: "If-then-else", min_args: 3}
-      "or" -> %{arity: :variable, args: [:any], description: "Logical OR", min_args: 1}
-      "and" -> %{arity: :variable, args: [:any], description: "Logical AND", min_args: 1}
-      ">" -> %{arity: :variable, args: [:number], description: "Greater than", min_args: 2}
-      ">=" -> %{arity: :variable, args: [:number], description: "Greater than or equal", min_args: 2}
-      "<" -> %{arity: :variable, args: [:number], description: "Less than", min_args: 2}
-      "<=" -> %{arity: :variable, args: [:number], description: "Less than or equal", min_args: 2}
-      "max" -> %{arity: :variable, args: [:number], description: "Maximum value", min_args: 1}
-      "min" -> %{arity: :variable, args: [:number], description: "Minimum value", min_args: 1}
-      "+" -> %{arity: :variable, args: [:number], description: "Addition", min_args: 1}
-      "-" -> %{arity: :variable, args: [:number], description: "Subtraction", min_args: 1}
-      "*" -> %{arity: :variable, args: [:number], description: "Multiplication", min_args: 1}
-      "/" -> %{arity: 2, args: [:number, :number], description: "Division"}
-      "%" -> %{arity: 2, args: [:number, :number], description: "Modulo"}
-      "map" -> %{arity: 2, args: [:array, :formula], description: "Map over array"}
-      "filter" -> %{arity: 2, args: [:array, :formula], description: "Filter array"}
-      "reduce" -> %{arity: 3, args: [:array, :formula, :any], description: "Reduce array"}
-      "all" -> %{arity: 2, args: [:array, :formula], description: "All elements match"}
-      "none" -> %{arity: 2, args: [:array, :formula], description: "No elements match"}
-      "some" -> %{arity: 2, args: [:array, :formula], description: "Some elements match"}
-      "in" -> %{arity: 2, args: [:any, :array_or_string], description: "Contains"}
-      "cat" -> %{arity: :variable, args: [:any], description: "Concatenate strings", min_args: 1}
-      "log" -> %{arity: 1, args: [:any], description: "Log value"}
-      _ -> %{arity: 0, args: [], description: "Unknown operator"}
+      "var" ->
+        %{
+          arity: :variable,
+          args: [:string_or_number],
+          description: "Get variable value",
+          min_args: 1,
+          max_args: 2
+        }
+
+      "==" ->
+        %{arity: 2, args: [:any, :any], description: "Equal (loose)"}
+
+      "===" ->
+        %{arity: 2, args: [:any, :any], description: "Equal (strict)"}
+
+      "!=" ->
+        %{arity: 2, args: [:any, :any], description: "Not equal (loose)"}
+
+      "!==" ->
+        %{arity: 2, args: [:any, :any], description: "Not equal (strict)"}
+
+      "!" ->
+        %{arity: 1, args: [:any], description: "Logical NOT"}
+
+      "!!" ->
+        %{arity: 1, args: [:any], description: "Truthy"}
+
+      "if" ->
+        %{arity: :variable, args: [:any], description: "If-then-else", min_args: 3}
+
+      "or" ->
+        %{arity: :variable, args: [:any], description: "Logical OR", min_args: 1}
+
+      "and" ->
+        %{arity: :variable, args: [:any], description: "Logical AND", min_args: 1}
+
+      ">" ->
+        %{arity: :variable, args: [:number], description: "Greater than", min_args: 2}
+
+      ">=" ->
+        %{arity: :variable, args: [:number], description: "Greater than or equal", min_args: 2}
+
+      "<" ->
+        %{arity: :variable, args: [:number], description: "Less than", min_args: 2}
+
+      "<=" ->
+        %{arity: :variable, args: [:number], description: "Less than or equal", min_args: 2}
+
+      "max" ->
+        %{arity: :variable, args: [:number], description: "Maximum value", min_args: 1}
+
+      "min" ->
+        %{arity: :variable, args: [:number], description: "Minimum value", min_args: 1}
+
+      "+" ->
+        %{arity: :variable, args: [:number], description: "Addition", min_args: 1}
+
+      "-" ->
+        %{arity: :variable, args: [:number], description: "Subtraction", min_args: 1}
+
+      "*" ->
+        %{arity: :variable, args: [:number], description: "Multiplication", min_args: 1}
+
+      "/" ->
+        %{arity: 2, args: [:number, :number], description: "Division"}
+
+      "%" ->
+        %{arity: 2, args: [:number, :number], description: "Modulo"}
+
+      "map" ->
+        %{arity: 2, args: [:array, :formula], description: "Map over array"}
+
+      "filter" ->
+        %{arity: 2, args: [:array, :formula], description: "Filter array"}
+
+      "reduce" ->
+        %{arity: 3, args: [:array, :formula, :any], description: "Reduce array"}
+
+      "all" ->
+        %{arity: 2, args: [:array, :formula], description: "All elements match"}
+
+      "none" ->
+        %{arity: 2, args: [:array, :formula], description: "No elements match"}
+
+      "some" ->
+        %{arity: 2, args: [:array, :formula], description: "Some elements match"}
+
+      "in" ->
+        %{arity: 2, args: [:any, :array_or_string], description: "Contains"}
+
+      "cat" ->
+        %{arity: :variable, args: [:any], description: "Concatenate strings", min_args: 1}
+
+      "log" ->
+        %{arity: 1, args: [:any], description: "Log value"}
+
+      _ ->
+        %{arity: 0, args: [], description: "Unknown operator"}
     end
   end
 end

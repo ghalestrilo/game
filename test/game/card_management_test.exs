@@ -184,9 +184,26 @@ defmodule Game.CardManagementTest do
   describe "combat card management" do
     setup do
       # Create cards
-      card1 = %Game.Card{id: "card1", name: "Card 1", cost: 1, effects: [%{"type" => "damage", "value" => 1}]}
-      card2 = %Game.Card{id: "card2", name: "Card 2", cost: 1, effects: [%{"type" => "damage", "value" => 2}]}
-      card3 = %Game.Card{id: "card3", name: "Card 3", cost: 1, effects: [%{"type" => "heal", "value" => 3}]}
+      card1 = %Game.Card{
+        id: "card1",
+        name: "Card 1",
+        cost: 1,
+        effects: [%{"type" => "damage", "value" => 1}]
+      }
+
+      card2 = %Game.Card{
+        id: "card2",
+        name: "Card 2",
+        cost: 1,
+        effects: [%{"type" => "damage", "value" => 2}]
+      }
+
+      card3 = %Game.Card{
+        id: "card3",
+        name: "Card 3",
+        cost: 1,
+        effects: [%{"type" => "heal", "value" => 3}]
+      }
 
       # Create player with cards
       player = %Character{

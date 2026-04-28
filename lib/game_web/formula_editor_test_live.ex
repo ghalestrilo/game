@@ -86,15 +86,20 @@ defmodule GameWeb.FormulaEditorTestLive do
 
   # Parse formula from form params (nested structure)
   defp parse_formula_from_params(nil), do: %{}
+
   defp parse_formula_from_params(params) when is_map(params) do
     case params do
-      %{"operator" => ""} -> %{}
+      %{"operator" => ""} ->
+        %{}
+
       %{"operator" => op} when is_binary(op) ->
         # Collect arguments
         args = collect_args_from_params(params, 0, [])
         if args == [], do: %{}, else: %{op => args}
+
       %{"value" => value} ->
         parse_value(value)
+
       _ ->
         %{}
     end

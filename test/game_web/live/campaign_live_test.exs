@@ -292,30 +292,34 @@ defmodule GameWeb.CampaignLiveTest do
 
       # Turn 1: Druid summons a wolf
       # Try each card until we successfully summon (some cards might be kill cards)
-      summon_result = Enum.reduce_while(0..4, nil, fn idx, _acc ->
-        # Check if the card at this index still exists (might have been played already)
-        cards = play_view |> render() |> String.match?(~r/phx-value-card_index="#{idx}"/)
-        if not cards do
-          {:halt, :ok}  # Card was already played, we're done
-        else
-          # Pick the card at this index
-          play_view
-          |> element("div[phx-click='pick_card'][phx-value-card_index='#{idx}']")
-          |> render_click()
+      summon_result =
+        Enum.reduce_while(0..4, nil, fn idx, _acc ->
+          # Check if the card at this index still exists (might have been played already)
+          cards = play_view |> render() |> String.match?(~r/phx-value-card_index="#{idx}"/)
 
-          # Try to play it on empty tile adjacent to druid
-          result = play_view
-          |> element("div[phx-click='interact'][phx-value-target_position='1_0_-1']")
-          |> render_click()
-
-          # Check if it succeeded (no error flash)
-          if result =~ "Tile must be empty" or result =~ "No character at this position" do
-            {:cont, nil}
-          else
+          if not cards do
+            # Card was already played, we're done
             {:halt, :ok}
+          else
+            # Pick the card at this index
+            play_view
+            |> element("div[phx-click='pick_card'][phx-value-card_index='#{idx}']")
+            |> render_click()
+
+            # Try to play it on empty tile adjacent to druid
+            result =
+              play_view
+              |> element("div[phx-click='interact'][phx-value-target_position='1_0_-1']")
+              |> render_click()
+
+            # Check if it succeeded (no error flash)
+            if result =~ "Tile must be empty" or result =~ "No character at this position" do
+              {:cont, nil}
+            else
+              {:halt, :ok}
+            end
           end
-        end
-      end)
+        end)
 
       assert summon_result == :ok, "None of the 5 cards could be played as summon"
 
@@ -324,7 +328,9 @@ defmodule GameWeb.CampaignLiveTest do
       # Verify a wolf was summoned - should now have 2 wolves total (1 enemy + 1 summoned)
       # The summoned wolf should appear in the queue or on the grid
       wolf_count = html |> String.split("Wolf") |> length() |> Kernel.-(1)
-      assert wolf_count >= 2, "Expected at least 2 wolves (1 enemy + 1 summoned), found #{wolf_count}"
+
+      assert wolf_count >= 2,
+             "Expected at least 2 wolves (1 enemy + 1 summoned), found #{wolf_count}"
 
       # Skip turn to end Druid's turn
       play_view
@@ -343,40 +349,48 @@ defmodule GameWeb.CampaignLiveTest do
 
       # Turn 4: Druid kills the enemy wolf
       # Try each card until we successfully attack (avoid summon cards)
-      kill_result = Enum.reduce_while(0..4, nil, fn idx, _acc ->
-        # First check if game is already over
-        current_html = render(play_view)
-        if current_html =~ "game_over" do
-          {:halt, :ok}  # Game is over, we succeeded
-        else
-          # Check if the card at this index still exists
-          cards = current_html =~ ~r/phx-value-card_index="#{idx}"/
-          if not cards do
-            {:cont, nil}  # No more cards at this index
+      kill_result =
+        Enum.reduce_while(0..4, nil, fn idx, _acc ->
+          # First check if game is already over
+          current_html = render(play_view)
+
+          if current_html =~ "game_over" do
+            # Game is over, we succeeded
+            {:halt, :ok}
           else
-            # Pick the card at this index
-            play_view
-            |> element("div[phx-click='pick_card'][phx-value-card_index='#{idx}']")
-            |> render_click()
+            # Check if the card at this index still exists
+            cards = current_html =~ ~r/phx-value-card_index="#{idx}"/
 
-            # Try to play it on enemy wolf at {2, -1, -1}
-            result = play_view
-            |> element("div[phx-click='interact'][phx-value-target_position='2_-1_-1']")
-            |> render_click()
+            if not cards do
+              # No more cards at this index
+              {:cont, nil}
+            else
+              # Pick the card at this index
+              play_view
+              |> element("div[phx-click='pick_card'][phx-value-card_index='#{idx}']")
+              |> render_click()
 
-            # Check if game is over after playing
-            cond do
-              result =~ "game_over" ->
-                {:halt, :ok}
-              result =~ "Tile must be empty" or result =~ "No character at this position" ->
-                {:cont, nil}
-              true ->
-                # Succeeded but game not over yet
-                {:halt, :ok}
+              # Try to play it on enemy wolf at {2, -1, -1}
+              result =
+                play_view
+                |> element("div[phx-click='interact'][phx-value-target_position='2_-1_-1']")
+                |> render_click()
+
+              # Check if game is over after playing
+              cond do
+                result =~ "game_over" ->
+                  {:halt, :ok}
+
+                result =~ "Tile must be empty" or result =~ "No character at this position" ->
+                  {:cont, nil}
+
+                true ->
+                  # Succeeded but game not over yet
+                  {:halt, :ok}
+              end
             end
           end
-        end
-      end)
+        end)
 
       assert kill_result == :ok, "Could not find kill card to attack enemy wolf"
 
