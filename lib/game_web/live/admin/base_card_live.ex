@@ -55,10 +55,6 @@ defmodule GameWeb.Admin.BaseCardLive do
             module: Backpex.Fields.Text,
             label: "Value"
           }
-          # targeting: %{
-          #   module: Backpex.Fields.Text,
-          #   label: "Targeting Rule"
-          # }
         ]
       }
     ]

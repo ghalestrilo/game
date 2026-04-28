@@ -49,20 +49,20 @@ defmodule Game.DataCase do
 
     # Create a basic strike card for testing
     {:ok, strike_card} =
-      Game.Repo.insert(%BaseCard{
+      Game.BaseCards.create_base_card(%{
         name: "Strike",
         headline: "A basic melee attack",
         ap: 1,
-        effects: [%{"type" => "damage", "value" => 5}],
+        effects: [%{type: "damage", value: "5"}],
         rarity: :common
       })
 
     {:ok, fireball_card} =
-      Game.Repo.insert(%BaseCard{
+      Game.BaseCards.create_base_card(%{
         name: "Fireball",
         headline: "Launches a ball of fire",
         ap: 2,
-        effects: [%{"type" => "damage", "value" => 8}],
+        effects: [%{type: "damage", value: "8"}],
         rarity: :uncommon
       })
 

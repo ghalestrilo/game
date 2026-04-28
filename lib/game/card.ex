@@ -138,6 +138,27 @@ defmodule Game.Card do
 
   def get_structured_effect(%CardEffect{} = effect), do: effect
 
+  def get_structured_effect(%Game.BaseCards.BaseCard.Effect{type: type} = effect) do
+    effect_data =
+      effect
+      |> Map.from_struct()
+      |> Map.delete(:__meta__)
+      |> Map.update(:value, nil, fn
+        v when is_binary(v) ->
+          case Integer.parse(v) do
+            {int, ""} -> int
+            _ -> v
+          end
+
+        v ->
+          v
+      end)
+
+    @effect_types
+    |> Map.fetch!(type)
+    |> struct(effect_data)
+  end
+
   def get_structured_effect(%{"type" => type} = effect) do
     effect_data =
       Enum.reduce(effect, %{}, fn {key, value}, acc ->
@@ -183,8 +204,8 @@ defmodule Game.Card do
       %{targeting: %{"type" => type}} when is_binary(type) ->
         String.to_atom(type)
 
-      # Handle map effects that need to be structured
-      %{"type" => _effect_type} = effect ->
+      # Handle map or struct effects that need to be structured
+      effect when is_map(effect) ->
         structured_effect = get_structured_effect(effect)
         case structured_effect do
           %{targeting: %{"type" => type}} when is_binary(type) -> String.to_atom(type)
@@ -220,7 +241,7 @@ defmodule Game.Card do
     structured_effect =
       case first_effect do
         %{targeting: _} = effect -> effect
-        %{"type" => _} = effect -> get_structured_effect(effect)
+        effect when is_map(effect) -> get_structured_effect(effect)
       end
 
     targeting_type = get_targeting_type(card)
