@@ -59,11 +59,18 @@ defmodule GameWeb.Admin.BaseCardLive do
           value: %{
             module: Backpex.Fields.Text,
             label: "Value"
+          },
+          targeting: %{
+            module: GameWeb.Admin.Fields.TargetingField,
+            label: "Targeting"
           }
         ]
       }
     ]
   end
+
+  def handle_info({:formula_updated, _path, _value}, socket), do: {:noreply, socket}
+  def handle_info({:formula_remove_node, _path}, socket), do: {:noreply, socket}
 
   @impl Backpex.LiveResource
   def filters do
@@ -75,6 +82,23 @@ defmodule GameWeb.Admin.BaseCardLive do
   end
 
   def changeset(item, attrs, _metadata) do
-    Game.BaseCards.BaseCard.changeset(item, attrs)
+    attrs
+    |> parse_targeting_in_effects()
+    |> then(&Game.BaseCards.BaseCard.changeset(item, &1))
   end
+
+  defp parse_targeting_in_effects(%{"effects" => effects} = attrs) when is_list(effects) do
+    parsed =
+      Enum.map(effects, fn
+        %{"targeting" => %{"rule" => rule_params} = targeting} = effect ->
+          %{effect | "targeting" => %{targeting | "rule" => Game.Formula.parse_params(rule_params)}}
+
+        effect ->
+          effect
+      end)
+
+    %{attrs | "effects" => parsed}
+  end
+
+  defp parse_targeting_in_effects(attrs), do: attrs
 end

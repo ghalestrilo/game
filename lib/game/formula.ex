@@ -170,4 +170,83 @@ defmodule Game.Formula do
         %{arity: 0, args: [], description: "Unknown operator"}
     end
   end
+
+  @doc """
+  Parses nested form params from FormulaEditorComponent into a JsonLogic map.
+
+  Input shape (from form submission):
+    %{"operator" => "and", "0" => %{"operator" => "var", "0" => %{"value" => "target.occupied"}}}
+
+  Output shape (JsonLogic):
+    %{"and" => [%{"var" => ["target.occupied"]}]}
+  """
+  @spec parse_params(map() | nil) :: map() | String.t() | number()
+  def parse_params(nil), do: %{}
+
+  def parse_params(params) when is_map(params) do
+    case params do
+      %{"operator" => ""} ->
+        %{}
+
+      %{"operator" => op} when is_binary(op) ->
+        args = collect_args(params, 0, [])
+        if args == [], do: %{}, else: %{op => args}
+
+      %{"value" => value} ->
+        parse_value(value)
+
+      _ ->
+        %{}
+    end
+  end
+
+  defp collect_args(params, index, acc) do
+    case params[to_string(index)] do
+      nil -> Enum.reverse(acc)
+      arg_params -> collect_args(params, index + 1, [parse_params(arg_params) | acc])
+    end
+  end
+
+  defp parse_value(value) when is_binary(value) do
+    cond do
+      value == "" -> ""
+      String.match?(value, ~r/^-?\d+$/) -> String.to_integer(value)
+      String.match?(value, ~r/^-?\d+\.\d+$/) -> String.to_float(value)
+      true -> value
+    end
+  end
+
+  defp parse_value(value), do: value
+
+  @doc "Updates the formula tree node at the given path index list."
+  @spec update_at_path(map(), list(), any()) :: map()
+  def update_at_path(_formula, [], new_value), do: new_value
+
+  def update_at_path(formula, [index | rest], new_value) when is_map(formula) do
+    [{op, args}] = Map.to_list(formula)
+    args_list = if is_list(args), do: args, else: [args]
+
+    updated_args =
+      List.update_at(args_list, index, &update_at_path(&1, rest, new_value))
+
+    %{op => updated_args}
+  end
+
+  @doc "Removes the formula tree node at the given path index list."
+  @spec remove_at_path(map(), list()) :: map()
+  def remove_at_path(_formula, []), do: %{}
+
+  def remove_at_path(formula, [index | rest]) when is_map(formula) do
+    [{op, args}] = Map.to_list(formula)
+    args_list = if is_list(args), do: args, else: [args]
+
+    updated_args =
+      if rest == [] do
+        List.delete_at(args_list, index)
+      else
+        List.update_at(args_list, index, &remove_at_path(&1, rest))
+      end
+
+    if updated_args == [], do: %{}, else: %{op => updated_args}
+  end
 end
