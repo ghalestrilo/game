@@ -78,16 +78,62 @@ defmodule GameWeb.LobbyLiveTest do
   describe "LobbyLive - ready state" do
     setup :two_players_in_lobby
 
+    defp select_class(view, class) do
+      view |> element("form[phx-change='select_class']") |> render_change(%{"class" => class})
+    end
+
     test "player1 toggles ready, player2's view shows player1 as ready", %{
       lobby_view1: lobby_view1,
       lobby_view2: lobby_view2,
       user1: user1
     } do
+      select_class(lobby_view1, "fighter")
       lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()
 
       html2 = render(lobby_view2)
       assert html2 =~ user1.email
       assert html2 =~ "ready"
+    end
+
+    test "player1 selects a class, player2's view shows that class", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2,
+      user1: user1
+    } do
+      select_class(lobby_view1, "fighter")
+
+      html2 = render(lobby_view2)
+      assert html2 =~ user1.email
+      assert html2 =~ "fighter"
+    end
+
+    test "player1's own view shows selected class immediately", %{
+      lobby_view1: lobby_view1,
+      user1: user1
+    } do
+      html = select_class(lobby_view1, "fighter")
+
+      assert html =~ user1.email
+      assert html =~ "fighter"
+    end
+
+    test "dropdown retains selected class after re-render", %{lobby_view1: lobby_view1} do
+      select_class(lobby_view1, "fighter")
+
+      html = render(lobby_view1)
+      assert html =~ ~s(value="fighter" selected)
+    end
+
+    test "ready button is disabled until a class is selected", %{lobby_view1: lobby_view1} do
+      assert lobby_view1 |> element("button[phx-click='toggle_ready'][disabled]") |> has_element?()
+
+      select_class(lobby_view1, "fighter")
+
+      refute lobby_view1 |> element("button[phx-click='toggle_ready'][disabled]") |> has_element?()
+    end
+
+    test "cannot toggle ready without a class selected", %{lobby_view1: lobby_view1} do
+      assert lobby_view1 |> element("button[phx-click='toggle_ready'][disabled]") |> has_element?()
     end
   end
 

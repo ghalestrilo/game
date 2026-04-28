@@ -1,7 +1,7 @@
 defmodule GameWeb.LobbyLive do
   use GameWeb, :live_view
 
-  alias Game.Lobby
+  alias Game.{Content, Lobby}
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -20,7 +20,8 @@ defmodule GameWeb.LobbyLive do
 
           case Lobby.join(id, user) do
             {:ok, lobby_state} ->
-              {:ok, assign(socket, lobby: lobby_state, lobby_id: id)}
+              base_classes = Content.list_base_classes()
+              {:ok, assign(socket, lobby: lobby_state, lobby_id: id, base_classes: base_classes, current_user_id: user.id)}
 
             {:error, :full} ->
               {:ok,
@@ -30,15 +31,28 @@ defmodule GameWeb.LobbyLive do
           end
       end
     else
-      {:ok, assign(socket, lobby: nil, lobby_id: id)}
+      {:ok, assign(socket, lobby: nil, lobby_id: id, base_classes: [], current_user_id: nil)}
+    end
+  end
+
+  @impl true
+  def handle_event("select_class", %{"class" => class}, socket) do
+    user = socket.assigns.current_scope.user
+
+    case Lobby.select_class(socket.assigns.lobby_id, user.id, class) do
+      {:ok, lobby_state} -> {:noreply, assign(socket, lobby: lobby_state)}
+      _ -> {:noreply, socket}
     end
   end
 
   @impl true
   def handle_event("toggle_ready", _params, socket) do
     user = socket.assigns.current_scope.user
-    Lobby.toggle_ready(socket.assigns.lobby_id, user.id)
-    {:noreply, socket}
+
+    case Lobby.toggle_ready(socket.assigns.lobby_id, user.id) do
+      {:ok, lobby_state} -> {:noreply, assign(socket, lobby: lobby_state)}
+      _ -> {:noreply, socket}
+    end
   end
 
   @impl true
@@ -65,13 +79,29 @@ defmodule GameWeb.LobbyLive do
           <%= for player <- @lobby.players do %>
             <li class="px-4 py-2 bg-secondary rounded flex gap-2 items-center">
               <%= player.email %>
+              <%= if player.class do %>
+                <span><%= player.class %></span>
+              <% end %>
               <%= if player.ready do %>
                 <span>ready</span>
               <% end %>
             </li>
           <% end %>
         </ul>
-        <button phx-click="toggle_ready" class="px-4 py-2 rounded-2 bg-primary text-primary">
+        <% my_class = @lobby.players |> Enum.find(&(&1.id == @current_user_id)) |> then(& &1 && &1.class) %>
+        <form phx-change="select_class">
+          <select name="class">
+            <option value="" selected={is_nil(my_class)}>Pick a class</option>
+            <%= for bc <- @base_classes do %>
+              <option value={bc.class} selected={my_class == bc.class}><%= bc.class %></option>
+            <% end %>
+          </select>
+        </form>
+        <button
+          phx-click="toggle_ready"
+          disabled={is_nil(my_class)}
+          class="px-4 py-2 rounded-2 bg-primary text-primary disabled:opacity-50"
+        >
           Ready
         </button>
         <%= if @lobby.status == :ready do %>

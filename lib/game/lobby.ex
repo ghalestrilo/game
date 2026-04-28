@@ -21,6 +21,13 @@ defmodule Game.Lobby do
     end
   end
 
+  def select_class(id, user_id, class) do
+    case Registry.lookup(Game.LobbyRegistry, id) do
+      [{_pid, _}] -> LobbyServer.select_class(id, user_id, class)
+      [] -> {:error, :not_found}
+    end
+  end
+
   def toggle_ready(id, user_id) do
     case Registry.lookup(Game.LobbyRegistry, id) do
       [{_pid, _}] -> LobbyServer.toggle_ready(id, user_id)
