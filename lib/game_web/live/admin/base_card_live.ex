@@ -43,9 +43,23 @@ defmodule GameWeb.Admin.BaseCardLive do
         ]
       },
       effects: %{
-        module: Backpex.Fields.Text,
+        module: Backpex.Fields.InlineCRUD,
         label: "Effects",
-        only: [:index, :show]
+        type: :embed,
+        child_fields: [
+          type: %{
+            module: Backpex.Fields.Text,
+            label: "Type"
+          },
+          value: %{
+            module: Backpex.Fields.Text,
+            label: "Value"
+          }
+          # targeting: %{
+          #   module: Backpex.Fields.Text,
+          #   label: "Targeting Rule"
+          # }
+        ]
       }
     ]
   end
