@@ -167,6 +167,7 @@ defmodule GameWeb.MultiplayerPlayLive do
           game_state={@game_state}
           action_log={@action_log}
           modal={nil}
+          current_player={@current_player}
         />
       <% else %>
         <div class="flex items-center justify-center h-screen">

@@ -631,8 +631,10 @@ defmodule GameWeb.CoreComponents do
     ~H"""
     <div
       class={[
-        "rounded-lg border border-base-300 bg-base-100 shadow-md w-72 flex flex-col p-4 transition-[all] duration-140 ease-in-out",
-        if(@selected, do: "!bg-yellow-50 -mt-4 mb-4", else: "")
+        "rounded-lg border border-base-300 bg-base-100 shadow-md w-72 flex flex-col p-4 transition-[all] duration-140 ease-in-out
+        hover:-mt-4 hover:mb-4
+        ",
+        if(@selected, do: "!bg-yellow-800 -mt-4 mb-4", else: "")
       ]}
       phx-click={@on_click}
       phx-blur={@on_click}

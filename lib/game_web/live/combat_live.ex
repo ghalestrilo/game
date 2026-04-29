@@ -170,7 +170,8 @@ defmodule GameWeb.CombatLive do
             </ul>
           </div>
 
-          <%= if @game_state.combat.current_turn.player do %>
+          <%= if @game_state.combat.current_turn.player &&
+                 (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id) do %>
             <div class="flex gap-4 flex-2 flex-row justify-between">
               <!-- Card piles status panel -->
               <div class="card-status-panel w-full bg-gray-100 p-4 rounded">
@@ -218,7 +219,8 @@ defmodule GameWeb.CombatLive do
           <% end %>
         </div>
 
-        <%= if @game_state.combat.current_turn.player do %>
+        <%= if @game_state.combat.current_turn.player &&
+               (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id) do %>
           <div class="card-row mt-4">
             <%= for {card, index} <- Enum.with_index(@game_state.combat.current_turn.player.cards.hand) do %>
               <div

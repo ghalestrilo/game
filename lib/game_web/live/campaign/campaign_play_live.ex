@@ -55,6 +55,7 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
           game_state={@game_state}
           action_log={@action_log}
           modal={@modal}
+          current_player={nil}
         />
       <% end %>
 

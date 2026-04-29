@@ -98,6 +98,27 @@ defmodule GameWeb.MultiplayerPlayLiveTest do
       assert redirect_path == lobby_path
     end
 
+    test "each player only sees their own hand when it is their turn", %{
+      conn1: conn1,
+      conn2: conn2,
+      play_path: play_path
+    } do
+      {:ok, view1, _} = live(conn1, play_path)
+      {:ok, view2, _} = live(conn2, play_path)
+
+      html1 = render(view1)
+      html2 = render(view2)
+
+      # Fighter (user1) goes first — user1 sees the card row, user2 does not
+      if html1 =~ "card-row" do
+        refute html2 =~ "card-row"
+      else
+        # Mage (user2) goes first — user2 sees the card row, user1 does not
+        assert html2 =~ "card-row"
+        refute html1 =~ "card-row"
+      end
+    end
+
     test "after game ends lobby shows players unready with classes kept", %{
       conn1: conn1,
       conn2: conn2,
