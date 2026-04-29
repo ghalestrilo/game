@@ -2,6 +2,7 @@ defmodule Game.Character do
   defstruct id: nil,
             name: nil,
             class: nil,
+            avatar_url: nil,
             # Action Points
             ap: nil,
             max_ap: nil,
@@ -253,6 +254,7 @@ defmodule Game.Character do
       id: base_class.id,
       name: String.capitalize(base_class.class),
       class: base_class.class,
+      avatar_url: base_class.avatar_url,
       hp: base_class.base_hp,
       max_hp: base_class.base_hp,
       ap: base_class.base_ap,

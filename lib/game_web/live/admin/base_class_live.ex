@@ -24,6 +24,10 @@ defmodule GameWeb.Admin.BaseClassLive do
         label: "Class",
         searchable: true
       },
+      avatar_url: %{
+        module: Backpex.Fields.Text,
+        label: "Avatar URL"
+      },
       base_hp: %{
         module: Backpex.Fields.Number,
         label: "Base HP"

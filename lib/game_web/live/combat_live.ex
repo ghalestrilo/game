@@ -60,7 +60,7 @@ defmodule GameWeb.CombatLive do
                 {@game_state.combat.current_turn.player.name} ({@game_state.combat.current_turn.player.class})
               </div>
             <% end %>
-            
+
     <!-- Turn Queue Panel -->
             <div class="mt-4">
               <h3 class="text-lg font-bold mb-2">Turn Queue</h3>
@@ -100,7 +100,7 @@ defmodule GameWeb.CombatLive do
               </ul>
             </div>
           </div>
-          
+
     <!-- Game board -->
           <div class="game-board flex-1">
             <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
@@ -159,7 +159,7 @@ defmodule GameWeb.CombatLive do
         <div class="flex gap-8">
           <!-- Action log panel -->
           <div
-            class="action-log bg-gray-100 p-4 mt-8 rounded overflow-auto flex-1 text-black"
+            class="action-log p-4 mt-8 rounded overflow-auto flex-1"
             style="max-height: 200px;"
           >
             <h3 class="text-lg font-bold mb-2">Action Log</h3>
@@ -174,7 +174,7 @@ defmodule GameWeb.CombatLive do
                  (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id) do %>
             <div class="flex gap-4 flex-2 flex-row justify-between">
               <!-- Card piles status panel -->
-              <div class="card-status-panel w-full bg-gray-100 p-4 rounded">
+              <div class="card-status-panel w-full  p-4 rounded">
                 <div class="mb-3">
                   <h4 class="font-semibold">
                     Current Player: {@game_state.combat.current_turn.player.name}
@@ -260,7 +260,7 @@ defmodule GameWeb.CombatLive do
           <p>{Jason.encode!(@game_state)}</p>
         </details>
       </div> --%>
-      
+
     <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}
@@ -353,19 +353,8 @@ defmodule GameWeb.CombatLive do
     Enum.find(characters, fn char -> char.position == position end)
   end
 
-  defp character_class(%{class: class}),
-    do: "character !bg-cover !bg-no-repeat #{get_class_bg(to_string(class))}"
+  defp character_class(%{avatar_url: url}) when is_binary(url) and url != "",
+    do: "character !bg-cover !bg-no-repeat !bg-[url('#{url}')]"
 
-  defp get_class_bg("bard"), do: "!bg-[url('/images/cat-bard.png')]"
-  defp get_class_bg("cleric"), do: "!bg-[url('/images/cat-cleric.png')]"
-  defp get_class_bg("druid"), do: "!bg-[url('/images/cat-druid.png')]"
-  defp get_class_bg("fighter"), do: "!bg-[url('/images/cat-fighter.png')]"
-  defp get_class_bg("mage"), do: "!bg-[url('/images/cat-mage.png')]"
-  defp get_class_bg("monk"), do: "!bg-[url('/images/cat-monk.png')]"
-  defp get_class_bg("paladin"), do: "!bg-[url('/images/cat-paladin.png')]"
-  defp get_class_bg("ranger"), do: "!bg-[url('/images/cat-ranger.png')]"
-  defp get_class_bg("sorcerer"), do: "!bg-[url('/images/cat-sorcerer.png')]"
-  defp get_class_bg("rogue"), do: "!bg-[url('/images/cat-rogue.png')]"
-  defp get_class_bg("warlock"), do: "!bg-[url('/images/cat-warlock.png')]"
-  defp get_class_bg(_), do: "!bg-none"
+  defp character_class(_), do: "character"
 end
