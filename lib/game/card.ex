@@ -136,8 +136,34 @@ defmodule Game.Card do
     |> Enum.reduce(initial_combat_state, fn effect, combat_state ->
       effect
       |> get_structured_effect()
+      |> resolve_effect_value(target, combat_state)
       |> CardEffect.process(target, combat_state)
     end)
+  end
+
+  defp resolve_effect_value(%{value: value} = effect, target, combat_state) when is_map(value) do
+    context = build_effect_context(target, combat_state)
+    %{effect | value: Game.Formula.resolve(value, context)}
+  end
+
+  defp resolve_effect_value(effect, _target, _combat_state), do: effect
+
+  defp build_effect_context(target, combat_state) do
+    caster = CombatState.get_current_player(combat_state)
+    {:ok, state_json} = Jason.encode(combat_state)
+    {:ok, state_map} = Jason.decode(state_json)
+    {:ok, caster_json} = Jason.encode(caster)
+    {:ok, caster_map} = Jason.decode(caster_json)
+    %{"caster" => caster_map, "target" => encode_target(target), "state" => state_map}
+  end
+
+  defp encode_target(target) when is_tuple(target),
+    do: %{"position" => Tuple.to_list(target)}
+
+  defp encode_target(target) do
+    {:ok, json} = Jason.encode(target)
+    {:ok, map} = Jason.decode(json)
+    map
   end
 
   def get_structured_effect(%CardEffect{} = effect), do: effect

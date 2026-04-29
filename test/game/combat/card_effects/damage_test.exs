@@ -3,7 +3,7 @@ defmodule Game.Combat.CardEffects.DamageTest do
 
   alias Game.Combat.CardEffect
   alias Game.Combat.CardEffects.Damage
-  alias Game.{Character, CombatState, Grid, Fixtures}
+  alias Game.{Card, Character, CombatState, Grid, Fixtures}
 
   describe "Damage effect" do
     setup do
@@ -57,6 +57,74 @@ defmodule Game.Combat.CardEffects.DamageTest do
 
       updated_mage = Enum.find(updated_state.queue, &(&1.id == mage.id))
       assert updated_mage.hp <= 0
+    end
+  end
+
+  describe "Damage effect with procedural value" do
+    setup do
+      warrior = %{Fixtures.fighter() | hp: 15, max_hp: 20}
+      mage = %{Fixtures.mage() | hp: 12, max_hp: 20, position: {1, 0, -1}}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: warrior},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
+        }
+      }
+
+      combat_state = %CombatState{
+        state: :running,
+        __constants__: %{players: [warrior, mage]},
+        queue: [warrior, mage],
+        grid: grid,
+        current_turn: %{
+          starting_position: warrior.position,
+          player: warrior,
+          card: nil
+        }
+      }
+
+      {:ok, combat_state: combat_state, warrior: warrior, mage: mage}
+    end
+
+    defp card_with(effect_value) do
+      %Card{
+        id: 99,
+        name: "Test",
+        cost: 0,
+        effects: [%{"type" => "damage", "value" => effect_value}],
+        targeting: %{"type" => "character"}
+      }
+    end
+
+    test "caster.hp expression deals damage equal to caster hp", %{
+      combat_state: combat_state,
+      warrior: warrior,
+      mage: mage
+    } do
+      updated_state = Card.process_card(combat_state, mage, card_with(%{"var" => "caster.hp"}))
+      updated_mage = Enum.find(updated_state.queue, &(&1.id == mage.id))
+      assert updated_mage.hp == mage.hp - warrior.hp
+    end
+
+    test "arithmetic expression caster.max_hp - caster.hp deals missing HP as damage", %{
+      combat_state: combat_state,
+      warrior: warrior,
+      mage: mage
+    } do
+      expr = %{"-" => [%{"var" => "caster.max_hp"}, %{"var" => "caster.hp"}]}
+      updated_state = Card.process_card(combat_state, mage, card_with(expr))
+      updated_mage = Enum.find(updated_state.queue, &(&1.id == mage.id))
+      assert updated_mage.hp == mage.hp - (warrior.max_hp - warrior.hp)
+    end
+
+    test "target.hp expression deals damage equal to target hp", %{
+      combat_state: combat_state,
+      mage: mage
+    } do
+      updated_state = Card.process_card(combat_state, mage, card_with(%{"var" => "target.hp"}))
+      updated_mage = Enum.find(updated_state.queue, &(&1.id == mage.id))
+      assert updated_mage.hp == 0
     end
   end
 

@@ -11,7 +11,7 @@ defmodule Game.Combat.CardEffects.Draw do
 
   @type t() :: %__MODULE__{
           type: atom(),
-          value: integer(),
+          value: integer() | map(),
           value_label: String.t() | nil
         }
 

@@ -355,4 +355,59 @@ defmodule Game.CardTest do
                {:error, "Target does not match targeting rule"}
     end
   end
+
+  describe "procedural effect values" do
+    test "process_card/3 resolves damage value from caster.hp expression" do
+      caster = %Character{
+        id: 1,
+        name: "Caster",
+        hp: 12,
+        max_hp: 20,
+        ap: 3,
+        max_ap: 3,
+        position: {0, 0, 0},
+        team: :team1,
+        cards: %{draw: [], hand: [], discard: []}
+      }
+
+      target = %Character{
+        id: 2,
+        name: "Target",
+        hp: 20,
+        max_hp: 20,
+        ap: 3,
+        max_ap: 3,
+        position: {1, 0, -1},
+        team: :team2,
+        cards: %{draw: [], hand: [], discard: []}
+      }
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: caster},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: target}
+        }
+      }
+
+      card = %Card{
+        id: 1,
+        name: "Vampiric Strike",
+        cost: 1,
+        effects: [%{"type" => "damage", "value" => %{"var" => "caster.hp"}}],
+        targeting: %{"type" => "character"}
+      }
+
+      combat_state = %CombatState{
+        state: :running,
+        __constants__: %{players: [caster, target]},
+        queue: [caster, target],
+        grid: grid,
+        current_turn: %{player: caster, starting_position: caster.position, card: nil}
+      }
+
+      updated_state = Card.process_card(combat_state, target, card)
+      updated_target = Enum.find(updated_state.queue, &(&1.id == target.id))
+      assert updated_target.hp == target.hp - caster.hp
+    end
+  end
 end

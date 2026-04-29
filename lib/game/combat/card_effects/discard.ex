@@ -10,7 +10,7 @@ defmodule Game.Combat.CardEffects.Discard do
 
   @type t() :: %__MODULE__{
           type: atom(),
-          value: integer(),
+          value: integer() | map(),
           value_label: String.t() | nil
         }
 

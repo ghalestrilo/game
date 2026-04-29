@@ -11,7 +11,7 @@ defmodule Game.Combat.CardEffects.Shield do
 
   @type t() :: %__MODULE__{
           type: atom(),
-          value: integer(),
+          value: integer() | map(),
           value_label: String.t() | nil
         }
 
