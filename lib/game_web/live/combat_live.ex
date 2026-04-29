@@ -31,7 +31,7 @@ defmodule GameWeb.CombatLive do
           <% pos = build_position_index(rows) %>
 
     <!-- Board -->
-          <div class="flex-1 flex items-center justify-center overflow-hidden mt-10">
+          <div class="flex-1 flex items-center justify-center overflow-hidden">
             <div class="game-board">
               <!-- Map layer -->
               <%= for row <- rows do %>

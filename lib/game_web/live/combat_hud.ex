@@ -10,8 +10,8 @@ defmodule GameWeb.CombatHUD do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="fixed z-10 grid [grid-template-areas:'queue_empty_action'_'draw_hand_discard'] gap-4 w-full shrink-0 p-4 overflow-y-auto pointer-events-none">
-      <div :if={@game_state} class="bg-gray-800 max-w-64 pointer-events-auto">
+    <div class="fixed z-10 grid [grid-template-areas:'queue_._action'_'draw_hand_discard'] [grid-template-columns:280px_1fr_280px] [grid-template-rows:1fr_auto] gap-4 p-4 pointer-events-none origin-top-left scale-75 w-[133%] h-[133%] pb-12">
+      <div :if={@game_state} class="[grid-area:queue] bg-gray-800 self-start pointer-events-auto">
         <!-- Buttons -->
         <div class="[grid-area:hand] flex flex-wrap gap-2">
           <button phx-click="reset" phx-target={@myself} class="btn btn-primary btn-sm">Reset Game</button>
