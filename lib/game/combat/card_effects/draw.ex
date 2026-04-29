@@ -33,6 +33,7 @@ defmodule Game.Combat.CardEffects.Draw do
     def get_icon(%Draw{}), do: "hero-squares-2x2-mini"
 
     @impl Game.Combat.CardEffect
-    def get_value_label(%Draw{value: count}), do: "#{count} card#{if count != 1, do: "s", else: ""}"
+    def get_value_label(%Draw{value: count}),
+      do: "#{count} card#{if count != 1, do: "s", else: ""}"
   end
 end

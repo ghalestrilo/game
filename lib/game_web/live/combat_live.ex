@@ -13,131 +13,129 @@ defmodule GameWeb.CombatLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="mx-auto max-w-full flex flex-row h-screen">
+    <div class="max-w-full flex flex-row h-screen">
       <!-- HUD -->
-      <div class="flex flex-col gap-4 w-[320px] shrink-0 bg-base-200 p-4 overflow-y-auto">
-        <!-- Buttons -->
-        <div class="flex flex-wrap gap-2">
-          <button phx-click="reset" class="btn btn-primary btn-sm">Reset Game</button>
-          <button phx-click="skip_turn" class="btn btn-success btn-sm">Skip Turn</button>
-          <button phx-click="win_match" class="btn btn-warning btn-sm">Win Match</button>
-          <button phx-click="modal" phx-value-action="load_game" class="btn btn-secondary btn-sm">
-            Load Game State
-          </button>
-        </div>
+      <div class="fixed z-10 grid [grid-template-areas:'queue_empty_action'_'draw_hand_discard'] gap-4 w-full shrink-0 p-4 overflow-y-auto">
+        <div :if={@game_state} class="bg-gray-800 max-w-64">
+          <!-- Buttons -->
+          <div class="[grid-area:hand] flex flex-wrap gap-2">
+            <button phx-click="reset" class="btn btn-primary btn-sm">Reset Game</button>
+            <button phx-click="skip_turn" class="btn btn-success btn-sm">Skip Turn</button>
+            <button phx-click="win_match" class="btn btn-warning btn-sm">Win Match</button>
+            <button phx-click="modal" phx-value-action="load_game" class="btn btn-secondary btn-sm">
+              Load Game State
+            </button>
+          </div>
 
-        <%= if @game_state do %>
-          <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
-
-          <!-- Combat state -->
-          <div>
+    <!-- Combat state -->
+          <div :if={@game_state}>
             <span class="font-semibold text-sm">State:</span>
             <span class="badge badge-info badge-sm ml-1">{@game_state.combat.state}</span>
           </div>
 
-          <!-- Turn Queue -->
-          <div>
+    <!-- Turn Queue -->
+          <div :if={@game_state}>
+            <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
             <h3 class="text-base font-bold mb-2">Turn Queue</h3>
             <ul class="text-sm flex flex-col gap-2">
-              <%= for character <- queue, character != nil do %>
-                <li class="p-2 border border-base-content/20 rounded">
-                  <div class="font-medium mb-1">
-                    {character.name}
-                    <%= if character == @game_state.combat.current_turn.player do %>
-                      <span class="badge badge-success badge-xs ml-1">current</span>
-                    <% end %>
-                  </div>
-                  <div class="flex gap-1 mb-1">
-                    <span
-                      :for={hp <- 1..Game.Character.get_max_hp(character)}
-                      class={"#{if hp > character.hp, do: "bg-base-300", else: "bg-error"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
-                    />
-                  </div>
-                  <div class="flex gap-1 mb-1">
-                    <span
-                      :for={ap <- 1..Game.Character.get_max_ap(character)}
-                      class={"#{if ap > character.ap, do: "bg-base-300", else: "bg-warning"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
-                    />
-                  </div>
-                  <div class="flex gap-1">
-                    <span
-                      :for={
-                        _shield <-
-                          List.duplicate(
-                            nil,
-                            case Game.Character.get_status_effect(character, :shield) do
-                              %{value: value} -> value
-                              _ -> 0
-                            end
-                          )
-                      }
-                      class="bg-info max-w-[20px] flex-1 h-2 rounded-[2px]"
-                    />
-                  </div>
-                </li>
-              <% end %>
+              <li
+                :for={character <- Enum.filter(queue, fn character -> character != nil end)}
+                class="p-2 border border-base-content/20 rounded"
+              >
+                <div class="font-medium mb-1">
+                  {character.name}
+                  <%= if character == @game_state.combat.current_turn.player do %>
+                    <span class="badge badge-success badge-xs ml-1">current</span>
+                  <% end %>
+                </div>
+                <div class="flex gap-1 mb-1">
+                  <span
+                    :for={hp <- 1..Game.Character.get_max_hp(character)}
+                    class={"#{if hp > character.hp, do: "bg-base-300", else: "bg-error"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
+                  />
+                </div>
+                <div class="flex gap-1 mb-1">
+                  <span
+                    :for={ap <- 1..Game.Character.get_max_ap(character)}
+                    class={"#{if ap > character.ap, do: "bg-base-300", else: "bg-warning"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
+                  />
+                </div>
+                <div class="flex gap-1">
+                  <span
+                    :for={
+                      _shield <-
+                        List.duplicate(
+                          nil,
+                          case Game.Character.get_status_effect(character, :shield) do
+                            %{value: value} -> value
+                            _ -> 0
+                          end
+                        )
+                    }
+                    class="bg-info max-w-[20px] flex-1 h-2 rounded-[2px]"
+                  />
+                </div>
+              </li>
             </ul>
           </div>
+        </div>
 
-          <!-- Action Log -->
-          <div>
-            <h3 class="text-base font-bold mb-2">Action Log</h3>
-            <div class="bg-base-300 rounded p-2 overflow-y-auto max-h-40 text-xs">
-              <ul class="list-disc pl-4 flex flex-col gap-1">
-                <%= for action <- @action_log do %>
-                  <li>{action}</li>
-                <% end %>
-              </ul>
-            </div>
+    <!-- Action Log -->
+        <div class="[grid-area:action]">
+          <h3 class="text-base font-bold mb-2">Action Log</h3>
+          <div class="bg-base-300 rounded p-2 overflow-y-auto max-h-40 text-xs">
+            <ul class="list-disc pl-4 flex flex-col gap-1">
+              <li :for={action <- @action_log}>{action}</li>
+            </ul>
           </div>
+        </div>
 
-          <!-- Card piles -->
-          <%= if @game_state.combat.current_turn.player &&
+    <!-- Card piles -->
+        <%= if @game_state.combat.current_turn.player &&
                  (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id) do %>
-            <div>
-              <h3 class="text-base font-bold mb-2">
-                Cards — {@game_state.combat.current_turn.player.name}
-              </h3>
-              <div class="flex flex-col gap-3 text-xs">
-                <div>
-                  <h4 class="font-semibold text-base-content/70 mb-1">
-                    Draw ({length(@game_state.combat.current_turn.player.cards.draw)})
-                  </h4>
-                  <%= for card <- @game_state.combat.current_turn.player.cards.draw do %>
-                    <div class="card-tiny">{card.name}</div>
-                  <% end %>
-                </div>
-                <div>
-                  <h4 class="font-semibold text-base-content/70 mb-1">
-                    Hand ({length(@game_state.combat.current_turn.player.cards.hand)})
-                  </h4>
-                  <%= for card <- @game_state.combat.current_turn.player.cards.hand do %>
-                    <div class="card-tiny">{card.name} (Cost: {card.cost})</div>
-                  <% end %>
-                </div>
-                <div>
-                  <h4 class="font-semibold text-base-content/70 mb-1">
-                    Discard ({length(@game_state.combat.current_turn.player.cards.discard)})
-                  </h4>
-                  <%= for card <- @game_state.combat.current_turn.player.cards.discard do %>
-                    <div class="card-tiny">{card.name}</div>
-                  <% end %>
-                </div>
-              </div>
-            </div>
-          <% end %>
+          <div class="[grid-area:draw] flex flex-col gap-3 text-xs">
+            <h4 class=" font-semibold text-base-content/70 mb-1">
+              Draw ({length(@game_state.combat.current_turn.player.cards.draw)})
+            </h4>
+            <%= for card <- @game_state.combat.current_turn.player.cards.draw do %>
+              <div class="card-tiny">{card.name}</div>
+            <% end %>
+          </div>
+          <div
+            :if={
+              get_in(@game_state, [:combat, :current_turn, :player]) &&
+                (@current_player == nil ||
+                   @current_player.id == @game_state.combat.current_turn.player.id)
+            }
+            class="[grid-area:hand] card-row"
+          >
+            <.card
+              :for={{card, index} <- Enum.with_index(@game_state.combat.current_turn.player.cards.hand)}
+              selected={card == Map.get(@game_state.combat.current_turn, :card, nil)}
+              index={index}
+              card={card}
+            />
+          </div>
+          <div class="[grid-area:discard]">
+            <h4 class="font-semibold text-base-content/70 mb-1">
+              Discard ({length(@game_state.combat.current_turn.player.cards.discard)})
+            </h4>
+            <%= for card <- @game_state.combat.current_turn.player.cards.discard do %>
+              <div class="card-tiny">{card.name}</div>
+            <% end %>
+          </div>
         <% end %>
       </div>
 
-      <!-- Game area -->
+    <!-- Game area -->
       <div class="flex-1 flex flex-col overflow-hidden">
         <%= if @game_state do %>
           <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
           <% rows = Game.Grid.to_rows(@game_state.combat.grid) %>
           <% pos = build_position_index(rows) %>
 
-          <!-- Board -->
-          <div class="flex-1 flex items-center justify-center overflow-hidden">
+    <!-- Board -->
+          <div class="flex-1 flex items-center justify-center overflow-hidden mt-10">
             <div class="game-board">
               <!-- Map layer -->
               <%= for row <- rows do %>
@@ -149,7 +147,9 @@ defmodule GameWeb.CombatLive do
                       class={[
                         "hex-cell border border-base-content/20 w-20 h-20 flex items-center justify-center bg-base-100",
                         if(within_movement_range?(@game_state.combat, {q, r, s}), do: "bg-warning/10"),
-                        if(current_player_at?(@game_state.combat, queue, {q, r, s}), do: "!bg-success/30")
+                        if(current_player_at?(@game_state.combat, queue, {q, r, s}),
+                          do: "!bg-success/30"
+                        )
                       ]}
                     >
                     </div>
@@ -157,7 +157,7 @@ defmodule GameWeb.CombatLive do
                 </div>
               <% end %>
 
-              <!-- Entity layer -->
+    <!-- Entity layer -->
               <div class="absolute inset-0 pointer-events-none">
                 <%= for character <- queue, character != nil do %>
                   <div
@@ -178,24 +178,10 @@ defmodule GameWeb.CombatLive do
               </div>
             </div>
           </div>
-
-          <!-- Card row -->
-          <%= if @game_state.combat.current_turn.player &&
-                 (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id) do %>
-            <div class="card-row">
-              <%= for {card, index} <- Enum.with_index(@game_state.combat.current_turn.player.cards.hand) do %>
-                <.card
-                  selected={card == Map.get(@game_state.combat.current_turn, :card, nil)}
-                  index={index}
-                  card={card}
-                />
-              <% end %>
-            </div>
-          <% end %>
         <% end %>
       </div>
 
-      <!-- Game Over Modal -->
+    <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}
         id="game-over-modal"
@@ -220,7 +206,9 @@ defmodule GameWeb.CombatLive do
                 <li class="flex items-center justify-center gap-2">
                   <span class="font-medium">{character.name}</span>
                   <span class="text-base-content/60">({character.class})</span>
-                  <span class="text-sm">HP: {character.hp}/{Game.Character.get_max_hp(character)}</span>
+                  <span class="text-sm">
+                    HP: {character.hp}/{Game.Character.get_max_hp(character)}
+                  </span>
                 </li>
               <% end %>
             </ul>
@@ -319,8 +307,11 @@ defmodule GameWeb.CombatLive do
     vertical_scaling = 0.92
 
     case Map.get(pos, character.position) do
-      {left, top} -> "transform: translate(#{left - r + padding}px, calc(#{vertical_scaling} * #{top - r + padding}px));"
-      nil -> "display: none;"
+      {left, top} ->
+        "transform: translate(#{left - r + padding}px, calc(#{vertical_scaling} * #{top - r + padding}px));"
+
+      nil ->
+        "display: none;"
     end
   end
 

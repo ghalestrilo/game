@@ -32,7 +32,8 @@ defmodule Game.Combat.CardEffects.Discard do
     def get_icon(%Discard{}), do: "hero-trash-mini"
 
     @impl Game.Combat.CardEffect
-    def get_value_label(%Discard{value: count}), do: "#{count} card#{if count != 1, do: "s", else: ""}"
+    def get_value_label(%Discard{value: count}),
+      do: "#{count} card#{if count != 1, do: "s", else: ""}"
 
     defp discard_random_cards(character, count) do
       hand = character.cards.hand

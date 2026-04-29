@@ -646,7 +646,7 @@ defmodule GameWeb.CoreComponents do
       phx-target={@click_target}
     >
       <div class="flex items-center justify-between mb-2">
-        <span class="font-bold text-lg text-base-content">{@card.name}</span>
+        <span class="font-bold text-sm text-base-content">{@card.name}</span>
         <div class="flex gap-2 items-center">
           <span class="text-xs bg-base-200 rounded px-2 py-0.5 text-base-content/70" title="Range">
             <.icon name="hero-arrow-up-right-mini" class="inline-block w-3 h-3 mr-1" /> {@card.range}
@@ -656,12 +656,12 @@ defmodule GameWeb.CoreComponents do
           </span>
         </div>
       </div>
-      <div class="mb-2 text-sm text-base-content/80 min-h-[3rem]">
+      <div class="mb-2 text-xs text-base-content/80 min-h-[3rem]">
         {@card.description}
         <!-- TODO: temporarily describe full effects as JSON in card content -->
-          <li :for={raw <- @card.effects} class="flex items-center gap-1">
-            <span class="text-base-content/40">{Jason.encode!(raw, pretty: true)}</span>
-          </li>
+        <li :for={raw <- @card.effects} class="flex items-center gap-1">
+          <span class="text-base-content/40">{Jason.encode!(raw, pretty: true)}</span>
+        </li>
       </div>
       <div class="mt-auto pt-2 border-t border-base-300 w-full">
         <.effect_list card={@card} />

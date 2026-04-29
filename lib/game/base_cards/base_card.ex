@@ -22,7 +22,8 @@ defmodule Game.BaseCards.BaseCard do
     use StructAccess
     import Ecto.Changeset
 
-    @derive {Jason.Encoder, only: [:type, :value, :value_label, :aoe, :range, :multi, :scaling, :conditional]}
+    @derive {Jason.Encoder,
+             only: [:type, :value, :value_label, :aoe, :range, :multi, :scaling, :conditional]}
     @primary_key false
     embedded_schema do
       field :type, :string
