@@ -352,25 +352,16 @@ defmodule GameWeb.CombatLive do
   defp character_style(pos, character) do
     padding = 20
     r = 32
+    vertical_scaling = 0.92
 
     case Map.get(pos, character.position) do
-      {left, top} -> "transform: translate(#{left - r + padding}px, #{top - r + padding}px);"
+      {left, top} -> "transform: translate(#{left - r + padding}px, calc(#{vertical_scaling} * #{top - r + padding}px));"
       nil -> "display: none;"
     end
   end
 
-  defp character_bg(%{class: class}), do: get_class_bg(to_string(class))
+  defp character_bg(%{avatar_url: url}) when is_binary(url) and url != "",
+    do: "!bg-[url('#{url}')]"
 
-  # defp get_class_bg("bard"), do: "!bg-[url('/images/cat-bard.png')]"
-  # defp get_class_bg("cleric"), do: "!bg-[url('/images/cat-cleric.png')]"
-  # defp get_class_bg("druid"), do: "!bg-[url('/images/cat-druid.png')]"
-  # defp get_class_bg("fighter"), do: "!bg-[url('/images/cat-fighter.png')]"
-  # defp get_class_bg("mage"), do: "!bg-[url('/images/cat-mage.png')]"
-  # defp get_class_bg("monk"), do: "!bg-[url('/images/cat-monk.png')]"
-  # defp get_class_bg("paladin"), do: "!bg-[url('/images/cat-paladin.png')]"
-  # defp get_class_bg("ranger"), do: "!bg-[url('/images/cat-ranger.png')]"
-  # defp get_class_bg("sorcerer"), do: "!bg-[url('/images/cat-sorcerer.png')]"
-  # defp get_class_bg("rogue"), do: "!bg-[url('/images/cat-rogue.png')]"
-  # defp get_class_bg("warlock"), do: "!bg-[url('/images/cat-warlock.png')]"
-  defp get_class_bg(_), do: ""
+  defp character_bg(_), do: ""
 end
