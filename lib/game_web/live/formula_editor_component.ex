@@ -170,6 +170,7 @@ defmodule GameWeb.FormulaEditorComponent do
           path={@path}
           field={@field}
           root_id={@root_id}
+          root_value={Map.get(assigns, :root_value, %{})}
         />
         """
 

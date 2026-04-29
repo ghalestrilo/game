@@ -86,6 +86,32 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       refute html =~ ~s(value="caster.ap")
     end
 
+    test "selecting an operator on a nested arg node does not crash", %{conn: conn, card: card} do
+      {:ok, view, _html} = live(conn, ~p"/admin/base_cards/#{card.id}/edit")
+
+      # Set root to * (two empty arg slots)
+      view
+      |> element("select[name='change[effects][0][value][operator]']")
+      |> render_change(%{
+        "change" => %{"effects" => %{"0" => %{"value" => %{"operator" => "*"}}}},
+        "_target" => ["change", "effects", "0", "value", "operator"]
+      })
+
+      # Select var on the first nested arg — this is the crash scenario
+      html =
+        view
+        |> element("select[name='change[effects][0][value][0][operator]']")
+        |> render_change(%{
+          "change" => %{
+            "effects" => %{"0" => %{"value" => %{"0" => %{"operator" => "var"}}}}
+          },
+          "_target" => ["change", "effects", "0", "value", "0", "operator"]
+        })
+
+      # var node should appear with its variable name input
+      assert html =~ ~s(name="change[effects][0][value][0][0][value]")
+    end
+
     test "clicking ƒx converts a literal arg to a nested formula node", %{conn: conn, card: card} do
       {:ok, view, _html} = live(conn, ~p"/admin/base_cards/#{card.id}/edit")
 

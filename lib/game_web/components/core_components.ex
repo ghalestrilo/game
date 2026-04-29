@@ -613,7 +613,6 @@ defmodule GameWeb.CoreComponents do
       >
         <% effect = Game.Card.get_structured_effect(raw) %>
         <.icon name={Game.Combat.CardEffect.get_icon(effect)} class="w-3 h-3" />
-        <span>{Game.Combat.CardEffect.get_value_label(effect)}</span>
       </li>
     </ul>
     """
