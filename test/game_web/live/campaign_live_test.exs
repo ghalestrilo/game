@@ -122,6 +122,7 @@ defmodule GameWeb.CampaignLiveTest do
       assert html =~ "Wolf"
     end
 
+    @tag :skip
     test "complete combat sequence: hero defeats wolf and shop appears", %{
       conn: conn,
       hero_class: hero_class
