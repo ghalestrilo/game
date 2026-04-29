@@ -45,7 +45,7 @@ defmodule Game.DataCase do
   This should be called in test setup to ensure base game data exists.
   """
   def seed_base_classes do
-    alias Game.{BaseCards.BaseCard, BaseDecks.BaseDeck, Content.BaseDeckCard, Content.BaseClass}
+    alias Game.{BaseDecks.BaseDeck, Content.BaseDeckCard, Content.BaseClass}
 
     # Create a basic strike card for testing
     {:ok, strike_card} =
