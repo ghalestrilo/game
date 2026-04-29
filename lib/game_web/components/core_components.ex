@@ -50,7 +50,7 @@ defmodule GameWeb.CoreComponents do
       data-cancel={JS.exec(@on_cancel, "phx-remove")}
       class="relative z-50 hidden"
     >
-      <div id={"#{@id}-bg"} class="bg-zinc-50/90 fixed inset-0 transition-opacity" aria-hidden="true" />
+      <div id={"#{@id}-bg"} class="bg-base-300/90 fixed inset-0 transition-opacity" aria-hidden="true" />
       <div
         class="fixed inset-0 overflow-y-auto"
         aria-labelledby={"#{@id}-title"}
@@ -66,7 +66,7 @@ defmodule GameWeb.CoreComponents do
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
               phx-key="escape"
               phx-click-away={JS.exec("data-cancel", to: "##{@id}")}
-              class="shadow-zinc-700/10 ring-zinc-700/10 relative hidden rounded-2xl bg-white p-14 shadow-lg ring-1 transition"
+              class="shadow-base-content/10 ring-base-content/10 relative hidden rounded-2xl bg-base-100 p-14 shadow-lg ring-1 transition"
             >
               <div class="absolute top-6 right-5">
                 <button
@@ -202,7 +202,7 @@ defmodule GameWeb.CoreComponents do
   def simple_form(assigns) do
     ~H"""
     <.form :let={f} for={@for} as={@as} {@rest}>
-      <div class="mt-10 space-y-8 bg-white">
+      <div class="mt-10 space-y-8 bg-base-100">
         {render_slot(@inner_block, f)}
         <div :for={action <- @actions} class="mt-2 flex items-center justify-between gap-6">
           {render_slot(action, f)}
@@ -310,7 +310,7 @@ defmodule GameWeb.CoreComponents do
 
     ~H"""
     <div>
-      <label class="flex items-center gap-4 text-sm leading-6 text-zinc-600">
+      <label class="flex items-center gap-4 text-sm leading-6 text-base-content/80">
         <input type="hidden" name={@name} value="false" disabled={@rest[:disabled]} />
         <input
           type="checkbox"
@@ -318,7 +318,7 @@ defmodule GameWeb.CoreComponents do
           name={@name}
           value="true"
           checked={@checked}
-          class="rounded border-zinc-300 text-zinc-900 focus:ring-0"
+          class="rounded border-base-300 text-primary focus:ring-0"
           {@rest}
         />
         {@label}
@@ -335,7 +335,7 @@ defmodule GameWeb.CoreComponents do
       <select
         id={@id}
         name={@name}
-        class="mt-2 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border-zinc-400 focus:ring-0 sm:text-sm"
+        class="mt-2 block w-full rounded-md border border-base-300 bg-base-100 shadow-sm focus:border-zinc-400 focus:ring-0 sm:text-sm"
         multiple={@multiple}
         {@rest}
       >
@@ -355,8 +355,8 @@ defmodule GameWeb.CoreComponents do
         id={@id}
         name={@name}
         class={[
-          "mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6 min-h-[6rem]",
-          @errors == [] && "border-zinc-300 focus:border-zinc-400",
+          "mt-2 block w-full rounded-lg text-base-content focus:ring-0 sm:text-sm sm:leading-6 min-h-[6rem]",
+          @errors == [] && "border-base-300 focus:border-zinc-400",
           @errors != [] && "border-rose-400 focus:border-rose-400"
         ]}
         {@rest}
@@ -377,8 +377,8 @@ defmodule GameWeb.CoreComponents do
         id={@id}
         value={Phoenix.HTML.Form.normalize_value(@type, @value)}
         class={[
-          "mt-2 block w-full rounded-lg text-zinc-900 focus:ring-0 sm:text-sm sm:leading-6",
-          @errors == [] && "border-zinc-300 focus:border-zinc-400",
+          "mt-2 block w-full rounded-lg text-base-content focus:ring-0 sm:text-sm sm:leading-6",
+          @errors == [] && "border-base-300 focus:border-zinc-400",
           @errors != [] && "border-rose-400 focus:border-rose-400"
         ]}
         {@rest}
@@ -396,7 +396,7 @@ defmodule GameWeb.CoreComponents do
 
   def label(assigns) do
     ~H"""
-    <label for={@for} class="block text-sm font-semibold leading-6 text-zinc-800">
+    <label for={@for} class="block text-sm font-semibold leading-6 text-base-content">
       {render_slot(@inner_block)}
     </label>
     """
@@ -429,10 +429,10 @@ defmodule GameWeb.CoreComponents do
     ~H"""
     <header class={[@actions != [] && "flex items-center justify-between gap-6", @class]}>
       <div>
-        <h1 class="text-lg font-semibold leading-8 text-zinc-800">
+        <h1 class="text-lg font-semibold leading-8 text-base-content">
           {render_slot(@inner_block)}
         </h1>
-        <p :if={@subtitle != []} class="mt-2 text-sm leading-6 text-zinc-600">
+        <p :if={@subtitle != []} class="mt-2 text-sm leading-6 text-base-content/60">
           {render_slot(@subtitle)}
         </p>
       </div>
@@ -475,7 +475,7 @@ defmodule GameWeb.CoreComponents do
     ~H"""
     <div class="overflow-y-auto px-4 sm:overflow-visible sm:px-0">
       <table class="w-[40rem] mt-11 sm:w-full">
-        <thead class="text-sm text-left leading-6 text-zinc-500">
+        <thead class="text-sm text-left leading-6 text-base-content/60">
           <tr>
             <th :for={col <- @col} class="p-0 pb-4 pr-6 font-normal">{col[:label]}</th>
             <th :if={@action != []} class="relative p-0 pb-4">
@@ -486,27 +486,27 @@ defmodule GameWeb.CoreComponents do
         <tbody
           id={@id}
           phx-update={match?(%Phoenix.LiveView.LiveStream{}, @rows) && "stream"}
-          class="relative divide-y divide-zinc-100 border-t border-zinc-200 text-sm leading-6 text-zinc-700"
+          class="relative divide-y divide-base-300 border-t border-base-300 text-sm leading-6 text-base-content/80"
         >
-          <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="group hover:bg-zinc-50">
+          <tr :for={row <- @rows} id={@row_id && @row_id.(row)} class="group hover:bg-base-200">
             <td
               :for={{col, i} <- Enum.with_index(@col)}
               phx-click={@row_click && @row_click.(row)}
               class={["relative p-0", @row_click && "hover:cursor-pointer"]}
             >
               <div class="block py-4 pr-6">
-                <span class="absolute -inset-y-px right-0 -left-4 group-hover:bg-zinc-50 sm:rounded-l-xl" />
-                <span class={["relative", i == 0 && "font-semibold text-zinc-900"]}>
+                <span class="absolute -inset-y-px right-0 -left-4 group-hover:bg-base-200 sm:rounded-l-xl" />
+                <span class={["relative", i == 0 && "font-semibold text-base-content"]}>
                   {render_slot(col, @row_item.(row))}
                 </span>
               </div>
             </td>
             <td :if={@action != []} class="relative w-14 p-0">
               <div class="relative whitespace-nowrap py-4 text-right text-sm font-medium">
-                <span class="absolute -inset-y-px -right-4 left-0 group-hover:bg-zinc-50 sm:rounded-r-xl" />
+                <span class="absolute -inset-y-px -right-4 left-0 group-hover:bg-base-200 sm:rounded-r-xl" />
                 <span
                   :for={action <- @action}
-                  class="relative ml-4 font-semibold leading-6 text-zinc-900 hover:text-zinc-700"
+                  class="relative ml-4 font-semibold leading-6 text-base-content hover:text-base-content/70"
                 >
                   {render_slot(action, @row_item.(row))}
                 </span>
@@ -536,10 +536,10 @@ defmodule GameWeb.CoreComponents do
   def list(assigns) do
     ~H"""
     <div class="mt-14">
-      <dl class="-my-4 divide-y divide-zinc-100">
+      <dl class="-my-4 divide-y divide-base-300">
         <div :for={item <- @item} class="flex gap-4 py-4 text-sm leading-6 sm:gap-8">
-          <dt class="w-1/4 flex-none text-zinc-500">{item.title}</dt>
-          <dd class="text-zinc-700">{render_slot(item)}</dd>
+          <dt class="w-1/4 flex-none text-base-content/60">{item.title}</dt>
+          <dd class="text-base-content/80">{render_slot(item)}</dd>
         </div>
       </dl>
     </div>
@@ -561,7 +561,7 @@ defmodule GameWeb.CoreComponents do
     <div class="mt-16">
       <.link
         navigate={@navigate}
-        class="text-sm font-semibold leading-6 text-zinc-900 hover:text-zinc-700"
+        class="text-sm font-semibold leading-6 text-base-content hover:text-base-content/70"
       >
         <.icon name="hero-arrow-left-solid" class="h-3 w-3" />
         {render_slot(@inner_block)}
@@ -602,7 +602,7 @@ defmodule GameWeb.CoreComponents do
 
   def effect_list(assigns) do
     ~H"""
-    <ul class="text-black">
+    <ul class="text-base-content">
       <li :for={effect <- @card.effects}>
         <%!-- <li :for={effect <- @card.effects} class="grid grid-cols-2 gap-2"> --%>
         <span>{effect["type"]}</span>
@@ -631,7 +631,7 @@ defmodule GameWeb.CoreComponents do
     ~H"""
     <div
       class={[
-        "rounded-lg border border-zinc-300 bg-white shadow-md w-72 flex flex-col p-4 transition-[all] duration-140 ease-in-out",
+        "rounded-lg border border-base-300 bg-base-100 shadow-md w-72 flex flex-col p-4 transition-[all] duration-140 ease-in-out",
         if(@selected, do: "!bg-yellow-50 -mt-4 mb-4", else: "")
       ]}
       phx-click={@on_click}
@@ -640,9 +640,9 @@ defmodule GameWeb.CoreComponents do
       phx-target={@click_target}
     >
       <div class="flex items-center justify-between mb-2">
-        <span class="font-bold text-lg text-zinc-800">{@card.name}</span>
+        <span class="font-bold text-lg text-base-content">{@card.name}</span>
         <div class="flex gap-2 items-center">
-          <span class="text-xs bg-zinc-100 rounded px-2 py-0.5 text-zinc-600" title="Range">
+          <span class="text-xs bg-base-200 rounded px-2 py-0.5 text-base-content/70" title="Range">
             <.icon name="hero-arrow-up-right-mini" class="inline-block w-3 h-3 mr-1" /> {@card.range}
           </span>
           <span class="text-xs bg-zinc-900 text-white rounded px-2 py-0.5" title="Cost">
@@ -650,10 +650,10 @@ defmodule GameWeb.CoreComponents do
           </span>
         </div>
       </div>
-      <div class="mb-2 text-sm text-zinc-700 min-h-[3rem]">
+      <div class="mb-2 text-sm text-base-content/80 min-h-[3rem]">
         {@card.description}
       </div>
-      <div class="mt-auto pt-2 border-t border-zinc-100 w-full">
+      <div class="mt-auto pt-2 border-t border-base-300 w-full">
         <.effect_list card={@card} />
       </div>
     </div>

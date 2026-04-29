@@ -70,13 +70,13 @@ defmodule GameWeb.CombatLive do
                     <div class="pb-1 flex gap-1">
                       <span
                         :for={hp <- 1..Game.Character.get_max_hp(character)}
-                        class={"#{if hp > character.hp, do: "bg-gray-300", else: "bg-green-300"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
+                        class={"#{if hp > character.hp, do: "bg-gray-300", else: "bg-red-400"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
                       />
                     </div>
                     <div class="pb-1 flex gap-1">
                       <span
                         :for={ap <- 1..Game.Character.get_max_ap(character)}
-                        class={"#{if ap > character.ap, do: "bg-gray-300", else: "bg-yellow-300"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
+                        class={"#{if ap > character.ap, do: "bg-gray-300", else: "bg-yellow-200"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
                       />
                     </div>
                     <div class="pb-1 flex gap-1">

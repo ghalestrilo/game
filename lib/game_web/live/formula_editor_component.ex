@@ -49,7 +49,7 @@ defmodule GameWeb.FormulaEditorComponent do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="formula-editor-node border border-gray-300 rounded p-3 mb-2 bg-white">
+    <div class="formula-editor-node border border-base-300 rounded p-3 mb-2 bg-base-100">
       <div class="flex items-start gap-2">
         <div class="flex-grow">
           <.operator_select
@@ -93,7 +93,7 @@ defmodule GameWeb.FormulaEditorComponent do
               type="button"
               phx-click="convert_to_value"
               phx-target={@myself}
-              class="text-xs text-gray-600 hover:text-gray-800 px-2 py-1 border border-gray-300 rounded"
+              class="text-xs text-base-content/70 hover:text-base-content px-2 py-1 border border-base-300 rounded"
               title="Convert to simple value"
             >
               123
@@ -120,7 +120,7 @@ defmodule GameWeb.FormulaEditorComponent do
       name={build_field_name(@field_name, @path, "operator")}
       phx-change="change_operator"
       phx-target={@myself}
-      class="border border-gray-300 rounded px-3 py-2 text-sm"
+      class="border border-base-300 rounded px-3 py-2 text-sm bg-base-100 text-base-content"
     >
       <option value="">-- Select operator --</option>
       <%= for op <- list_available_keywords() do %>
@@ -147,7 +147,7 @@ defmodule GameWeb.FormulaEditorComponent do
           name={build_field_name(@field, @path, "value")}
           value={@arg}
           placeholder="Variable name"
-          class="border border-gray-300 rounded px-3 py-2 text-sm w-full"
+          class="border border-base-300 rounded px-3 py-2 text-sm w-full bg-base-100 text-base-content"
         />
         """
 
@@ -173,7 +173,7 @@ defmodule GameWeb.FormulaEditorComponent do
             name={build_field_name(@field, @path, "value")}
             value={to_string(@arg)}
             placeholder={arg_placeholder(@operator, @arg_index)}
-            class="border border-gray-300 rounded px-3 py-2 text-sm flex-1"
+            class="border border-base-300 rounded px-3 py-2 text-sm flex-1 bg-base-100 text-base-content"
           />
           <button
             type="button"
