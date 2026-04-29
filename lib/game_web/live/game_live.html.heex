@@ -1,21 +1,19 @@
-<div class="mx-auto max-w-full p-4">
-  <%= if @game_state do %>
-    <%= if @game_state.current_view == :combat do %>
-      <.live_component
-        module={GameWeb.CombatLive}
-        id="combat-view"
-        game_state={@game_state}
-        action_log={@action_log}
-        current_player={nil}
-      />
-    <% end %>
-
-    <%= if @game_state.current_view == :shop do %>
-      <.live_component
-        module={GameWeb.ShopLive}
-        id="shop-view"
-        game_state={@game_state}
-      />
-    <% end %>
+<%= if @game_state do %>
+  <%= if @game_state.current_view == :combat do %>
+    <.live_component
+      module={GameWeb.CombatLive}
+      id="combat-view"
+      game_state={@game_state}
+      action_log={@action_log}
+      current_player={nil}
+    />
   <% end %>
-</div>
+
+  <%= if @game_state.current_view == :shop do %>
+    <.live_component
+      module={GameWeb.ShopLive}
+      id="shop-view"
+      game_state={@game_state}
+    />
+  <% end %>
+<% end %>
