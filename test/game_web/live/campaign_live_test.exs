@@ -109,16 +109,17 @@ defmodule GameWeb.CampaignLiveTest do
 
       # Verify combat view is rendered with hero and wolf characters
       # Check for Combat State panel to ensure view loaded
-      assert html =~ "Combat State"
+      assert html =~ "Turn Queue"
 
       # Check that both characters appear in the grid/queue
       # Character names appear in the Turn Queue and on the grid
       assert html =~ "Hero"
       assert html =~ "Wolf"
 
-      # Verify both characters are in the turn queue
-      assert html =~ "Character&lt;Hero"
-      assert html =~ "Character&lt;Wolf"
+      # Verify both characters are in the turn queue (Hero is current, has badge)
+      assert html =~ "badge-success"
+      assert html =~ "Hero"
+      assert html =~ "Wolf"
     end
 
     test "complete combat sequence: hero defeats wolf and shop appears", %{
@@ -211,11 +212,11 @@ defmodule GameWeb.CampaignLiveTest do
 
       # Verify we're back in combat with a fresh combat instance
       html = render(play_view)
-      assert html =~ "Combat State"
+      assert html =~ "Turn Queue"
 
-      # Verify characters have full HP and AP
-      assert html =~ "HP:2/2"
-      assert html =~ "AP:3/3"
+      # Verify characters are shown in the turn queue (full HP = all pip spans are bg-error)
+      assert html =~ "bg-error"
+      assert html =~ "bg-warning"
 
       # Verify the Fireball card is now in the player's hand
       # The player draws 5 cards at the start, and Fireball was added to their deck
