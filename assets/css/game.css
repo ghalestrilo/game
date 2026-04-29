@@ -2,11 +2,13 @@
   .character {
     @apply w-16 h-16 rounded-full flex flex-col items-center justify-center
            text-base-content font-bold text-xs text-center p-1
-           bg-base-100/60 z-10 box-border;
+           bg-base-100/60 box-border;
+    transition: transform 0.3s ease;
   }
 
   .game-board {
     @apply relative mb-8 rounded-lg p-5;
+    width: fit-content;
   }
 
   .hex-cell {
