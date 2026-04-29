@@ -22,11 +22,12 @@ defmodule Game.BaseCards.BaseCard do
     use StructAccess
     import Ecto.Changeset
 
-    @derive {Jason.Encoder, only: [:type, :value, :aoe, :range, :multi, :scaling, :conditional]}
+    @derive {Jason.Encoder, only: [:type, :value, :value_label, :aoe, :range, :multi, :scaling, :conditional]}
     @primary_key false
     embedded_schema do
       field :type, :string
       field :value, Game.BaseCards.BaseCard.StringOrNumber
+      field :value_label, :string
       field :aoe, :boolean, default: false
       field :range, :integer
       field :multi, :integer
@@ -36,7 +37,7 @@ defmodule Game.BaseCards.BaseCard do
 
     def changeset(effect, attrs) do
       effect
-      |> cast(attrs, [:type, :value, :aoe, :range, :multi, :scaling, :conditional])
+      |> cast(attrs, [:type, :value, :value_label, :aoe, :range, :multi, :scaling, :conditional])
       |> validate_required([:type])
     end
   end

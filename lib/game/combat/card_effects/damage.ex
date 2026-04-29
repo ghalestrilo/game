@@ -6,11 +6,12 @@ defmodule Game.Combat.CardEffects.Damage do
   alias Game.CombatState
   alias Game.Character
 
-  defstruct type: :damage, value: 0
+  defstruct type: :damage, value: 0, value_label: nil
 
   @type t() :: %__MODULE__{
           type: atom(),
-          value: integer()
+          value: integer(),
+          value_label: String.t() | nil
         }
 
   defimpl Game.Combat.CardEffect do
@@ -25,5 +26,12 @@ defmodule Game.Combat.CardEffects.Damage do
     def get_description(%Damage{value: amount}) do
       "Deal #{amount} damage to target"
     end
+
+    @impl Game.Combat.CardEffect
+    def get_icon(%Damage{}), do: "hero-bolt-mini"
+
+    @impl Game.Combat.CardEffect
+    def get_value_label(%Damage{value_label: label}) when is_binary(label), do: label
+    def get_value_label(%Damage{value: v}), do: "#{v}"
   end
 end

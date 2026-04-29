@@ -9,11 +9,12 @@ defmodule Game.Combat.CardEffects.Summon do
   alias Game.CombatState
   alias Game.{Character, Content}
 
-  defstruct type: :summon, value: nil
+  defstruct type: :summon, value: nil, value_label: nil
 
   @type t() :: %__MODULE__{
           type: atom(),
-          value: String.t() | nil
+          value: String.t() | nil,
+          value_label: String.t() | nil
         }
 
   defimpl Game.Combat.CardEffect do
@@ -61,6 +62,13 @@ defmodule Game.Combat.CardEffects.Summon do
     def get_description(%Summon{value: class_name}) do
       "Summon a #{class_name} at target tile"
     end
+
+    @impl Game.Combat.CardEffect
+    def get_icon(%Summon{}), do: "hero-user-plus-mini"
+
+    @impl Game.Combat.CardEffect
+    def get_value_label(%Summon{value_label: label}) when is_binary(label), do: label
+    def get_value_label(%Summon{value: class_name}), do: class_name
 
     # Generate a unique ID for the summoned character
     defp generate_unique_id(combat_state) do

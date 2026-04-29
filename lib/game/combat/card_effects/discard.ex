@@ -6,11 +6,12 @@ defmodule Game.Combat.CardEffects.Discard do
 
   alias Game.CombatState
 
-  defstruct type: :discard, value: 0
+  defstruct type: :discard, value: 0, value_label: nil
 
   @type t() :: %__MODULE__{
           type: atom(),
-          value: integer()
+          value: integer(),
+          value_label: String.t() | nil
         }
 
   defimpl Game.Combat.CardEffect do
@@ -26,6 +27,12 @@ defmodule Game.Combat.CardEffects.Discard do
     def get_description(%Discard{value: count}) do
       "Discard #{count} card#{if count != 1, do: "s", else: ""} from target's hand"
     end
+
+    @impl Game.Combat.CardEffect
+    def get_icon(%Discard{}), do: "hero-trash-mini"
+
+    @impl Game.Combat.CardEffect
+    def get_value_label(%Discard{value: count}), do: "#{count} card#{if count != 1, do: "s", else: ""}"
 
     defp discard_random_cards(character, count) do
       hand = character.cards.hand

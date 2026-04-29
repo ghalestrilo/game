@@ -11,4 +11,10 @@ defprotocol Game.Combat.CardEffect do
 
   @spec get_description(t()) :: String.t()
   def get_description(card_effect)
+
+  @spec get_icon(t()) :: String.t()
+  def get_icon(card_effect)
+
+  @spec get_value_label(t()) :: String.t()
+  def get_value_label(card_effect)
 end
