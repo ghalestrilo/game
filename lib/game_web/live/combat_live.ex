@@ -83,10 +83,13 @@ defmodule GameWeb.CombatLive do
                       <span
                         :for={
                           _shield <-
-                            1..case Game.Character.get_status_effect(character, :shield) do
-                              %{value: value} -> value
-                              _ -> 0
-                            end
+                            List.duplicate(
+                              nil,
+                              case Game.Character.get_status_effect(character, :shield) do
+                                %{value: value} -> value
+                                _ -> 0
+                              end
+                            )
                         }
                         class="bg-blue-300 max-w-[20px] flex-1 h-2 rounded-[2px]"
                       />
