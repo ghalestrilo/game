@@ -10,8 +10,8 @@ defmodule GameWeb.CombatHUD do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="fixed z-10 grid [grid-template-areas:'queue_empty_action'_'draw_hand_discard'] gap-4 w-full shrink-0 p-4 overflow-y-auto">
-      <div :if={@game_state} class="bg-gray-800 max-w-64">
+    <div class="fixed z-10 grid [grid-template-areas:'queue_empty_action'_'draw_hand_discard'] gap-4 w-full shrink-0 p-4 overflow-y-auto pointer-events-none">
+      <div :if={@game_state} class="bg-gray-800 max-w-64 pointer-events-auto">
         <!-- Buttons -->
         <div class="[grid-area:hand] flex flex-wrap gap-2">
           <button phx-click="reset" phx-target={@myself} class="btn btn-primary btn-sm">Reset Game</button>
@@ -76,7 +76,7 @@ defmodule GameWeb.CombatHUD do
       </div>
 
       <!-- Action Log -->
-      <div class="[grid-area:action]">
+      <div class="[grid-area:action] pointer-events-auto">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
         <div class="bg-base-300 rounded p-2 overflow-y-auto max-h-40 text-xs">
           <ul class="list-disc pl-4 flex flex-col gap-1">
@@ -88,7 +88,7 @@ defmodule GameWeb.CombatHUD do
       <!-- Card piles -->
       <%= if @game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id) do %>
-        <div class="[grid-area:draw] flex flex-col gap-3 text-xs">
+        <div class="[grid-area:draw] flex flex-col gap-3 text-xs pointer-events-auto">
           <h4 class="font-semibold text-base-content/70 mb-1">
             Draw ({length(@game_state.combat.current_turn.player.cards.draw)})
           </h4>
@@ -102,7 +102,7 @@ defmodule GameWeb.CombatHUD do
               (@current_player == nil ||
                  @current_player.id == @game_state.combat.current_turn.player.id)
           }
-          class="[grid-area:hand] card-row"
+          class="[grid-area:hand] card-row pointer-events-auto"
         >
           <.card
             :for={{card, index} <- Enum.with_index(@game_state.combat.current_turn.player.cards.hand)}
@@ -112,7 +112,7 @@ defmodule GameWeb.CombatHUD do
             click_target={@myself}
           />
         </div>
-        <div class="[grid-area:discard]">
+        <div class="[grid-area:discard] pointer-events-auto">
           <h4 class="font-semibold text-base-content/70 mb-1">
             Discard ({length(@game_state.combat.current_turn.player.cards.discard)})
           </h4>
