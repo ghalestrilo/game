@@ -74,13 +74,15 @@ defmodule GameWeb.FormulaEditorTestLive do
     {:noreply, socket}
   end
 
-  def handle_info({:formula_updated, path, new_value}, socket) do
+  def handle_info({:formula_updated, _root_id, path, new_value}, socket) do
     formula = Game.Formula.update_at_path(socket.assigns.formula, path, new_value)
     {:noreply, assign(socket, formula: formula)}
   end
 
-  def handle_info({:formula_remove_node, path}, socket) do
+  def handle_info({:formula_remove_node, _root_id, path}, socket) do
     formula = Game.Formula.remove_at_path(socket.assigns.formula, path)
     {:noreply, assign(socket, formula: formula)}
   end
+
+  def handle_info(_msg, socket), do: {:noreply, socket}
 end

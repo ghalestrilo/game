@@ -61,7 +61,7 @@ defmodule GameWeb.Admin.BaseCardLive do
               Game.Card.effect_types() |> Map.keys() |> Enum.map(&{String.capitalize(&1), &1})
           },
           value: %{
-            module: Backpex.Fields.Text,
+            module: GameWeb.Admin.Fields.FormulaField,
             label: "Value"
           }
         ]
@@ -69,8 +69,6 @@ defmodule GameWeb.Admin.BaseCardLive do
     ]
   end
 
-  def handle_info({:formula_updated, _path, _value}, socket), do: {:noreply, socket}
-  def handle_info({:formula_remove_node, _path}, socket), do: {:noreply, socket}
 
   @impl Backpex.LiveResource
   def filters do
@@ -84,6 +82,7 @@ defmodule GameWeb.Admin.BaseCardLive do
   def changeset(item, attrs, _metadata) do
     attrs
     |> parse_targeting()
+    |> parse_effect_values()
     |> then(&Game.BaseCards.BaseCard.changeset(item, &1))
   end
 
@@ -92,4 +91,21 @@ defmodule GameWeb.Admin.BaseCardLive do
   end
 
   defp parse_targeting(attrs), do: attrs
+
+  defp parse_effect_values(%{"effects" => effects} = attrs) when is_map(effects) do
+    parsed =
+      Map.new(effects, fn {k, effect} ->
+        {k, parse_effect_value(effect)}
+      end)
+
+    %{attrs | "effects" => parsed}
+  end
+
+  defp parse_effect_values(attrs), do: attrs
+
+  defp parse_effect_value(%{"value" => value} = effect) when is_map(value) do
+    %{effect | "value" => Game.Formula.parse_params(value)}
+  end
+
+  defp parse_effect_value(effect), do: effect
 end

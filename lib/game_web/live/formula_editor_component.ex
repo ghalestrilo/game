@@ -14,11 +14,18 @@ defmodule GameWeb.FormulaEditorComponent do
 
   @impl true
   def update(assigns, socket) do
+    is_root = Map.get(assigns, :path, []) == []
+
     socket =
       socket
       |> assign(assigns)
       |> assign_new(:path, fn -> [] end)
       |> assign_new(:value, fn -> %{} end)
+      |> assign_new(:root_id, fn -> assigns.id end)
+      |> assign_new(:root_value, fn -> assigns[:value] || %{} end)
+      |> then(fn s ->
+        if is_root, do: assign(s, :root_value, s.assigns.value), else: s
+      end)
       |> assign_operator_and_args()
 
     {:ok, socket}
@@ -71,6 +78,7 @@ defmodule GameWeb.FormulaEditorComponent do
                     field={@field || "formula"}
                     id={"#{@id}-arg-#{idx}"}
                     myself={@myself}
+                    root_id={@root_id}
                   />
                 </div>
               <% end %>
@@ -161,6 +169,7 @@ defmodule GameWeb.FormulaEditorComponent do
           value={@arg}
           path={@path}
           field={@field}
+          root_id={@root_id}
         />
         """
 
@@ -209,10 +218,9 @@ defmodule GameWeb.FormulaEditorComponent do
 
   @impl true
   def handle_event("change_operator", params, socket) do
-    # Extract operator value from params - could be %{"value" => op} or nested form params
     operator = extract_operator_value(params, socket.assigns.field, socket.assigns.path)
 
-    new_value =
+    new_node =
       if operator == "" do
         %{}
       else
@@ -229,33 +237,36 @@ defmodule GameWeb.FormulaEditorComponent do
         %{operator => default_args}
       end
 
-    send(self(), {:formula_updated, socket.assigns.path, new_value})
+    push_root_update(socket, socket.assigns.path, new_node)
     {:noreply, socket}
   end
 
   def handle_event("add_arg", _params, socket) do
-    new_args = socket.assigns.args ++ [""]
-    new_value = %{socket.assigns.operator => new_args}
-    send(self(), {:formula_updated, socket.assigns.path, new_value})
+    new_node = %{socket.assigns.operator => socket.assigns.args ++ [""]}
+    push_root_update(socket, socket.assigns.path, new_node)
     {:noreply, socket}
   end
 
   def handle_event("remove_node", _params, socket) do
-    send(self(), {:formula_remove_node, socket.assigns.path})
+    new_root = Formula.remove_at_path(socket.assigns.root_value, socket.assigns.path)
+    Phoenix.LiveView.send_update(__MODULE__, id: socket.assigns.root_id, value: new_root)
     {:noreply, socket}
   end
 
   def handle_event("convert_to_formula", %{"path" => path_json}, socket) do
     path = Jason.decode!(path_json)
-    # Send message to parent to convert the value at this path to an empty formula
-    send(self(), {:formula_updated, path, %{}})
+    push_root_update(socket, path, %{})
     {:noreply, socket}
   end
 
   def handle_event("convert_to_value", _params, socket) do
-    # Convert the current formula node back to a simple empty string value
-    send(self(), {:formula_updated, socket.assigns.path, ""})
+    push_root_update(socket, socket.assigns.path, "")
     {:noreply, socket}
+  end
+
+  defp push_root_update(socket, path, new_node) do
+    new_root = Formula.update_at_path(socket.assigns.root_value, path, new_node)
+    Phoenix.LiveView.send_update(__MODULE__, id: socket.assigns.root_id, value: new_root)
   end
 
   @doc """
