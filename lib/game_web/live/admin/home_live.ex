@@ -9,7 +9,7 @@ defmodule GameWeb.Admin.HomeLive do
       <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <.link
           navigate={~p"/admin/base_cards"}
-          class="card bg-base-200 hover:bg-base-300 transition-colors"
+          class=" hover:bg-base-300 transition-colors"
         >
           <div class="card-body">
             <Backpex.HTML.CoreComponents.icon name="hero-rectangle-stack" class="size-8 mb-2" />
@@ -19,7 +19,7 @@ defmodule GameWeb.Admin.HomeLive do
         </.link>
         <.link
           navigate={~p"/admin/base_decks"}
-          class="card bg-base-200 hover:bg-base-300 transition-colors"
+          class=" hover:bg-base-300 transition-colors"
         >
           <div class="card-body">
             <Backpex.HTML.CoreComponents.icon name="hero-squares-2x2" class="size-8 mb-2" />
@@ -29,7 +29,7 @@ defmodule GameWeb.Admin.HomeLive do
         </.link>
         <.link
           navigate={~p"/admin/base_classes"}
-          class="card bg-base-200 hover:bg-base-300 transition-colors"
+          class=" hover:bg-base-300 transition-colors"
         >
           <div class="card-body">
             <Backpex.HTML.CoreComponents.icon name="hero-user-group" class="size-8 mb-2" />

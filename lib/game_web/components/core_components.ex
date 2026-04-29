@@ -602,11 +602,11 @@ defmodule GameWeb.CoreComponents do
 
   def effect_list(assigns) do
     ~H"""
-    <ul>
-      <li :for={effect <- @card.effects} class="grid grid-cols-[auto_1fr] gap-2">
+    <ul class="text-black">
+      <li :for={effect <- @card.effects}>
         <%!-- <li :for={effect <- @card.effects} class="grid grid-cols-2 gap-2"> --%>
         <span>{effect["type"]}</span>
-        <span>{Jason.encode!(Map.drop(effect, ["type"]))}</span>
+        <span>{Jason.encode!(Map.drop(effect, ["type"]), pretty: :true)}</span>
       </li>
     </ul>
     """
@@ -740,5 +740,13 @@ defmodule GameWeb.CoreComponents do
   """
   def translate_errors(errors, field) when is_list(errors) do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
+  end
+
+    def translate_backpex({msg, opts}) do
+    if count = opts[:count] do
+      Gettext.dngettext(GameWeb.Gettext, "backpex", msg, msg, count, opts)
+    else
+      Gettext.dgettext(GameWeb.Gettext, "backpex", msg, opts)
+    end
   end
 end

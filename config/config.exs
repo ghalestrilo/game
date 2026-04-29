@@ -65,7 +65,10 @@ config :tailwind,
     cd: Path.expand("..", __DIR__)
   ]
 
-config :backpex, :pubsub_server, Game.PubSub
+config :backpex,
+  pubsub_server: Game.PubSub,
+  translator_function: {GameWeb.CoreComponents, :translate_backpex},
+  error_translator_function: {GameWeb.CoreComponents, :translate_error}
 
 # Configures Elixir's Logger
 config :logger, :console,

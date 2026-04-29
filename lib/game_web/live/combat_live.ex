@@ -13,7 +13,7 @@ defmodule GameWeb.CombatLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class=" mx-auto max-w-full p-4">
+    <div class=" mx-auto max-w-full p-4 mb-100">
       <div class="mb-4 flex gap-4">
         <button
           phx-click="reset"
@@ -43,9 +43,9 @@ defmodule GameWeb.CombatLive do
       </div>
 
       <%= if @game_state do %>
-        <!-- Combat State Panel -->
-        <div class="w-full flex flex-row gap-8">
-          <div class="mb-4 min-w-[300px] bg-gray-100 p-4 rounded shadow inline-block">
+      <div class="w-full flex flex-row gap-8 ">
+      <!-- Combat State Panel -->
+          <div class="mb-4 min-w-[300px] bg-gray-800 p-4 rounded shadow inline-block">
             <h3 class="text-lg font-bold mb-2">Combat State</h3>
             <div class="text-md">
               <span class="font-semibold">State:</span>
@@ -60,23 +60,23 @@ defmodule GameWeb.CombatLive do
                 {@game_state.combat.current_turn.player.name} ({@game_state.combat.current_turn.player.class})
               </div>
             <% end %>
-            
+
     <!-- Turn Queue Panel -->
             <div class="mt-4">
               <h3 class="text-lg font-bold mb-2">Turn Queue</h3>
               <ul class="text-sm">
                 <%= for character <- Game.CombatState.get_current_queue(@game_state.combat), character != nil do %>
-                  <li class="my-2 p-2 border border-gray-100 rounded">
+                  <li class="my-2 p-2 border border-white/20 rounded">
                     <div class="pb-1 flex gap-1">
                       <span
                         :for={hp <- 1..Game.Character.get_max_hp(character)}
-                        class={"#{if hp > character.hp, do: "bg-gray-300", else: "bg-green-300"} flex-1 h-1 rounded-[2px]"}
+                        class={"#{if hp > character.hp, do: "bg-gray-300", else: "bg-green-300"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
                       />
                     </div>
                     <div class="pb-1 flex gap-1">
                       <span
                         :for={ap <- 1..Game.Character.get_max_ap(character)}
-                        class={"#{if ap > character.ap, do: "bg-gray-300", else: "bg-yellow-300"} flex-1 h-1 rounded-[2px]"}
+                        class={"#{if ap > character.ap, do: "bg-gray-300", else: "bg-yellow-300"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
                       />
                     </div>
                     <div class="pb-1 flex gap-1">
@@ -88,7 +88,7 @@ defmodule GameWeb.CombatLive do
                               _ -> 0
                             end
                         }
-                        class="bg-blue-300 flex-1 h-1 rounded-[2px]"
+                        class="bg-blue-300 max-w-[20px] flex-1 h-2 rounded-[2px]"
                       />
                     </div>
                     {inspect(character)}
@@ -97,7 +97,7 @@ defmodule GameWeb.CombatLive do
               </ul>
             </div>
           </div>
-          
+
     <!-- Game board -->
           <div class="game-board flex-1">
             <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
@@ -108,7 +108,7 @@ defmodule GameWeb.CombatLive do
                     phx-value-target_position={"#{q}_#{r}_#{s}"}
                     class={
                       [
-                        "hex-cell border border-gray-300 w-20 h-20 flex items-center justify-center  bg-white",
+                        "hex-cell border border-gray-300 w-20 h-20 flex items-center justify-center bg-white",
                         # If distance from `:starting_position` is within `:movement_range` highlight the hex cell
                         if(
                           @game_state.combat.current_turn.player &&
@@ -156,7 +156,7 @@ defmodule GameWeb.CombatLive do
         <div class="flex gap-8">
           <!-- Action log panel -->
           <div
-            class="action-log bg-gray-100 p-4 mt-8 rounded overflow-auto flex-1"
+            class="action-log bg-gray-100 p-4 mt-8 rounded overflow-auto flex-1 text-black"
             style="max-height: 200px;"
           >
             <h3 class="text-lg font-bold mb-2">Action Log</h3>
@@ -226,7 +226,7 @@ defmodule GameWeb.CombatLive do
                   "card",
                   if(card == Map.get(@game_state.combat.current_turn, :card, nil),
                     do: "!bg-yellow-50",
-                    else: ""
+                    else: "bg-blue-100"
                   )
                 ]}
               >
@@ -255,7 +255,7 @@ defmodule GameWeb.CombatLive do
           <p>{Jason.encode!(@game_state)}</p>
         </details>
       </div> --%>
-      
+
     <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}
