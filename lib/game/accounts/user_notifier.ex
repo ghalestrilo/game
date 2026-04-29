@@ -9,7 +9,7 @@ defmodule Game.Accounts.UserNotifier do
     email =
       new()
       |> to(recipient)
-      |> from({"Game", "contact@example.com"})
+      |> from({"Game", "hexdecks@grilosoft.com"})
       |> subject(subject)
       |> text_body(body)
 

@@ -19,7 +19,7 @@ defmodule GameWeb.MultiplayerLive do
       <h1 class="text-2xl font-bold">PVP Lobby</h1>
       <button
         phx-click="create_lobby"
-        class="px-4 py-2 rounded-2 bg-primary text-primary"
+        class="px-4 py-2 rounded-2 bg-primary"
       >
         Create Lobby
       </button>

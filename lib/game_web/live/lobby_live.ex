@@ -99,7 +99,7 @@ defmodule GameWeb.LobbyLive do
         <button
           phx-click="toggle_ready"
           disabled={is_nil(my_class)}
-          class="px-4 py-2 rounded-2 bg-primary text-primary disabled:opacity-50"
+          class="px-4 py-2 rounded-2 bg-primary disabled:opacity-50"
         >
           Ready
         </button>
