@@ -141,6 +141,44 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
     end
   end
 
+  describe "formula editor for new effects" do
+    test "selecting an operator shows the correct number of operand slots", %{conn: conn} do
+      # Start with a card whose effect has an empty formula value — this is the
+      # "clean slate" state a user reaches after adding a new effect row.
+      {:ok, card} =
+        Game.BaseCards.create_base_card(%{
+          name: "New Effect Card",
+          ap: 1,
+          headline: "test",
+          rarity: :common,
+          effects: [%{type: "damage", value: %{}}]
+        })
+
+      {:ok, view, html} = live(conn, ~p"/admin/base_cards/#{card.id}/edit")
+
+      # On load the formula editor shows no operator selected and no operand slots
+      refute html =~ ~s(name="change[effects][0][value][0][value]")
+
+      # Simulate what the browser actually sends when a user picks an option:
+      # a full form params map rooted at "change", not a bare %{"value" => op}.
+      view
+      |> element("select[name='change[effects][0][value][operator]']")
+      |> render_change(%{
+        "change" => %{"effects" => %{"0" => %{"value" => %{"operator" => "*"}}}},
+        "_target" => ["change", "effects", "0", "value", "operator"]
+      })
+
+      html = render(view)
+
+      # Two operand slots must now appear below the operator
+      assert html =~ ~s(name="change[effects][0][value][0][value]"),
+             "expected first operand slot after selecting * operator"
+
+      assert html =~ ~s(name="change[effects][0][value][1][value]"),
+             "expected second operand slot after selecting * operator"
+    end
+  end
+
   # Count value-type inputs at depth 0 of effect N's formula
   defp count_value_inputs(html, effect_index) do
     prefix = "change[effects][#{effect_index}][value]"

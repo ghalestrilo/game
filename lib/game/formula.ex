@@ -131,7 +131,7 @@ defmodule Game.Formula do
         %{arity: :variable, args: [:number], description: "Subtraction", min_args: 1}
 
       "*" ->
-        %{arity: :variable, args: [:number], description: "Multiplication", min_args: 1}
+        %{arity: :variable, args: [:number], description: "Multiplication", min_args: 2}
 
       "/" ->
         %{arity: 2, args: [:number, :number], description: "Division"}

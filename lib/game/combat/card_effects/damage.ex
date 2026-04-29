@@ -32,6 +32,7 @@ defmodule Game.Combat.CardEffects.Damage do
 
     @impl Game.Combat.CardEffect
     def get_value_label(%Damage{value_label: label}) when is_binary(label), do: label
+    def get_value_label(%Damage{value: v}) when is_map(v), do: inspect(v)
     def get_value_label(%Damage{value: v}), do: "#{v}"
   end
 end

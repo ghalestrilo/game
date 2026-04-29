@@ -278,13 +278,17 @@ defmodule GameWeb.FormulaEditorComponent do
 
   # Private helper functions
 
-  defp extract_operator_value(%{"value" => operator}, _field, _path), do: operator
+  defp extract_operator_value(%{"value" => operator}, _field, _path) when is_binary(operator),
+    do: operator
 
   defp extract_operator_value(params, field, path) do
-    # Navigate through nested params structure
-    # For root: %{"formula" => %{"operator" => ">"}}
-    # For nested: %{"formula" => %{"0" => %{"operator" => "var"}}}
-    value = get_in(params, [field | Enum.map(path, &to_string/1)] ++ ["operator"])
-    value || ""
+    # The browser sends a full nested params map keyed by the bracket-notation field
+    # name, e.g. field = "change[effects][0][value]" arrives as nested maps:
+    # %{"change" => %{"effects" => %{"0" => %{"value" => %{"operator" => ">"}}}}}
+    # Parse the bracket path into a list of string keys, append index path and "operator".
+    field_keys = Regex.scan(~r/([^\[\]]+)/, field, capture: :all_but_first) |> List.flatten()
+    index_keys = Enum.map(path, &to_string/1)
+    full_path = field_keys ++ index_keys ++ ["operator"]
+    get_in(params, full_path) || ""
   end
 end

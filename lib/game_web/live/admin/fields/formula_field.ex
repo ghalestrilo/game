@@ -20,10 +20,13 @@ defmodule GameWeb.Admin.Fields.FormulaField do
 
   @impl Backpex.Field
   def render_form(assigns) do
+    value = Phoenix.HTML.Form.input_value(assigns.form, assigns.name)
+
     value =
-      Map.get(assigns, :value) ||
-        Phoenix.HTML.Form.input_value(assigns.form, assigns.name) ||
-        %{}
+      case value do
+        v when is_map(v) -> v
+        _ -> %{}
+      end
 
     assigns = assign(assigns, :formula_value, value)
 
