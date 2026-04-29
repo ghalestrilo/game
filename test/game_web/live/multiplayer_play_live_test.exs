@@ -22,8 +22,13 @@ defmodule GameWeb.MultiplayerPlayLiveTest do
     {:ok, lobby_view2, _} = live(conn2, lobby_path)
 
     # Both select a class
-    lobby_view1 |> element("form[phx-change='select_class']") |> render_change(%{"class" => "fighter"})
-    lobby_view2 |> element("form[phx-change='select_class']") |> render_change(%{"class" => "mage"})
+    lobby_view1
+    |> element("form[phx-change='select_class']")
+    |> render_change(%{"class" => "fighter"})
+
+    lobby_view2
+    |> element("form[phx-change='select_class']")
+    |> render_change(%{"class" => "mage"})
 
     # Both toggle ready — second ready triggers game start and redirects both lobby views
     lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()

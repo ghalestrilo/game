@@ -82,7 +82,9 @@ defmodule GameWeb.MultiplayerPlayLive do
   def handle_event(
         "interact",
         params,
-        %{assigns: %{game_state: %{combat: %{state: :card_selected, current_turn: %{card: card}}}}} = socket
+        %{
+          assigns: %{game_state: %{combat: %{state: :card_selected, current_turn: %{card: card}}}}
+        } = socket
       ) do
     if not my_turn?(socket) do
       {:noreply, put_flash(socket, :error, "It's not your turn")}
@@ -101,7 +103,8 @@ defmodule GameWeb.MultiplayerPlayLive do
   def handle_event(
         "interact",
         %{"target_position" => target_position},
-        %{assigns: %{game_state: %{combat: %{state: :running, current_turn: %{player: player}}}}} = socket
+        %{assigns: %{game_state: %{combat: %{state: :running, current_turn: %{player: player}}}}} =
+          socket
       ) do
     if not my_turn?(socket) do
       {:noreply, put_flash(socket, :error, "It's not your turn")}

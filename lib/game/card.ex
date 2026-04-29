@@ -200,7 +200,11 @@ defmodule Game.Card do
 
   def get_targeting_type(%__MODULE__{}), do: :character
 
-  def is_target_cell_valid?(%__MODULE__{targeting: targeting} = card, target_position, combat_state) do
+  def is_target_cell_valid?(
+        %__MODULE__{targeting: targeting} = card,
+        target_position,
+        combat_state
+      ) do
     targeting_type = get_targeting_type(card)
     position_result = Game.Grid.get_object(combat_state.grid, target_position)
 

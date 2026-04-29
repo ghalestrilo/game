@@ -21,7 +21,14 @@ defmodule GameWeb.LobbyLive do
           case Lobby.join(id, user) do
             {:ok, lobby_state} ->
               base_classes = Content.list_base_classes()
-              {:ok, assign(socket, lobby: lobby_state, lobby_id: id, base_classes: base_classes, current_user_id: user.id)}
+
+              {:ok,
+               assign(socket,
+                 lobby: lobby_state,
+                 lobby_id: id,
+                 base_classes: base_classes,
+                 current_user_id: user.id
+               )}
 
             {:error, :full} ->
               {:ok,
@@ -77,9 +84,9 @@ defmodule GameWeb.LobbyLive do
         <ul class="flex flex-col gap-2">
           <%= for player <- @lobby.players do %>
             <li class="px-4 py-2 bg-secondary rounded flex gap-2 items-center">
-              <%= player.email %>
+              {player.email}
               <%= if player.class do %>
-                <span><%= player.class %></span>
+                <span>{player.class}</span>
               <% end %>
               <%= if player.ready do %>
                 <span>ready</span>
@@ -87,12 +94,13 @@ defmodule GameWeb.LobbyLive do
             </li>
           <% end %>
         </ul>
-        <% my_class = @lobby.players |> Enum.find(&(&1.id == @current_user_id)) |> then(& &1 && &1.class) %>
+        <% my_class =
+          @lobby.players |> Enum.find(&(&1.id == @current_user_id)) |> then(&(&1 && &1.class)) %>
         <form phx-change="select_class">
           <select name="class">
             <option value="" selected={is_nil(my_class)}>Pick a class</option>
             <%= for bc <- @base_classes do %>
-              <option value={bc.class} selected={my_class == bc.class}><%= bc.class %></option>
+              <option value={bc.class} selected={my_class == bc.class}>{bc.class}</option>
             <% end %>
           </select>
         </form>

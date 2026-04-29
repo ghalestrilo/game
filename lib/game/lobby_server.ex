@@ -111,7 +111,7 @@ defmodule Game.LobbyServer do
   end
 
   defp maybe_start_game(%{players: players, game_pid: nil} = state) do
-    all_ready = length(players) == 2 and Enum.all?(players, & &1.ready and not is_nil(&1.class))
+    all_ready = length(players) == 2 and Enum.all?(players, &(&1.ready and not is_nil(&1.class)))
 
     if all_ready do
       [p1, p2] = players

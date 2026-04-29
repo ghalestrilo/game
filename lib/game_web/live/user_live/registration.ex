@@ -8,34 +8,34 @@ defmodule GameWeb.UserLive.Registration do
   def render(assigns) do
     ~H"""
     <div class="mx-auto max-w-sm">
-        <div class="text-center">
-          <.header>
-            Register for an account
-            <:subtitle>
-              Already registered?
-              <.link navigate={~p"/users/log-in"} class="font-semibold text-brand hover:underline">
-                Log in
-              </.link>
-              to your account now.
-            </:subtitle>
-          </.header>
-        </div>
+      <div class="text-center">
+        <.header>
+          Register for an account
+          <:subtitle>
+            Already registered?
+            <.link navigate={~p"/users/log-in"} class="font-semibold text-brand hover:underline">
+              Log in
+            </.link>
+            to your account now.
+          </:subtitle>
+        </.header>
+      </div>
 
-        <.form for={@form} id="registration_form" phx-submit="save" phx-change="validate">
-          <.input
-            field={@form[:email]}
-            type="email"
-            label="Email"
-            autocomplete="username"
-            spellcheck="false"
-            required
-            phx-mounted={JS.focus()}
-          />
+      <.form for={@form} id="registration_form" phx-submit="save" phx-change="validate">
+        <.input
+          field={@form[:email]}
+          type="email"
+          label="Email"
+          autocomplete="username"
+          spellcheck="false"
+          required
+          phx-mounted={JS.focus()}
+        />
 
-          <.button phx-disable-with="Creating account..." class="btn btn-primary w-full">
-            Create an account
-          </.button>
-        </.form>
+        <.button phx-disable-with="Creating account..." class="btn btn-primary w-full">
+          Create an account
+        </.button>
+      </.form>
     </div>
     """
   end

@@ -50,7 +50,11 @@ defmodule GameWeb.CoreComponents do
       data-cancel={JS.exec(@on_cancel, "phx-remove")}
       class="relative z-50 hidden"
     >
-      <div id={"#{@id}-bg"} class="bg-base-300/90 fixed inset-0 transition-opacity" aria-hidden="true" />
+      <div
+        id={"#{@id}-bg"}
+        class="bg-base-300/90 fixed inset-0 transition-opacity"
+        aria-hidden="true"
+      />
       <div
         class="fixed inset-0 overflow-y-auto"
         aria-labelledby={"#{@id}-title"}
@@ -606,7 +610,7 @@ defmodule GameWeb.CoreComponents do
       <li :for={effect <- @card.effects}>
         <%!-- <li :for={effect <- @card.effects} class="grid grid-cols-2 gap-2"> --%>
         <span>{effect["type"]}</span>
-        <span>{Jason.encode!(Map.drop(effect, ["type"]), pretty: :true)}</span>
+        <span>{Jason.encode!(Map.drop(effect, ["type"]), pretty: true)}</span>
       </li>
     </ul>
     """
@@ -744,7 +748,7 @@ defmodule GameWeb.CoreComponents do
     for {^field, {msg, opts}} <- errors, do: translate_error({msg, opts})
   end
 
-    def translate_backpex({msg, opts}) do
+  def translate_backpex({msg, opts}) do
     if count = opts[:count] do
       Gettext.dngettext(GameWeb.Gettext, "backpex", msg, msg, count, opts)
     else

@@ -43,8 +43,8 @@ defmodule GameWeb.CombatLive do
       </div>
 
       <%= if @game_state do %>
-      <div class="w-full flex flex-row gap-8 ">
-      <!-- Combat State Panel -->
+        <div class="w-full flex flex-row gap-8 ">
+          <!-- Combat State Panel -->
           <div class="mb-4 min-w-[300px] bg-gray-800 p-4 rounded shadow inline-block">
             <h3 class="text-lg font-bold mb-2">Combat State</h3>
             <div class="text-md">
@@ -60,7 +60,7 @@ defmodule GameWeb.CombatLive do
                 {@game_state.combat.current_turn.player.name} ({@game_state.combat.current_turn.player.class})
               </div>
             <% end %>
-
+            
     <!-- Turn Queue Panel -->
             <div class="mt-4">
               <h3 class="text-lg font-bold mb-2">Turn Queue</h3>
@@ -100,7 +100,7 @@ defmodule GameWeb.CombatLive do
               </ul>
             </div>
           </div>
-
+          
     <!-- Game board -->
           <div class="game-board flex-1">
             <%= for row <- Game.Grid.to_rows(@game_state.combat.grid) do %>
@@ -260,7 +260,7 @@ defmodule GameWeb.CombatLive do
           <p>{Jason.encode!(@game_state)}</p>
         </details>
       </div> --%>
-
+      
     <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}

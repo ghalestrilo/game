@@ -125,15 +125,21 @@ defmodule GameWeb.LobbyLiveTest do
     end
 
     test "ready button is disabled until a class is selected", %{lobby_view1: lobby_view1} do
-      assert lobby_view1 |> element("button[phx-click='toggle_ready'][disabled]") |> has_element?()
+      assert lobby_view1
+             |> element("button[phx-click='toggle_ready'][disabled]")
+             |> has_element?()
 
       select_class(lobby_view1, "fighter")
 
-      refute lobby_view1 |> element("button[phx-click='toggle_ready'][disabled]") |> has_element?()
+      refute lobby_view1
+             |> element("button[phx-click='toggle_ready'][disabled]")
+             |> has_element?()
     end
 
     test "cannot toggle ready without a class selected", %{lobby_view1: lobby_view1} do
-      assert lobby_view1 |> element("button[phx-click='toggle_ready'][disabled]") |> has_element?()
+      assert lobby_view1
+             |> element("button[phx-click='toggle_ready'][disabled]")
+             |> has_element?()
     end
   end
 
