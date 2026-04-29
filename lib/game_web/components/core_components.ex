@@ -607,7 +607,10 @@ defmodule GameWeb.CoreComponents do
   def effect_list(assigns) do
     ~H"""
     <ul class="flex flex-wrap gap-2 text-xs text-base-content/70">
-      <li :for={raw <- @card.effects} class="flex items-center gap-1">
+      <li
+        :for={raw <- Enum.filter(@card.effects, &Game.Card.effect_implemented?/1)}
+        class="flex items-center gap-1"
+      >
         <% effect = Game.Card.get_structured_effect(raw) %>
         <.icon name={Game.Combat.CardEffect.get_icon(effect)} class="w-3 h-3" />
         <span>{Game.Combat.CardEffect.get_value_label(effect)}</span>
@@ -627,6 +630,7 @@ defmodule GameWeb.CoreComponents do
   attr :card, Game.Card, required: true
   attr :index, :integer
   attr :selected, :boolean, default: false
+  attr :disabled, :boolean, default: false
   attr :on_click, :string, default: "pick_card"
   attr :click_target, :any, default: nil
 
@@ -638,10 +642,11 @@ defmodule GameWeb.CoreComponents do
         "rounded-lg border border-base-300 bg-base-100 shadow-md w-72 flex flex-col p-4 transition-[all] duration-140 ease-in-out
         hover:-mt-4 hover:mb-4
         ",
-        if(@selected, do: "!bg-yellow-800 -mt-4 mb-4", else: "")
+        if(@selected, do: "!bg-yellow-800 -mt-4 mb-4", else: ""),
+        if(@disabled, do: "opacity-40 cursor-not-allowed pointer-events-none", else: "")
       ]}
-      phx-click={@on_click}
-      phx-blur={@on_click}
+      phx-click={unless @disabled, do: @on_click}
+      phx-blur={unless @disabled, do: @on_click}
       phx-value-card_index={@index}
       phx-target={@click_target}
     >
@@ -660,7 +665,9 @@ defmodule GameWeb.CoreComponents do
         {@card.description}
         <!-- TODO: temporarily describe full effects as JSON in card content -->
         <li :for={raw <- @card.effects} class="flex items-center gap-1">
-          <span class="text-base-content/40">{Jason.encode!(raw, pretty: true)}</span>
+          <span class="text-base-content/40">
+            {Jason.encode!(Map.from_struct(raw), pretty: true)}
+          </span>
         </li>
       </div>
       <div class="mt-auto pt-2 border-t border-base-300 w-full">

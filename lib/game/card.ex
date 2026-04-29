@@ -184,9 +184,16 @@ defmodule Game.Card do
           v
       end)
 
-    @effect_types
-    |> Map.fetch!(type)
-    |> struct(effect_data)
+    if type && Map.has_key?(@effect_types, type) do
+      Logger.info("Processing Card Effect: #{inspect(effect)}")
+
+      @effect_types
+      |> Map.fetch!(type)
+      |> struct(effect_data)
+    else
+      Logger.warning("Effect not implemented, ignoring: #{inspect(effect)}")
+      nil
+    end
   end
 
   def get_structured_effect(%{"type" => type} = effect) do
@@ -195,9 +202,16 @@ defmodule Game.Card do
         Map.put(acc, String.to_atom(key), value)
       end)
 
-    @effect_types
-    |> Map.fetch!(type)
-    |> struct(effect_data)
+    if type && Map.has_key?(@effect_types, type) do
+      Logger.info("Processing Card Effect: #{inspect(effect)}")
+
+      @effect_types
+      |> Map.fetch!(type)
+      |> struct(effect_data)
+    else
+      Logger.warning("Effect not implemented, ignoring: #{inspect(effect)}")
+      nil
+    end
   end
 
   defp temporary_hack_filter_only_allowed_effects(effects) do
@@ -219,6 +233,20 @@ defmodule Game.Card do
         false
       end
     end)
+  end
+
+  def selectable?(%__MODULE__{cost: cost}, combat_state) do
+    player = CombatState.get_current_player(combat_state)
+    player.ap >= cost
+  end
+
+  def effect_implemented?(%{type: type} = effect) do
+    if type && Map.has_key?(@effect_types, type) do
+      true
+    else
+      Logger.warning("Effect not implemented, ignoring: #{inspect(effect)}")
+      false
+    end
   end
 
   def get_targeting_type(%__MODULE__{targeting: %{"type" => type}}) when is_binary(type),

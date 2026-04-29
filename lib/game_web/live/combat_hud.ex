@@ -11,21 +11,28 @@ defmodule GameWeb.CombatHUD do
   def render(assigns) do
     ~H"""
     <div class="fixed z-10 grid [grid-template-areas:'queue_._action'_'draw_hand_discard'] [grid-template-columns:280px_1fr_280px] [grid-template-rows:1fr_auto] gap-4 p-4 pointer-events-none origin-top-left scale-75 w-[133%] h-[133%] pb-12">
-      <div :if={@game_state} class="[grid-area:queue] bg-gray-800 self-start pointer-events-auto p-2 rounded">
+      <div
+        :if={@game_state}
+        class="[grid-area:queue] bg-gray-800 self-start pointer-events-auto p-2 rounded"
+      >
         <!-- Buttons -->
         <div class="flex flex-wrap gap-2 mb-2">
           <button phx-click="reset" phx-target={@myself} class="btn btn-primary btn-sm">Reset</button>
-          <button phx-click="skip_turn" phx-target={@myself} class="btn btn-success btn-sm">Skip Turn</button>
-          <button phx-click="win_match" phx-target={@myself} class="btn btn-warning btn-sm">Win Match</button>
+          <button phx-click="skip_turn" phx-target={@myself} class="btn btn-success btn-sm">
+            Skip Turn
+          </button>
+          <button phx-click="win_match" phx-target={@myself} class="btn btn-warning btn-sm">
+            Win Match
+          </button>
         </div>
-
-        <!-- Combat state -->
+        
+    <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
           <span class="badge badge-info badge-sm ml-1">{@game_state.combat.state}</span>
         </div>
-
-        <!-- Turn Queue -->
+        
+    <!-- Turn Queue -->
         <div>
           <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
           <h3 class="text-base font-bold mb-2">Next up</h3>
@@ -71,8 +78,8 @@ defmodule GameWeb.CombatHUD do
           </ul>
         </div>
       </div>
-
-      <!-- Action Log -->
+      
+    <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
         <div class="bg-base-300 rounded p-2 overflow-y-auto max-h-40 text-xs">
@@ -81,8 +88,8 @@ defmodule GameWeb.CombatHUD do
           </ul>
         </div>
       </div>
-
-      <!-- Card piles -->
+      
+    <!-- Card piles -->
       <%= if @game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id) do %>
         <div class="[grid-area:draw] flex flex-col gap-3 text-xs pointer-events-auto">
@@ -104,6 +111,7 @@ defmodule GameWeb.CombatHUD do
           <.card
             :for={{card, index} <- Enum.with_index(@game_state.combat.current_turn.player.cards.hand)}
             selected={card == Map.get(@game_state.combat.current_turn, :card, nil)}
+            disabled={not Game.Card.selectable?(card, @game_state.combat)}
             index={index}
             card={card}
             click_target={@myself}

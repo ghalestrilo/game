@@ -22,14 +22,14 @@ defmodule GameWeb.CombatLive do
         action_log={@action_log}
         current_player={@current_player}
       />
-
+      
     <!-- Game area -->
       <div class="flex-1 flex flex-col overflow-hidden">
         <%= if @game_state do %>
           <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
           <% rows = Game.Grid.to_rows(@game_state.combat.grid) %>
           <% pos = build_position_index(rows) %>
-
+          
     <!-- Board -->
           <div class="flex-1 flex items-center justify-center overflow-hidden">
             <div class="game-board">
@@ -52,7 +52,7 @@ defmodule GameWeb.CombatLive do
                   <% end %>
                 </div>
               <% end %>
-
+              
     <!-- Entity layer -->
               <div class="absolute inset-0 pointer-events-none">
                 <%= for character <- queue, character != nil do %>
@@ -76,7 +76,7 @@ defmodule GameWeb.CombatLive do
           </div>
         <% end %>
       </div>
-
+      
     <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}

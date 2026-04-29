@@ -7,11 +7,14 @@ defmodule Game.BaseCards.BaseCard do
     def type, do: :string
     def cast(v) when is_binary(v), do: {:ok, v}
     def cast(v) when is_number(v), do: {:ok, to_string(v)}
+    def cast(v) when is_map(v), do: {:ok, v}
     def cast(_), do: :error
     def load(v) when is_binary(v), do: {:ok, v}
     def load(v) when is_number(v), do: {:ok, to_string(v)}
+    def load(v) when is_map(v), do: {:ok, v}
     def load(_), do: :error
     def dump(v) when is_binary(v), do: {:ok, v}
+    def dump(v) when is_map(v), do: {:ok, v}
     def dump(_), do: :error
     def embed_as(_), do: :self
     def equal?(a, b), do: a == b

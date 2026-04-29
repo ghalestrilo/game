@@ -23,9 +23,11 @@ defmodule GameWeb.Router do
     pipe_through :browser
 
     get "/", PageController, :home
+
     live_session :game, layout: {GameWeb.Layouts, :game} do
       live "/sandbox", GameLive
     end
+
     live "/campaign/character-select", Campaign.CharacterSelectLive
     live "/campaign/play", Campaign.CampaignPlayLive
 
