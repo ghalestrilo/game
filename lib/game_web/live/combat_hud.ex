@@ -11,19 +11,16 @@ defmodule GameWeb.CombatHUD do
   def render(assigns) do
     ~H"""
     <div class="fixed z-10 grid [grid-template-areas:'queue_._action'_'draw_hand_discard'] [grid-template-columns:280px_1fr_280px] [grid-template-rows:1fr_auto] gap-4 p-4 pointer-events-none origin-top-left scale-75 w-[133%] h-[133%] pb-12">
-      <div :if={@game_state} class="[grid-area:queue] bg-gray-800 self-start pointer-events-auto">
+      <div :if={@game_state} class="[grid-area:queue] bg-gray-800 self-start pointer-events-auto p-2 rounded">
         <!-- Buttons -->
-        <div class="[grid-area:hand] flex flex-wrap gap-2">
-          <button phx-click="reset" phx-target={@myself} class="btn btn-primary btn-sm">Reset Game</button>
+        <div class="flex flex-wrap gap-2 mb-2">
+          <button phx-click="reset" phx-target={@myself} class="btn btn-primary btn-sm">Reset</button>
           <button phx-click="skip_turn" phx-target={@myself} class="btn btn-success btn-sm">Skip Turn</button>
           <button phx-click="win_match" phx-target={@myself} class="btn btn-warning btn-sm">Win Match</button>
-          <button phx-click="modal" phx-value-action="load_game" phx-target={@myself} class="btn btn-secondary btn-sm">
-            Load Game State
-          </button>
         </div>
 
         <!-- Combat state -->
-        <div>
+        <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
           <span class="badge badge-info badge-sm ml-1">{@game_state.combat.state}</span>
         </div>
@@ -31,7 +28,7 @@ defmodule GameWeb.CombatHUD do
         <!-- Turn Queue -->
         <div>
           <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
-          <h3 class="text-base font-bold mb-2">Turn Queue</h3>
+          <h3 class="text-base font-bold mb-2">Next up</h3>
           <ul class="text-sm flex flex-col gap-2">
             <li
               :for={character <- Enum.filter(queue, fn character -> character != nil end)}

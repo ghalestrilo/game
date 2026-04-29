@@ -15,7 +15,7 @@ defmodule Game.Content.BaseDeckCard do
   @doc false
   def changeset(base_deck_card, attrs) do
     base_deck_card
-    |> cast(attrs, [:card_id, :deck_id, :count])
-    |> validate_required([:card_id, :deck_id, :count])
+    |> cast(attrs, [:card_id, :count])
+    |> validate_required([:card_id, :count])
   end
 end
