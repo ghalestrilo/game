@@ -55,7 +55,7 @@ defmodule Game.FormulaAliasTest do
     end
 
     test "returns empty map for unknown alias name" do
-      assert Formula.resolve(%{"alias" => "nonexistent"}) == nil
+      assert Formula.resolve(%{"alias" => "nonexistent"}) == %{}
     end
 
     test "skips DB query when no aliases are present in formula" do
