@@ -1,3 +1,8 @@
+@keyframes float-up {
+  0%   { opacity: 1; translate: -50% 0; }
+  100% { opacity: 0; translate: -50% -2.5rem; }
+}
+
 @keyframes hit {
   0%   { filter: brightness(1);                                         rotate: 0deg;  scale: 1; }
   15%  { filter: brightness(3) sepia(1) saturate(5) hue-rotate(10deg); rotate: -6deg; scale: 1.08; }
@@ -17,6 +22,17 @@
 
   .character-hit {
     animation: hit 0.5s ease-out forwards;
+  }
+
+  .floating-number {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    font-size: 1.1rem;
+    font-weight: 800;
+    pointer-events: none;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+    animation: float-up 1s ease-out forwards;
   }
 
   .game-board {

@@ -33,5 +33,7 @@ defmodule Game.Combat.CardEffects.Heal do
     @impl Game.Combat.CardEffect
     def get_value_label(%Heal{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Heal{value: v}), do: "#{v}"
+
+    def animate(%Heal{value: v}), do: %{label: "+#{v}", color: :green}
   end
 end

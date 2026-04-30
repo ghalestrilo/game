@@ -2,6 +2,13 @@ defmodule Game.CombatTest do
   use ExUnit.Case, async: true
   alias Game.{Combat, Character, Fixtures, Grid, CombatState}
 
+  defp play_card(combat, position) do
+    case Combat.process_action(combat, {:play_card, position}) do
+      {:ok, updated, _animations} -> {:ok, updated}
+      other -> other
+    end
+  end
+
   @cards %{
     attack: %{Fixtures.attack_card() | id: 1},
     fireball: %{Fixtures.fireball_card() | id: 2},
@@ -107,7 +114,7 @@ defmodule Game.CombatTest do
           {:pick_card, fighter_with_expensive, @cards.expensive}
         )
 
-      result = Combat.process_action(updated_combat, {:play_card, {2, 0, -2}})
+      result = play_card(updated_combat, {2, 0, -2})
 
       {:ok, result: result, combat_state: updated_combat}
     end
@@ -127,7 +134,7 @@ defmodule Game.CombatTest do
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
 
-      result = Combat.process_action(updated_combat, {:play_card, mage.position})
+      result = play_card(updated_combat, mage.position)
 
       {:ok, result: result, fighter: fighter, original_mage: mage, test_card: @cards.attack}
     end
@@ -170,7 +177,7 @@ defmodule Game.CombatTest do
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, @cards.heal})
 
-      result = Combat.process_action(updated_combat, {:play_card, {0, 0, 0}})
+      result = play_card(updated_combat, {0, 0, 0})
 
       {:ok, result: result, heal_card: @cards.heal, original_hp: fighter.hp}
     end
@@ -285,7 +292,7 @@ defmodule Game.CombatTest do
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, @cards.attack})
 
-      result = Combat.process_action(updated_combat, {:play_card, {3, 0, -3}})
+      result = play_card(updated_combat, {3, 0, -3})
 
       {:ok, result: result}
     end
@@ -300,7 +307,7 @@ defmodule Game.CombatTest do
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, @cards.lethal})
 
-      result = Combat.process_action(updated_combat, {:play_card, mage.position})
+      result = play_card(updated_combat, mage.position)
 
       {:ok, result: result}
     end
@@ -453,7 +460,7 @@ defmodule Game.CombatTest do
 
       # Play the card on mage's position
       {:ok, first_attack_result} =
-        Combat.process_action(card_selected_combat, {:play_card, mage.position})
+        play_card(card_selected_combat, mage.position)
 
       # Find updated mage after first attack
       updated_mage = Enum.find(first_attack_result.queue, &(&1.id == mage.id))
@@ -476,7 +483,7 @@ defmodule Game.CombatTest do
 
       # Play the second card on mage's position
       {:ok, second_attack_result} =
-        Combat.process_action(second_card_selected, {:play_card, mage.position})
+        play_card(second_card_selected, mage.position)
 
       # Find updated mage after second attack
       final_mage = Enum.find(second_attack_result.queue, &(&1.id == mage.id))
@@ -537,7 +544,7 @@ defmodule Game.CombatTest do
         Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
 
       # Play the card on the mage
-      result = Combat.process_action(updated_combat, {:play_card, mage.position})
+      result = play_card(updated_combat, mage.position)
 
       # Should succeed despite unimplemented effects
       assert {:ok, _final_combat} = result
@@ -555,7 +562,7 @@ defmodule Game.CombatTest do
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
 
-      {:ok, final_combat} = Combat.process_action(updated_combat, {:play_card, mage.position})
+      {:ok, final_combat} = play_card(updated_combat, mage.position)
 
       # Get updated mage
       updated_mage = Enum.find(final_combat.queue, &(&1.id == mage.id))
@@ -574,7 +581,7 @@ defmodule Game.CombatTest do
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
 
-      result = Combat.process_action(updated_combat, {:play_card, mage.position})
+      result = play_card(updated_combat, mage.position)
 
       # Should not return an error
       refute match?({:error, _}, result)
@@ -591,7 +598,7 @@ defmodule Game.CombatTest do
       {:ok, updated_combat} =
         Combat.process_action(combat_state, {:pick_card, fighter, mixed_card})
 
-      {:ok, final_combat} = Combat.process_action(updated_combat, {:play_card, mage.position})
+      {:ok, final_combat} = play_card(updated_combat, mage.position)
 
       updated_fighter = final_combat.current_turn.player
 

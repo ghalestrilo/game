@@ -32,7 +32,7 @@ defmodule GameWeb.CombatHUD do
           <span class="badge badge-info badge-sm ml-1">{@game_state.combat.state}</span>
         </div>
 
-    <!-- Turn Queue // @TODO: refactor this, create a .character_queue_card component (same_team?, current?, stats) and a queue display component -->
+    <!-- Turn Queue // @TODO: refactor this, create a .character_queue_card component (same_team?, current?, stats) and a queue display component which groups those in the current stacked layout -->
         <div>
           <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
           <h3 class="text-base font-bold mb-2">Next up</h3>

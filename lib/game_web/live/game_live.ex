@@ -164,7 +164,8 @@ defmodule GameWeb.GameLive do
         } = socket
       ) do
     with {:ok, position} <- parse_target_position(params["target_position"]),
-         {:ok, combat} <- process_game_action(socket, {:play_card, position}) do
+         {:ok, combat, animations} <-
+           Game.Combat.process_action(socket.assigns.game_state.combat, {:play_card, position}) do
       action =
         "#{socket.assigns.game_state.combat.current_turn.player.name} played card: #{card.name}"
 
@@ -178,8 +179,19 @@ defmodule GameWeb.GameLive do
 
       socket =
         case Game.Grid.get_object(socket.assigns.game_state.combat.grid, position) do
-          {:ok, %{id: id}} -> push_event(socket, "hit", %{id: to_string(id)})
-          _ -> socket
+          {:ok, %{id: id}} ->
+            target_id = to_string(id)
+
+            socket
+            |> push_event("hit", %{id: target_id})
+            |> then(fn s ->
+              Enum.reduce(animations, s, fn anim, s ->
+                push_event(s, "float", %{id: target_id, label: anim.label, color: anim.color})
+              end)
+            end)
+
+          _ ->
+            socket
         end
 
       {:noreply, socket}

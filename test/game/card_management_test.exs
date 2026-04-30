@@ -302,7 +302,7 @@ defmodule Game.CardManagementTest do
                )
 
       # Then play the card on target
-      assert {:ok, updated_combat} =
+      assert {:ok, updated_combat, _} =
                Combat.process_action(card_selected_combat, {:play_card, target.position})
 
       # Find updated player

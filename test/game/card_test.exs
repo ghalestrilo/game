@@ -405,7 +405,7 @@ defmodule Game.CardTest do
         current_turn: %{player: caster, starting_position: caster.position, card: nil}
       }
 
-      updated_state = Card.process_card(combat_state, target, card)
+      {updated_state, _} = Card.process_card(combat_state, target, card)
       updated_target = Enum.find(updated_state.queue, &(&1.id == target.id))
       assert updated_target.hp == target.hp - caster.hp
     end

@@ -36,5 +36,7 @@ defmodule Game.Combat.CardEffects.Shield do
     @impl Game.Combat.CardEffect
     def get_value_label(%Shield{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Shield{value: v}), do: "#{v}"
+
+    def animate(_), do: nil
   end
 end

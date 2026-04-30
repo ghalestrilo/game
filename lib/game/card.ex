@@ -129,16 +129,21 @@ defmodule Game.Card do
     apply_card_effects(updated_combat, card.effects, updated_target)
   end
 
-  # Helper function to apply multiple card effects
+  # Helper function to apply multiple card effects; returns {combat_state, animations}
   defp apply_card_effects(initial_combat_state, effects, target) when is_list(effects) do
     effects
     |> temporary_hack_filter_only_allowed_effects()
-    |> Enum.reduce(initial_combat_state, fn effect, combat_state ->
-      effect
-      |> get_structured_effect()
-      |> resolve_effect_value(target, combat_state)
-      |> CardEffect.process(target, combat_state)
+    |> Enum.reduce({initial_combat_state, []}, fn effect, {combat_state, anims} ->
+      resolved =
+        effect
+        |> get_structured_effect()
+        |> resolve_effect_value(target, combat_state)
+
+      new_combat = CardEffect.process(resolved, target, combat_state)
+      new_anim = CardEffect.animate(resolved)
+      {new_combat, if(new_anim, do: [new_anim | anims], else: anims)}
     end)
+    |> then(fn {combat, anims} -> {combat, Enum.reverse(anims)} end)
   end
 
   defp resolve_effect_value(%{value: value} = effect, target, combat_state) when is_map(value) do

@@ -102,7 +102,7 @@ defmodule Game.Combat.CardEffects.DamageTest do
       warrior: warrior,
       mage: mage
     } do
-      updated_state = Card.process_card(combat_state, mage, card_with(%{"var" => "caster.hp"}))
+      {updated_state, _} = Card.process_card(combat_state, mage, card_with(%{"var" => "caster.hp"}))
       updated_mage = Enum.find(updated_state.queue, &(&1.id == mage.id))
       assert updated_mage.hp == mage.hp - warrior.hp
     end
@@ -113,7 +113,7 @@ defmodule Game.Combat.CardEffects.DamageTest do
       mage: mage
     } do
       expr = %{"-" => [%{"var" => "caster.max_hp"}, %{"var" => "caster.hp"}]}
-      updated_state = Card.process_card(combat_state, mage, card_with(expr))
+      {updated_state, _} = Card.process_card(combat_state, mage, card_with(expr))
       updated_mage = Enum.find(updated_state.queue, &(&1.id == mage.id))
       assert updated_mage.hp == mage.hp - (warrior.max_hp - warrior.hp)
     end
@@ -122,7 +122,7 @@ defmodule Game.Combat.CardEffects.DamageTest do
       combat_state: combat_state,
       mage: mage
     } do
-      updated_state = Card.process_card(combat_state, mage, card_with(%{"var" => "target.hp"}))
+      {updated_state, _} = Card.process_card(combat_state, mage, card_with(%{"var" => "target.hp"}))
       updated_mage = Enum.find(updated_state.queue, &(&1.id == mage.id))
       assert updated_mage.hp == 0
     end

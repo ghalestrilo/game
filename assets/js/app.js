@@ -23,17 +23,25 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import {Hooks as BackpexHooks} from "backpex"
 
-const HitAnimation = {
+const CharacterEffects = {
   mounted() {
     window.addEventListener("phx:hit", (e) => {
-      if (e.detail.id === this.el.dataset.characterId) {
+      if (e.detail.id !== this.el.dataset.characterId) return
+      this.el.classList.remove("character-hit")
+      void this.el.offsetWidth // reflow to restart animation
+      this.el.classList.add("character-hit")
+      this.el.addEventListener("animationend", () => {
         this.el.classList.remove("character-hit")
-        void this.el.offsetWidth // reflow to restart animation
-        this.el.classList.add("character-hit")
-        this.el.addEventListener("animationend", () => {
-          this.el.classList.remove("character-hit")
-        }, {once: true})
-      }
+      }, {once: true})
+    })
+
+    window.addEventListener("phx:float", (e) => {
+      if (e.detail.id !== this.el.dataset.characterId) return
+      const el = document.createElement("span")
+      el.textContent = e.detail.label
+      el.className = `floating-number ${e.detail.color === "red" ? "text-red-400" : "text-green-400"}`
+      this.el.appendChild(el)
+      el.addEventListener("animationend", () => el.remove(), {once: true})
     })
   }
 }
@@ -42,7 +50,7 @@ let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...BackpexHooks, HitAnimation}
+  hooks: {...BackpexHooks, CharacterEffects}
 })
 
 // Show progress bar on live navigation and form submits

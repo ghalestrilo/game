@@ -161,9 +161,11 @@ defmodule Game.Combat do
             # For character targeting, target is the character struct
             target_for_processing = if is_nil(target), do: target_position, else: target
 
+            {processed_combat, animations} =
+              CombatState.process_card(combat_with_running_state, target_for_processing, card)
+
             result =
-              combat_with_running_state
-              |> CombatState.process_card(target_for_processing, card)
+              processed_combat
               |> then(fn combat ->
                 # Only check target death for character targeting
                 if is_nil(target),
@@ -173,7 +175,7 @@ defmodule Game.Combat do
               |> CombatState.refresh_grid()
               |> CombatState.check_game_over()
 
-            {:ok, result}
+            {:ok, result, animations}
 
           {:error, reason} ->
             {:error, reason}

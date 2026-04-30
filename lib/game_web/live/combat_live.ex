@@ -69,7 +69,7 @@ defmodule GameWeb.CombatLive do
                   <div
                     id={"character-#{character.id}"}
                     phx-key={to_string(character.id)}
-                    phx-hook="HitAnimation"
+                    phx-hook="CharacterEffects"
                     class={[
                       "character absolute top-0 left-0 pointer-events-auto !bg-cover !bg-no-repeat",
                       character_bg(character)
