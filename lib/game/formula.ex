@@ -136,6 +136,43 @@ defmodule Game.Formula do
     |> Enum.map(fn a -> %{name: a.name, description: a.description} end)
   end
 
+  @doc "Returns available variable paths for the given formula context."
+  @spec available_variables(atom() | nil) :: list(map())
+  def available_variables(:effect) do
+    [
+      %{name: "caster.hp", description: "Caster current HP"},
+      %{name: "caster.max_hp", description: "Caster max HP"},
+      %{name: "caster.ap", description: "Caster action points"},
+      %{name: "caster.max_ap", description: "Caster max action points"},
+      %{name: "caster.position", description: "Caster grid position"},
+      %{name: "caster.name", description: "Caster name"},
+      %{name: "caster.id", description: "Caster ID"},
+      %{name: "caster.team", description: "Caster team"},
+      %{name: "caster.dead", description: "Caster dead flag"},
+      %{name: "target.hp", description: "Target current HP"},
+      %{name: "target.max_hp", description: "Target max HP"},
+      %{name: "target.team", description: "Target team"},
+      %{name: "target.occupied", description: "Target tile occupied"},
+      %{name: "target.position", description: "Target grid position"},
+      %{name: "target.id", description: "Target ID"},
+      %{name: "state.current_turn.player.team", description: "Current turn player team"},
+      %{name: "state.queue", description: "Turn queue"}
+    ]
+  end
+
+  def available_variables(:targeting) do
+    [
+      %{name: "target.occupied", description: "Target tile occupied"},
+      %{name: "target.team", description: "Target team"},
+      %{name: "target.hp", description: "Target current HP"},
+      %{name: "target.max_hp", description: "Target max HP"},
+      %{name: "state.combat.current_turn.player.team", description: "Current turn player team"},
+      %{name: "state.combat.queue", description: "Turn queue"}
+    ]
+  end
+
+  def available_variables(_), do: []
+
   @doc """
   Returns metadata about an operator including its arity and argument types.
   """

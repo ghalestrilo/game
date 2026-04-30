@@ -24,6 +24,7 @@ defmodule GameWeb.FormulaEditorComponent do
       |> assign_new(:root_id, fn -> assigns.id end)
       |> assign_new(:root_value, fn -> assigns[:value] || %{} end)
       |> assign_new(:aliases, fn -> Formula.available_aliases() end)
+      |> assign_new(:variables, fn -> Formula.available_variables(assigns[:context]) end)
       |> then(fn s ->
         if is_root, do: assign(s, :root_value, s.assigns.value), else: s
       end)
@@ -83,6 +84,7 @@ defmodule GameWeb.FormulaEditorComponent do
                     root_id={@root_id}
                     root_value={@root_value}
                     aliases={@aliases}
+                    variables={@variables}
                   />
                 </div>
               <% end %>
@@ -150,9 +152,26 @@ defmodule GameWeb.FormulaEditorComponent do
     is_var_operator = assigns.operator == "var"
     is_alias_operator = assigns.operator == "alias"
     is_nested_map = is_map(assigns.arg)
+    has_variables = assigns.variables != []
 
     cond do
-      # For var operator, show string input for variable name (special case, can't be nested)
+      # For var operator with known context: dropdown of available variable paths
+      is_var_operator and has_variables ->
+        ~H"""
+        <select
+          name={build_field_name(@field, @path, "value")}
+          class="border border-base-300 rounded px-3 py-2 text-sm bg-base-100 text-base-content"
+        >
+          <option value="">-- Select variable --</option>
+          <%= for var <- @variables do %>
+            <option value={var.name} selected={var.name == @arg}>
+              {var.name}<%= if var.description do %> - {var.description}<% end %>
+            </option>
+          <% end %>
+        </select>
+        """
+
+      # For var operator without context: free text fallback
       is_var_operator ->
         ~H"""
         <input
@@ -193,6 +212,7 @@ defmodule GameWeb.FormulaEditorComponent do
           root_id={@root_id}
           root_value={@root_value}
           aliases={@aliases}
+          variables={@variables}
         />
         """
 

@@ -42,6 +42,7 @@ defmodule GameWeb.Admin.Fields.FormulaField do
           value={@formula_value}
           field={"#{@form[@name].name}"}
           path={[]}
+          context={:effect}
         />
       </Layout.field_container>
     </div>

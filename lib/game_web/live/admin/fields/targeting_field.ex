@@ -41,6 +41,7 @@ defmodule GameWeb.Admin.Fields.TargetingField do
             value={@targeting_rule}
             field={"#{@form[@name].name}[rule]"}
             path={[]}
+            context={:targeting}
           />
         </div>
       </Layout.field_container>
