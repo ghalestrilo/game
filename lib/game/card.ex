@@ -315,6 +315,54 @@ defmodule Game.Card do
     }
   end
 
+  def build_tile_overlay(%__MODULE__{range: range} = card, combat) when is_integer(range) do
+    player = CombatState.get_current_player(combat)
+    in_range = Game.Grid.tiles_in_range(combat.grid, player.position, range)
+
+    {:ok, state_json} = Jason.encode(combat)
+    {:ok, state_map} = Jason.decode(state_json)
+
+    targeting_rule = get_in(card.targeting, ["rule"])
+
+    base_overlay =
+      Map.new(in_range, fn coord ->
+        position_result = Game.Grid.get_object(combat.grid, coord)
+        data_context = %{
+          "target" => build_target_data(position_result),
+          "state" => %{"combat" => state_map}
+        }
+        valid? = targeting_rule && JsonLogic.resolve(targeting_rule, data_context)
+        {coord, if(valid?, do: :valid, else: :invalid)}
+      end)
+
+    aoe = aoe_radius(card)
+
+    if aoe > 0 do
+      blast_coords =
+        base_overlay
+        |> Enum.flat_map(fn
+          {coord, :valid} -> Game.Grid.tiles_in_range(combat.grid, coord, aoe)
+          _ -> []
+        end)
+        |> Enum.reject(&Map.has_key?(base_overlay, &1))
+
+      Map.merge(base_overlay, Map.new(blast_coords, &{&1, :blast}))
+    else
+      base_overlay
+    end
+  end
+
+  def build_tile_overlay(_card, _combat), do: %{}
+
+  defp aoe_radius(%__MODULE__{effects: effects}) when is_list(effects) do
+    effects
+    |> Enum.filter(&(Map.get(&1, :aoe) || Map.get(&1, "aoe")))
+    |> Enum.map(&(Map.get(&1, :range) || Map.get(&1, "range") || 1))
+    |> Enum.max(fn -> 0 end)
+  end
+
+  defp aoe_radius(_), do: 0
+
   # Build target-specific data for JsonLogic evaluation
   defp build_target_data(position_result) do
     case position_result do

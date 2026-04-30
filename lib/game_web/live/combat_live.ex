@@ -7,7 +7,16 @@ defmodule GameWeb.CombatLive do
 
   @impl true
   def update(assigns, socket) do
-    {:ok, assign(socket, assigns)}
+    card = get_in(assigns, [:game_state, :combat, :current_turn, :card])
+
+    overlay =
+      if card && assigns[:game_state] do
+        Game.Card.build_tile_overlay(card, assigns.game_state.combat)
+      else
+        %{}
+      end
+
+    {:ok, socket |> assign(assigns) |> assign(:tile_overlay, overlay)}
   end
 
   @impl true
@@ -45,7 +54,8 @@ defmodule GameWeb.CombatLive do
                         if(within_movement_range?(@game_state.combat, {q, r, s}), do: "bg-warning/10"),
                         if(current_player_at?(@game_state.combat, queue, {q, r, s}),
                           do: "!bg-success/30"
-                        )
+                        ),
+                        tile_overlay_class(Map.get(@tile_overlay, {q, r, s}))
                       ]}
                     >
                     </div>
@@ -133,6 +143,11 @@ defmodule GameWeb.CombatLive do
     send(self(), {:parent_event, "load_game_state", params})
     {:noreply, socket}
   end
+
+  defp tile_overlay_class(:valid), do: "ring-2 ring-inset ring-green-400 bg-green-400/10"
+  defp tile_overlay_class(:invalid), do: "opacity-40"
+  defp tile_overlay_class(:blast), do: "bg-orange-400/20"
+  defp tile_overlay_class(nil), do: nil
 
   defp within_movement_range?(combat, coord) do
     combat.current_turn.player &&

@@ -37,6 +37,16 @@ defmodule GameWeb.Admin.HomeLive do
             <p class="text-sm opacity-70">Manage playable character classes</p>
           </div>
         </.link>
+        <.link
+          navigate={~p"/admin/formula_aliases"}
+          class=" hover:bg-base-300 transition-colors"
+        >
+          <div class="card-body">
+            <Backpex.HTML.CoreComponents.icon name="hero-user-group" class="size-8 mb-2" />
+            <h2 class="card-title">Formula Aliases</h2>
+            <p class="text-sm opacity-70">Manage formula shorthands</p>
+          </div>
+        </.link>
       </div>
     </div>
     """

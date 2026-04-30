@@ -34,6 +34,10 @@ defmodule GameWeb.Admin.BaseCardLive do
         module: Backpex.Fields.Number,
         label: "AP"
       },
+      range: %{
+        module: Backpex.Fields.Number,
+        label: "Range"
+      },
       rarity: %{
         module: Backpex.Fields.Select,
         label: "Rarity",

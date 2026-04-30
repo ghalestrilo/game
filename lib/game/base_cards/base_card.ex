@@ -50,6 +50,7 @@ defmodule Game.BaseCards.BaseCard do
     field :name, :string
     embeds_many :effects, Effect, on_replace: :delete
     field :ap, :integer
+    field :range, :integer
     field :headline, :string
     field :rarity, Ecto.Enum, values: [:common, :uncommon, :rare, :legendary]
     field :targeting, :map
@@ -60,7 +61,7 @@ defmodule Game.BaseCards.BaseCard do
   @doc false
   def changeset(base_card, attrs) do
     base_card
-    |> cast(attrs, [:name, :ap, :headline, :rarity, :targeting])
+    |> cast(attrs, [:name, :ap, :range, :headline, :rarity, :targeting])
     |> cast_embed(:effects,
       with: &Effect.changeset/2,
       sort_param: :effects_order,

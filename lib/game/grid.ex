@@ -78,6 +78,15 @@ defmodule Game.Grid do
   end
 
   @doc """
+  Returns all tile coordinates within `radius` steps of `origin`.
+  """
+  def tiles_in_range(%Grid{tiles: tiles}, origin, radius) do
+    tiles
+    |> Map.keys()
+    |> Enum.filter(&(distance(%Grid{}, origin, &1) <= radius))
+  end
+
+  @doc """
   Returns true if a tile is blocked (wall or occupied)
   """
   def tile_blocked?(%Grid{tiles: tiles}, target_position) do
