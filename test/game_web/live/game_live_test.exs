@@ -26,10 +26,10 @@ defmodule GameWeb.GameLiveTest do
       # Load the game page with the query parameter
       {:ok, view, _html} = live(conn, uri)
 
-      # Verify the grid contains 19 cells (radius=2)
+      # Verify the grid contains 61 cells (radius=5)
       rendered_grid = view |> element(".game-board") |> render()
       cell_count = (rendered_grid |> String.split("hex-cell") |> length()) - 1
-      assert cell_count == 19
+      assert cell_count == 61
     end
 
     @tag :skip

@@ -11,6 +11,8 @@ defmodule Game.Combat do
   alias Game.CombatState
   alias Game.{Character, Grid}
 
+  @default_grid_padding 3
+
   def new, do: %CombatState{}
 
   def initialize_from_char_params_list(params) do
@@ -42,7 +44,7 @@ defmodule Game.Combat do
       |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end)
       |> Enum.max()
 
-    padded_radius = max_radius + 1
+    padded_radius = max_radius + @default_grid_padding
     grid = Game.Grid.new({padded_radius, padded_radius, padded_radius})
 
     # Validate positions in grid
