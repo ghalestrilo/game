@@ -6,7 +6,8 @@ defmodule Game.Formula do
 
   @doc """
   Resolves a formula expression with the given data context.
-  Delegates directly to JsonLogic.resolve/2.
+  Expands any `%{"alias" => "name"}` nodes by looking them up in the database
+  before delegating to JsonLogic.resolve/2.
 
   ## Examples
 
@@ -17,7 +18,69 @@ defmodule Game.Formula do
       true
   """
   @spec resolve(map() | nil, map() | nil) :: term()
-  defdelegate resolve(logic, data \\ nil), to: JsonLogic
+  def resolve(logic, data \\ nil) do
+    aliases = load_aliases(logic)
+    logic
+    |> expand_aliases(aliases)
+    |> JsonLogic.resolve(data)
+  end
+
+  defp load_aliases(logic) do
+    names = collect_alias_names(logic, [])
+
+    if names == [] do
+      %{}
+    else
+      alias_records = Game.FormulaAliases.list_formula_aliases()
+      Map.new(alias_records, fn a -> {a.name, a.expression} end)
+    end
+  end
+
+  defp collect_alias_names(%{"alias" => name}, acc) when is_binary(name), do: [name | acc]
+
+  defp collect_alias_names(%{"alias" => [name | _]}, acc) when is_binary(name), do: [name | acc]
+
+  defp collect_alias_names(%{"alias" => _} = node, acc) do
+    node
+    |> Map.values()
+    |> Enum.reduce(acc, &collect_alias_names/2)
+  end
+
+  defp collect_alias_names(map, acc) when is_map(map) do
+    map
+    |> Map.values()
+    |> Enum.reduce(acc, &collect_alias_names/2)
+  end
+
+  defp collect_alias_names(list, acc) when is_list(list) do
+    Enum.reduce(list, acc, &collect_alias_names/2)
+  end
+
+  defp collect_alias_names(_value, acc), do: acc
+
+  defp expand_aliases(%{"alias" => name}, aliases) when is_binary(name) do
+    case Map.fetch(aliases, name) do
+      {:ok, expression} -> expand_aliases(expression, aliases)
+      :error -> %{}
+    end
+  end
+
+  defp expand_aliases(%{"alias" => [name | _]}, aliases) when is_binary(name) do
+    case Map.fetch(aliases, name) do
+      {:ok, expression} -> expand_aliases(expression, aliases)
+      :error -> %{}
+    end
+  end
+
+  defp expand_aliases(map, aliases) when is_map(map) do
+    Map.new(map, fn {k, v} -> {k, expand_aliases(v, aliases)} end)
+  end
+
+  defp expand_aliases(list, aliases) when is_list(list) do
+    Enum.map(list, &expand_aliases(&1, aliases))
+  end
+
+  defp expand_aliases(value, _aliases), do: value
 
   @doc """
   Returns a list of all available formula operators/keywords.
@@ -25,6 +88,8 @@ defmodule Game.Formula do
   @spec available_operators() :: list(String.t())
   def available_operators do
     [
+      # Aliases
+      "alias",
       # Variables
       "var",
       # Logic
@@ -64,12 +129,26 @@ defmodule Game.Formula do
     ]
   end
 
+  @doc "Returns all alias names from the database, for use in formula editors."
+  @spec available_aliases() :: list(map())
+  def available_aliases do
+    Game.FormulaAliases.list_formula_aliases()
+    |> Enum.map(fn a -> %{name: a.name, description: a.description} end)
+  end
+
   @doc """
   Returns metadata about an operator including its arity and argument types.
   """
   @spec operator_metadata(String.t()) :: map()
   def operator_metadata(operator) do
     case operator do
+      "alias" ->
+        %{
+          arity: 1,
+          args: [:string],
+          description: "Named formula alias"
+        }
+
       "var" ->
         %{
           arity: :variable,

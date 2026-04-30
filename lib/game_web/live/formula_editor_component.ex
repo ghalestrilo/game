@@ -23,6 +23,7 @@ defmodule GameWeb.FormulaEditorComponent do
       |> assign_new(:value, fn -> %{} end)
       |> assign_new(:root_id, fn -> assigns.id end)
       |> assign_new(:root_value, fn -> assigns[:value] || %{} end)
+      |> assign_new(:aliases, fn -> Formula.available_aliases() end)
       |> then(fn s ->
         if is_root, do: assign(s, :root_value, s.assigns.value), else: s
       end)
@@ -64,6 +65,7 @@ defmodule GameWeb.FormulaEditorComponent do
             operator={@operator}
             field_name={@field || "formula"}
             myself={@myself}
+            aliases={@aliases}
           />
 
           <%= if @operator do %>
@@ -80,6 +82,7 @@ defmodule GameWeb.FormulaEditorComponent do
                     myself={@myself}
                     root_id={@root_id}
                     root_value={@root_value}
+                    aliases={@aliases}
                   />
                 </div>
               <% end %>
@@ -145,6 +148,7 @@ defmodule GameWeb.FormulaEditorComponent do
     metadata = Formula.operator_metadata(assigns.operator)
     is_formula_arg = metadata.args |> Enum.at(assigns.arg_index) == :formula
     is_var_operator = assigns.operator == "var"
+    is_alias_operator = assigns.operator == "alias"
     is_nested_map = is_map(assigns.arg)
 
     cond do
@@ -160,6 +164,22 @@ defmodule GameWeb.FormulaEditorComponent do
         />
         """
 
+      # For alias operator, show a dropdown of available alias names
+      is_alias_operator ->
+        ~H"""
+        <select
+          name={build_field_name(@field, @path, "value")}
+          class="border border-base-300 rounded px-3 py-2 text-sm bg-base-100 text-base-content"
+        >
+          <option value="">-- Select alias --</option>
+          <%= for alias_entry <- @aliases do %>
+            <option value={alias_entry.name} selected={alias_entry.name == @arg}>
+              {alias_entry.name}<%= if alias_entry.description do %> - {alias_entry.description}<% end %>
+            </option>
+          <% end %>
+        </select>
+        """
+
       # For all other operators, allow arguments to be either simple values or nested formulas
       # If arg is a map (nested formula), render recursively with operator dropdown
       is_nested_map or is_formula_arg ->
@@ -172,6 +192,7 @@ defmodule GameWeb.FormulaEditorComponent do
           field={@field}
           root_id={@root_id}
           root_value={@root_value}
+          aliases={@aliases}
         />
         """
 
