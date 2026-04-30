@@ -25,14 +25,14 @@ defmodule GameWeb.CombatHUD do
             Win Match
           </button>
         </div>
-        
+
     <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
           <span class="badge badge-info badge-sm ml-1">{@game_state.combat.state}</span>
         </div>
-        
-    <!-- Turn Queue -->
+
+    <!-- Turn Queue // @TODO: refactor this, create a .character_queue_card component (same_team?, current?, stats) and a queue display component -->
         <div>
           <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
           <h3 class="text-base font-bold mb-2">Next up</h3>
@@ -49,20 +49,22 @@ defmodule GameWeb.CombatHUD do
               <% else %>
                 <div class="w-10 h-10 rounded-full bg-base-300 flex-shrink-0" />
               <% end %>
-              <div class="flex-1 min-w-0">
+              <div class={["flex-1 min-w-0",
+              if(same_team?(character, @current_player), do: "items-start", else: "items-end text-end")
+              ]}>
                 <div class="font-medium mb-1">
                   {character.name}
                   <%= if character == @game_state.combat.current_turn.player do %>
                     <span class="badge badge-success badge-xs ml-1">current</span>
                   <% end %>
                 </div>
-                <div class="flex gap-1 mb-1">
+                <div class={["flex gap-1 mb-1", if(same_team?(character, @current_player), do: "justify-start", else: "justify-end")]}>
                   <span
                     :for={hp <- 1..Game.Character.get_max_hp(character)}
                     class={"#{if hp > character.hp, do: "bg-base-300", else: "bg-error"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
                   />
                 </div>
-                <div class="flex gap-1 mb-1">
+                <div class={["flex gap-1 mb-1", if(same_team?(character, @current_player), do: "justify-start", else: "justify-end")]}>
                   <span
                     :for={ap <- 1..Game.Character.get_max_ap(character)}
                     class={"#{if ap > character.ap, do: "bg-base-300", else: "bg-warning"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
@@ -88,7 +90,7 @@ defmodule GameWeb.CombatHUD do
           </ul>
         </div>
       </div>
-      
+
     <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
@@ -98,7 +100,7 @@ defmodule GameWeb.CombatHUD do
           </ul>
         </div>
       </div>
-      
+
     <!-- Card piles -->
       <%= if @game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id) do %>
