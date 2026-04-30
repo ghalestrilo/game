@@ -4,7 +4,9 @@ defmodule GameWeb.GameLive do
   alias Game.CombatState.StateSave
 
   @impl true
-  def mount(_params, _session, socket) do
+  def mount(_params, session, socket) do
+    session_id = session["_csrf_token"]
+
     if connected?(socket) do
       game_state = %{
         current_view: :combat,
@@ -31,10 +33,11 @@ defmodule GameWeb.GameLive do
          game_state: game_state,
          initial_game_state: game_state,
          action_log: [],
-         modal: nil
+         modal: nil,
+         session_id: session_id
        )}
     else
-      {:ok, assign(socket, game_state: nil, action_log: [], modal: nil)}
+      {:ok, assign(socket, game_state: nil, action_log: [], modal: nil, session_id: session_id)}
     end
   end
 
@@ -72,7 +75,29 @@ defmodule GameWeb.GameLive do
            |> assign(game_pid: nil, game_state: nil)}
       end
     else
-      {:noreply, socket}
+      case Game.CombatSaves.load(socket.assigns.session_id) do
+        {:ok, combat_state} ->
+          {:ok, game_pid} = Game.start_link()
+
+          game_state = %{
+            current_view: :combat,
+            grid: combat_state.grid,
+            characters: combat_state.__constants__.players,
+            combat: combat_state
+          }
+
+          :ok = GenServer.call(game_pid, {:set_state, game_state})
+
+          {:noreply,
+           assign(socket,
+             game_pid: game_pid,
+             game_state: game_state,
+             initial_game_state: game_state
+           )}
+
+        {:error, _} ->
+          {:noreply, socket}
+      end
     end
   end
 
@@ -149,6 +174,8 @@ defmodule GameWeb.GameLive do
     action = "#{current_turn.player.name} selected card: #{card.name}"
     updated_log = [action | socket.assigns.action_log]
 
+    checkpoint_combat(socket.assigns.session_id, combat)
+
     {:noreply,
      assign(socket,
        game_state: %{socket.assigns.game_state | combat: combat},
@@ -194,6 +221,8 @@ defmodule GameWeb.GameLive do
             socket
         end
 
+      checkpoint_combat(socket.assigns.session_id, combat)
+
       {:noreply, socket}
     else
       {:error, error} ->
@@ -217,6 +246,8 @@ defmodule GameWeb.GameLive do
     with {:ok, combat} <- process_game_action(socket, {:move, player, position}) do
       action = "#{player.name} moved to position #{inspect(position)}"
       updated_log = [action | socket.assigns.action_log]
+
+      checkpoint_combat(socket.assigns.session_id, combat)
 
       {:noreply,
        assign(socket,
@@ -247,6 +278,8 @@ defmodule GameWeb.GameLive do
     with {:ok, combat} <- process_game_action(socket, {:skip_turn, player}) do
       action = "#{player.name} skipped their turn"
       updated_log = [action | socket.assigns.action_log]
+
+      checkpoint_combat(socket.assigns.session_id, combat)
 
       {:noreply,
        assign(socket,
@@ -298,6 +331,8 @@ defmodule GameWeb.GameLive do
       }
 
       updated_game_state = %{socket.assigns.game_state | combat: updated_combat}
+
+      checkpoint_combat(socket.assigns.session_id, updated_combat)
 
       # Sync the updated state to the GenServer
       if socket.assigns.game_pid do
@@ -396,6 +431,14 @@ defmodule GameWeb.GameLive do
     else
       {:error, error} ->
         {:error, error}
+    end
+  end
+
+  defp checkpoint_combat(session_id, combat_state) do
+    if combat_state.state == :game_over do
+      Game.CombatSaves.delete(session_id)
+    else
+      Game.CombatSaves.save(session_id, combat_state)
     end
   end
 

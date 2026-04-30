@@ -12,6 +12,7 @@ defmodule Game.Application do
       Game.Repo,
       {DNSCluster, query: Application.get_env(:game, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Game.PubSub},
+      Game.CombatSaves,
       {Registry, keys: :unique, name: Game.LobbyRegistry},
       {DynamicSupervisor, strategy: :one_for_one, name: Game.LobbySupervisor},
       # Start to serve requests, typically the last entry
