@@ -118,8 +118,8 @@ defmodule Game.LobbyServer do
 
       combat =
         Game.CombatBuilder.build([
-          %{class: p1.class, team: 1, position: {0, 0, 0}, id: p1.id},
-          %{class: p2.class, team: 2, position: {2, -1, -1}, id: p2.id}
+          %{class: p1.class, team: p1.id, position: {0, 0, 0}, id: p1.id},
+          %{class: p2.class, team: p2.id, position: {2, -1, -1}, id: p2.id}
         ])
 
       {:ok, game_pid} = Game.start_link()

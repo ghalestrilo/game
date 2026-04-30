@@ -39,40 +39,50 @@ defmodule GameWeb.CombatHUD do
           <ul class="text-sm flex flex-col gap-2">
             <li
               :for={character <- Enum.filter(queue, fn character -> character != nil end)}
-              class="p-2 border border-base-content/20 rounded"
+              class={[
+                "p-2 border border-base-content/20 rounded flex items-center gap-2",
+                if(same_team?(character, @current_player), do: "flex-row", else: "flex-row-reverse")
+              ]}
             >
-              <div class="font-medium mb-1">
-                {character.name}
-                <%= if character == @game_state.combat.current_turn.player do %>
-                  <span class="badge badge-success badge-xs ml-1">current</span>
-                <% end %>
-              </div>
-              <div class="flex gap-1 mb-1">
-                <span
-                  :for={hp <- 1..Game.Character.get_max_hp(character)}
-                  class={"#{if hp > character.hp, do: "bg-base-300", else: "bg-error"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
-                />
-              </div>
-              <div class="flex gap-1 mb-1">
-                <span
-                  :for={ap <- 1..Game.Character.get_max_ap(character)}
-                  class={"#{if ap > character.ap, do: "bg-base-300", else: "bg-warning"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
-                />
-              </div>
-              <div class="flex gap-1">
-                <span
-                  :for={
-                    _shield <-
-                      List.duplicate(
-                        nil,
-                        case Game.Character.get_status_effect(character, :shield) do
-                          %{value: value} -> value
-                          _ -> 0
-                        end
-                      )
-                  }
-                  class="bg-info max-w-[20px] flex-1 h-2 rounded-[2px]"
-                />
+              <%= if character.avatar_url && character.avatar_url != "" do %>
+                <img src={character.avatar_url} class="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+              <% else %>
+                <div class="w-10 h-10 rounded-full bg-base-300 flex-shrink-0" />
+              <% end %>
+              <div class="flex-1 min-w-0">
+                <div class="font-medium mb-1">
+                  {character.name}
+                  <%= if character == @game_state.combat.current_turn.player do %>
+                    <span class="badge badge-success badge-xs ml-1">current</span>
+                  <% end %>
+                </div>
+                <div class="flex gap-1 mb-1">
+                  <span
+                    :for={hp <- 1..Game.Character.get_max_hp(character)}
+                    class={"#{if hp > character.hp, do: "bg-base-300", else: "bg-error"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
+                  />
+                </div>
+                <div class="flex gap-1 mb-1">
+                  <span
+                    :for={ap <- 1..Game.Character.get_max_ap(character)}
+                    class={"#{if ap > character.ap, do: "bg-base-300", else: "bg-warning"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
+                  />
+                </div>
+                <div class="flex gap-1">
+                  <span
+                    :for={
+                      _shield <-
+                        List.duplicate(
+                          nil,
+                          case Game.Character.get_status_effect(character, :shield) do
+                            %{value: value} -> value
+                            _ -> 0
+                          end
+                        )
+                    }
+                    class="bg-info max-w-[20px] flex-1 h-2 rounded-[2px]"
+                  />
+                </div>
               </div>
             </li>
           </ul>
@@ -155,4 +165,7 @@ defmodule GameWeb.CombatHUD do
     send(self(), {:parent_event, "modal", params})
     {:noreply, socket}
   end
+
+  defp same_team?(_character, nil), do: true
+  defp same_team?(character, current_player), do: character.team == current_player.id
 end
