@@ -103,3 +103,32 @@ https://davehardee.com/QRSCoords/
 
 
   https://www.redblobgames.com/grids/hexagons/
+
+## WIP code smells
+
+  1. Card is doing too much (SRP)
+
+  Card is a data struct, but it also owns: effect processing, formula resolution, targeting validation, tile overlay computation, JSON encoding, and animation collection. That's five or six distinct responsibilities. The processing logic (process_card, apply_card_effects, build_tile_overlay, is_target_cell_valid?) belongs in a separate module — something like Game.Combat.CardProcessor or just pushed into Combat/CombatState. Right now, Combat delegates process_card straight back to Card, making the layering circular.
+
+  2. The JSON round-trip is repeated in three places
+
+  build_data_context (line 312–313), build_effect_context (line 158–161), and build_tile_overlay (line 327–328) all do Jason.encode → Jason.decode to produce a plain map for JsonLogic/Formula evaluation. It's the same operation expressed three times. A shared to_plain_map/1 helper would centralize it, and more importantly, build_tile_overlay already encodes combat once and reuses it — but build_data_context (called per-tile from is_target_cell_valid?) re-encodes every call. These two code paths should share the same pre-encoded state.
+
+  3. temporary_hack_filter_only_allowed_effects is duplicating get_structured_effect's logic
+
+  The filter checks whether an effect type is in @effect_types — then get_structured_effect checks the same thing again immediately after. The filter exists to avoid a crash in get_structured_effect for unknown types, but the right fix is to make get_structured_effect return nil for unknowns (it already does) and filter on nil in the reduce, eliminating the pre-pass entirely.
+
+  4. process_action for play_card returns a different shape than all other actions
+
+  Every other action returns {:ok, combat}. play_card returns {:ok, combat, animations}. This breaks the typespec on line 86 and means callers have to know which action they called before they can destructure the result — that's why we needed the play_card/2 helper in tests. A cleaner design: return animations out-of-band (e.g. store them as a field on CombatState that gets cleared each turn, similar to an event log), so all actions keep the same return shape.
+  
+  5. get_available_card_effects/0 in Combat is out of sync with @effect_types in Card
+
+  There are two separate lists of effect types — one as a map in Card (the source of truth), one as a hardcoded list in Combat.get_available_card_effects/0. Adding a new effect type means updating both. The list function should just delegate to Card.effect_types() |> Map.keys().
+
+  6. build_target_data handles nil and {:ok, nil} as the same case
+
+  The third clause (bare nil, line 391) exists because Grid.get_object can return nil for unknown positions, but the first clause already handles {:ok, nil} for empty tiles. These represent different things — one is "empty tile," the other is "position doesn't exist in the grid" — and conflating them silently masks targeting bugs.
+
+  ---
+  The two I'd fix first: the temporary_hack redundancy (easy, low risk) and the inconsistent process_action return shape (higher impact, touches tests but makes the API coherent). The JSON round-trip duplication is real but the performance impact is small at current board sizes.

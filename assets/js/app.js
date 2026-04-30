@@ -39,7 +39,7 @@ const CharacterEffects = {
       if (e.detail.id !== this.el.dataset.characterId) return
       const el = document.createElement("span")
       el.textContent = e.detail.label
-      el.className = `floating-number ${e.detail.color === "red" ? "text-red-400" : "text-green-400"}`
+      el.className = `floating-number ${e.detail.color === "red" ? "text-red-800" : "text-green-800"}`
       this.el.appendChild(el)
       el.addEventListener("animationend", () => el.remove(), {once: true})
     })
