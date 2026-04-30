@@ -89,7 +89,7 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
     test "selecting an operator on a nested arg node does not crash", %{conn: conn, card: card} do
       {:ok, view, _html} = live(conn, ~p"/admin/base_cards/#{card.id}/edit")
 
-      # Set root to * (two empty arg slots)
+      # Set root to * (gives two literal arg slots with a ƒx button each)
       view
       |> element("select[name='change[effects][0][value][operator]']")
       |> render_change(%{
@@ -97,19 +97,26 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
         "_target" => ["change", "effects", "0", "value", "operator"]
       })
 
-      # Select var on the first nested arg — this is the crash scenario
-      html =
-        view
-        |> element("select[name='change[effects][0][value][0][operator]']")
-        |> render_change(%{
-          "change" => %{
-            "effects" => %{"0" => %{"value" => %{"0" => %{"operator" => "var"}}}}
-          },
-          "_target" => ["change", "effects", "0", "value", "0", "operator"]
-        })
+      # Convert the first literal arg into a nested formula node via its ƒx button
+      view
+      |> element("button[phx-click='convert_to_formula'][phx-value-path='[0]']")
+      |> render_click()
 
-      # var node should appear with its variable name input
+      # Now a child operator select exists for the nested arg — select var on it
+      view
+      |> element("select[name='change[effects][0][value][0][operator]']")
+      |> render_change(%{
+        "change" => %{
+          "effects" => %{"0" => %{"value" => %{"0" => %{"operator" => "var"}}}}
+        },
+        "_target" => ["change", "effects", "0", "value", "0", "operator"]
+      })
+
+      html = render(view)
+
+      # var node's text input should appear, and the root * operator must not be wiped
       assert html =~ ~s(name="change[effects][0][value][0][0][value]")
+      assert html =~ ~s(name="change[effects][0][value][operator]")
     end
 
     test "clicking ƒx converts a literal arg to a nested formula node", %{conn: conn, card: card} do

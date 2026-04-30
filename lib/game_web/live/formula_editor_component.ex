@@ -79,6 +79,7 @@ defmodule GameWeb.FormulaEditorComponent do
                     id={"#{@id}-arg-#{idx}"}
                     myself={@myself}
                     root_id={@root_id}
+                    root_value={@root_value}
                   />
                 </div>
               <% end %>
@@ -170,7 +171,7 @@ defmodule GameWeb.FormulaEditorComponent do
           path={@path}
           field={@field}
           root_id={@root_id}
-          root_value={Map.get(assigns, :root_value, %{})}
+          root_value={@root_value}
         />
         """
 
