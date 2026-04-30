@@ -149,12 +149,18 @@ defmodule Game.Formula do
       %{name: "caster.id", description: "Caster ID"},
       %{name: "caster.team", description: "Caster team"},
       %{name: "caster.dead", description: "Caster dead flag"},
+      %{name: "caster.cards.hand", description: "Caster hand (list of cards)"},
+      %{name: "caster.cards.draw", description: "Caster draw pile"},
+      %{name: "caster.cards.discard", description: "Caster discard pile"},
       %{name: "target.hp", description: "Target current HP"},
       %{name: "target.max_hp", description: "Target max HP"},
       %{name: "target.team", description: "Target team"},
       %{name: "target.occupied", description: "Target tile occupied"},
       %{name: "target.position", description: "Target grid position"},
       %{name: "target.id", description: "Target ID"},
+      %{name: "target.cards.hand", description: "Target hand (list of cards, character targets only)"},
+      %{name: "target.cards.draw", description: "Target draw pile (character targets only)"},
+      %{name: "target.cards.discard", description: "Target discard pile (character targets only)"},
       %{name: "state.current_turn.player.team", description: "Current turn player team"},
       %{name: "state.queue", description: "Turn queue"}
     ]
