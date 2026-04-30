@@ -32,63 +32,10 @@ defmodule GameWeb.CombatHUD do
           <span class="badge badge-info badge-sm ml-1">{@game_state.combat.state}</span>
         </div>
 
-    <!-- Turn Queue // @TODO: refactor this, create a .character_queue_card component (same_team?, current?, stats) and a queue display component which groups those in the current stacked layout -->
-        <div>
-          <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
-          <h3 class="text-base font-bold mb-2">Next up</h3>
-          <ul class="text-sm flex flex-col gap-2">
-            <li
-              :for={character <- Enum.filter(queue, fn character -> character != nil end)}
-              class={[
-                "p-2 border border-base-content/20 rounded flex items-center gap-2",
-                if(same_team?(character, @current_player), do: "flex-row", else: "flex-row-reverse")
-              ]}
-            >
-              <%= if character.avatar_url && character.avatar_url != "" do %>
-                <img src={character.avatar_url} class="w-10 h-10 rounded-full object-cover flex-shrink-0" />
-              <% else %>
-                <div class="w-10 h-10 rounded-full bg-base-300 flex-shrink-0" />
-              <% end %>
-              <div class={["flex-1 min-w-0",
-              if(same_team?(character, @current_player), do: "items-start", else: "items-end text-end")
-              ]}>
-                <div class="font-medium mb-1">
-                  {character.name}
-                  <%= if character == @game_state.combat.current_turn.player do %>
-                    <span class="badge badge-success badge-xs ml-1">current</span>
-                  <% end %>
-                </div>
-                <div class={["flex gap-1 mb-1", if(same_team?(character, @current_player), do: "justify-start", else: "justify-end")]}>
-                  <span
-                    :for={hp <- 1..Game.Character.get_max_hp(character)}
-                    class={"#{if hp > character.hp, do: "bg-base-300", else: "bg-error"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
-                  />
-                </div>
-                <div class={["flex gap-1 mb-1", if(same_team?(character, @current_player), do: "justify-start", else: "justify-end")]}>
-                  <span
-                    :for={ap <- 1..Game.Character.get_max_ap(character)}
-                    class={"#{if ap > character.ap, do: "bg-base-300", else: "bg-warning"} max-w-[20px] flex-1 h-2 rounded-[2px]"}
-                  />
-                </div>
-                <div class="flex gap-1">
-                  <span
-                    :for={
-                      _shield <-
-                        List.duplicate(
-                          nil,
-                          case Game.Character.get_status_effect(character, :shield) do
-                            %{value: value} -> value
-                            _ -> 0
-                          end
-                        )
-                    }
-                    class="bg-info max-w-[20px] flex-1 h-2 rounded-[2px]"
-                  />
-                </div>
-              </div>
-            </li>
-          </ul>
-        </div>
+    <.character_turn_queue
+            combat={@game_state.combat}
+            current_player={@current_player}
+          />
       </div>
 
     <!-- Action Log -->
@@ -166,6 +113,74 @@ defmodule GameWeb.CombatHUD do
   def handle_event("modal", params, socket) do
     send(self(), {:parent_event, "modal", params})
     {:noreply, socket}
+  end
+
+  attr :combat, :map, required: true
+  attr :current_player, :map, default: nil
+
+  defp character_turn_queue(assigns) do
+    ~H"""
+    <div>
+      <% queue = Game.CombatState.get_current_queue(@combat) %>
+      <h3 class="text-base font-bold mb-2">Next up</h3>
+      <ul class="text-sm flex flex-col gap-2">
+        <.character_queue_card
+          :for={character <- Enum.filter(queue, & &1 != nil)}
+          character={character}
+          same_team={same_team?(character, @current_player)}
+          current={character == @combat.current_turn.player}
+        />
+      </ul>
+    </div>
+    """
+  end
+
+  attr :character, :map, required: true
+  attr :same_team, :boolean, required: true
+  attr :current, :boolean, required: true
+
+  defp character_queue_card(assigns) do
+    ~H"""
+    <li class={[
+      "p-2 border border-base-content/20 rounded flex items-center gap-2",
+      if(@same_team, do: "flex-row", else: "flex-row-reverse")
+    ]}>
+      <%= if @character.avatar_url && @character.avatar_url != "" do %>
+        <img src={@character.avatar_url} class="w-10 h-10 rounded-full object-cover flex-shrink-0" />
+      <% else %>
+        <div class="w-10 h-10 rounded-full bg-base-300 flex-shrink-0" />
+      <% end %>
+      <div class={["flex-1 min-w-0", if(@same_team, do: "items-start", else: "items-end text-end")]}>
+        <div class="font-medium mb-1">
+          {@character.name}
+          <span :if={@current} class="badge badge-success badge-xs ml-1">current</span>
+        </div>
+        <div class={["flex gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
+          <span
+            :for={hp <- 1..Game.Character.get_max_hp(@character)}
+            class={["max-w-[20px] flex-1 h-2 rounded-[2px]", if(hp > @character.hp, do: "bg-base-300", else: "bg-error")]}
+          />
+        </div>
+        <div class={["flex gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
+          <span
+            :for={ap <- 1..Game.Character.get_max_ap(@character)}
+            class={["max-w-[20px] flex-1 h-2 rounded-[2px]", if(ap > @character.ap, do: "bg-base-300", else: "bg-warning")]}
+          />
+        </div>
+        <div class={["flex gap-1", if(@same_team, do: "justify-start", else: "justify-end flex-row-reverse")]}>
+          <span
+            :for={
+              _shield <- List.duplicate(nil, case Game.Character.get_status_effect(@character, :shield) do
+                %{value: value} -> value
+                _ -> 0
+              end)
+            }
+            class="bg-info max-w-[20px] flex-1 h-2 rounded-[2px]"
+          />
+        </div>
+      </div>
+    </li>
+    """
   end
 
   defp same_team?(_character, nil), do: true

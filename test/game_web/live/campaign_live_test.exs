@@ -109,7 +109,7 @@ defmodule GameWeb.CampaignLiveTest do
 
       # Verify combat view is rendered with hero and wolf characters
       # Check for Combat State panel to ensure view loaded
-      assert html =~ "Turn Queue"
+      assert html =~ "Next up"
 
       # Check that both characters appear in the grid/queue
       # Character names appear in the Turn Queue and on the grid
@@ -213,7 +213,7 @@ defmodule GameWeb.CampaignLiveTest do
 
       # Verify we're back in combat with a fresh combat instance
       html = render(play_view)
-      assert html =~ "Turn Queue"
+      assert html =~ "Next up"
 
       # Verify characters are shown in the turn queue (full HP = all pip spans are bg-error)
       assert html =~ "bg-error"
