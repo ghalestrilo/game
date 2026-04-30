@@ -1,9 +1,22 @@
+@keyframes hit {
+  0%   { filter: brightness(1);                                         rotate: 0deg;  scale: 1; }
+  15%  { filter: brightness(3) sepia(1) saturate(5) hue-rotate(10deg); rotate: -6deg; scale: 1.08; }
+  35%  { filter: brightness(2) sepia(1) saturate(4) hue-rotate(10deg); rotate: 5deg;  scale: 1.05; }
+  55%  { filter: brightness(1.5);                                       rotate: -3deg; scale: 1; }
+  75%  { filter: brightness(1.2);                                       rotate: 2deg;  scale: 1; }
+  100% { filter: brightness(1);                                         rotate: 0deg;  scale: 1; }
+}
+
 @layer components {
   .character {
     @apply w-16 h-16 rounded-full flex flex-col items-center justify-center
            text-base-content font-bold text-xs text-center p-1
            bg-base-100/60 box-border;
-    transition: transform 0.3s ease;
+    transition: translate 0.3s ease;
+  }
+
+  .character-hit {
+    animation: hit 0.5s ease-out forwards;
   }
 
   .game-board {

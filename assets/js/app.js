@@ -23,11 +23,26 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import {Hooks as BackpexHooks} from "backpex"
 
+const HitAnimation = {
+  mounted() {
+    window.addEventListener("phx:hit", (e) => {
+      if (e.detail.id === this.el.dataset.characterId) {
+        this.el.classList.remove("character-hit")
+        void this.el.offsetWidth // reflow to restart animation
+        this.el.classList.add("character-hit")
+        this.el.addEventListener("animationend", () => {
+          this.el.classList.remove("character-hit")
+        }, {once: true})
+      }
+    })
+  }
+}
+
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...BackpexHooks}
+  hooks: {...BackpexHooks, HitAnimation}
 })
 
 // Show progress bar on live navigation and form submits

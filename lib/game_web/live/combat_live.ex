@@ -69,6 +69,7 @@ defmodule GameWeb.CombatLive do
                   <div
                     id={"character-#{character.id}"}
                     phx-key={to_string(character.id)}
+                    phx-hook="HitAnimation"
                     class={[
                       "character absolute top-0 left-0 pointer-events-auto !bg-cover !bg-no-repeat",
                       character_bg(character)
@@ -194,7 +195,7 @@ defmodule GameWeb.CombatLive do
 
     case Map.get(pos, character.position) do
       {left, top} ->
-        "transform: translate(#{left - r + padding}px, calc(#{vertical_scaling} * #{top - r + padding}px));"
+        "translate: #{left - r + padding}px calc(#{vertical_scaling} * #{top - r + padding}px);"
 
       nil ->
         "display: none;"

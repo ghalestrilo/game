@@ -170,11 +170,19 @@ defmodule GameWeb.GameLive do
 
       updated_log = [action | socket.assigns.action_log]
 
-      {:noreply,
-       assign(socket,
-         game_state: %{socket.assigns.game_state | combat: combat},
-         action_log: updated_log
-       )}
+      socket =
+        assign(socket,
+          game_state: %{socket.assigns.game_state | combat: combat},
+          action_log: updated_log
+        )
+
+      socket =
+        case Game.Grid.get_object(socket.assigns.game_state.combat.grid, position) do
+          {:ok, %{id: id}} -> push_event(socket, "hit", %{id: to_string(id)})
+          _ -> socket
+        end
+
+      {:noreply, socket}
     else
       {:error, error} ->
         socket =
