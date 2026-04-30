@@ -27,11 +27,13 @@ const CharacterEffects = {
   mounted() {
     window.addEventListener("phx:hit", (e) => {
       if (e.detail.id !== this.el.dataset.characterId) return
-      this.el.classList.remove("character-hit")
+      const color = e.detail.color || "yellow"
+      const colorClass = `character-hit-${color}`
+      this.el.classList.remove("character-hit", "character-hit-red", "character-hit-green", "character-hit-blue", "character-hit-yellow")
       void this.el.offsetWidth // reflow to restart animation
-      this.el.classList.add("character-hit")
+      this.el.classList.add("character-hit", colorClass)
       this.el.addEventListener("animationend", () => {
-        this.el.classList.remove("character-hit")
+        this.el.classList.remove("character-hit", colorClass)
       }, {once: true})
     })
 

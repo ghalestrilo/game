@@ -209,8 +209,13 @@ defmodule GameWeb.GameLive do
           {:ok, %{id: id}} ->
             target_id = to_string(id)
 
+            hit_color = animations |> List.first() |> then(fn
+              %{color: color} -> color
+              _ -> :yellow
+            end)
+
             socket
-            |> push_event("hit", %{id: target_id})
+            |> push_event("hit", %{id: target_id, color: hit_color})
             |> then(fn s ->
               Enum.reduce(animations, s, fn anim, s ->
                 push_event(s, "float", %{id: target_id, label: anim.label, color: anim.color})

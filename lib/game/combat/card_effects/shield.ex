@@ -37,6 +37,6 @@ defmodule Game.Combat.CardEffects.Shield do
     def get_value_label(%Shield{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Shield{value: v}), do: "#{v}"
 
-    def animate(_), do: nil
+    def animate(%Shield{value: v}), do: %{label: "+#{v}", color: :blue}
   end
 end

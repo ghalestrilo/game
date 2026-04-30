@@ -18,6 +18,6 @@ defprotocol Game.Combat.CardEffect do
   @spec get_value_label(t()) :: String.t()
   def get_value_label(card_effect)
 
-  @spec animate(t()) :: %{label: String.t(), color: :red | :green} | nil
+  @spec animate(t()) :: %{label: String.t(), color: :red | :green | :blue | :yellow} | nil
   def animate(card_effect)
 end

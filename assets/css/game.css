@@ -6,12 +6,12 @@
 }
 
 @keyframes hit {
-  0%   { filter: brightness(1);                                         rotate: 0deg;  scale: 1; }
-  15%  { filter: brightness(3) sepia(1) saturate(5) hue-rotate(10deg); rotate: -6deg; scale: 1.08; }
-  35%  { filter: brightness(2) sepia(1) saturate(4) hue-rotate(10deg); rotate: 5deg;  scale: 1.05; }
-  55%  { filter: brightness(1.5);                                       rotate: -3deg; scale: 1; }
-  75%  { filter: brightness(1.2);                                       rotate: 2deg;  scale: 1; }
-  100% { filter: brightness(1);                                         rotate: 0deg;  scale: 1; }
+  0%   { filter: brightness(1);                                                              rotate: 0deg;  scale: 1; }
+  15%  { filter: brightness(1) saturate(5) hue-rotate(var(--hit-hue, 10deg));                rotate: -6deg; scale: 1.08; }
+  35%  { filter: brightness(2) saturate(4) hue-rotate(var(--hit-hue, 10deg));                rotate: 5deg;  scale: 1.05; }
+  55%  { filter: brightness(1.5);                                                            rotate: -3deg; scale: 1; }
+  75%  { filter: brightness(1.2);                                                            rotate: 2deg;  scale: 1; }
+  100% { filter: brightness(1);                                                              rotate: 0deg;  scale: 1; }
 }
 
 @layer components {
@@ -23,8 +23,17 @@
   }
 
   .character-hit {
-    animation: hit 0.5s ease-out forwards;
+    animation: hit 1s ease-out forwards;
   }
+
+  /* red: ~0deg hue-rotate (sepia baseline is already yellowish, 0deg keeps it red-orange) */
+  .character-hit-red    { --hit-hue: 0deg; }
+  /* green: ~90deg shifts yellow sepia toward green */
+  .character-hit-green  { --hit-hue: 90deg; }
+  /* blue: ~180deg shifts toward cyan/blue */
+  .character-hit-blue   { --hit-hue: 180deg; }
+  /* yellow: ~10deg keeps the default warm sepia tone */
+  .character-hit-yellow { --hit-hue: 10deg; }
 
   .floating-number {
     position: absolute;
