@@ -5,7 +5,7 @@
       id="combat-view"
       game_state={@game_state}
       action_log={@action_log}
-      current_player={nil}
+      current_player={List.first(@game_state.combat.__constants__.players)}
     />
   <% end %>
 

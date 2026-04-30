@@ -167,5 +167,5 @@ defmodule GameWeb.CombatHUD do
   end
 
   defp same_team?(_character, nil), do: true
-  defp same_team?(character, current_player), do: character.team == current_player.id
+  defp same_team?(character, current_player), do: character.team == current_player.team
 end
