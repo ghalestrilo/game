@@ -185,6 +185,57 @@ defmodule GameWeb.GameLive do
 
   def handle_event(
         "interact",
+        %{"target_character_id" => character_id},
+        %{
+          assigns: %{game_state: %{combat: %{state: :card_selected, current_turn: %{card: card}}}}
+        } = socket
+      ) do
+    combat = socket.assigns.game_state.combat
+
+    character =
+      Game.CombatState.get_current_queue(combat)
+      |> Enum.find(fn c -> c && to_string(c.id) == character_id end)
+
+    with true <- not is_nil(character),
+         {:ok, updated_combat, animations} <-
+           Game.Combat.process_action(combat, {:play_card_on_character, character}) do
+      action = "#{combat.current_turn.player.name} played card: #{card.name}"
+      updated_log = [action | socket.assigns.action_log]
+
+      hit_color =
+        animations
+        |> List.first()
+        |> then(fn
+          %{color: color} -> color
+          _ -> :yellow
+        end)
+
+      socket =
+        assign(socket,
+          game_state: %{socket.assigns.game_state | combat: updated_combat},
+          action_log: updated_log
+        )
+        |> push_event("hit", %{id: character_id, color: hit_color})
+        |> then(fn s ->
+          Enum.reduce(animations, s, fn anim, s ->
+            push_event(s, "float", %{id: character_id, label: anim.label, color: anim.color})
+          end)
+        end)
+
+      checkpoint_combat(socket.assigns.session_id, updated_combat)
+
+      {:noreply, socket}
+    else
+      false ->
+        {:noreply, put_flash(socket, :error, "Character not found")}
+
+      {:error, error} ->
+        {:noreply, put_flash(socket, :error, "#{error}")}
+    end
+  end
+
+  def handle_event(
+        "interact",
         params,
         %{
           assigns: %{game_state: %{combat: %{state: :card_selected, current_turn: %{card: card}}}}

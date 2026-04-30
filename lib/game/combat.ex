@@ -129,6 +129,47 @@ defmodule Game.Combat do
     end
   end
 
+  # Play Card on a character directly (clicked character sprite):
+  def process_action(
+        %CombatState{
+          state: :card_selected,
+          grid: grid,
+          current_turn: %{player: player, card: card}
+        } = combat,
+        {:play_card_on_character, %{position: target_position} = character}
+      ) do
+    cond do
+      not CombatState.is_players_turn?(combat, player) ->
+        {:error, "Not player's turn"}
+
+      not Character.has_enough_ap?(player, card.cost) ->
+        {:error, "Not enough AP"}
+
+      Grid.distance(grid, player.position, target_position) > card.range ->
+        {:error, "Out of range"}
+
+      true ->
+        case Game.Card.is_target_valid_for_character?(card, character, combat) do
+          {:ok, target} ->
+            combat_with_running_state = %{combat | state: :running}
+
+            {processed_combat, animations} =
+              CombatState.process_card(combat_with_running_state, target, card)
+
+            result =
+              processed_combat
+              |> CombatState.check_target_death(target)
+              |> CombatState.refresh_grid()
+              |> CombatState.check_game_over()
+
+            {:ok, result, animations}
+
+          {:error, reason} ->
+            {:error, reason}
+        end
+    end
+  end
+
   # Play Card:
   def process_action(
         %CombatState{

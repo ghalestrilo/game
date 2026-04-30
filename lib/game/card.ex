@@ -304,6 +304,25 @@ defmodule Game.Card do
     end
   end
 
+  def is_target_valid_for_character?(%__MODULE__{targeting: targeting} = _card, character, combat_state) do
+    position_result = {:ok, character}
+
+    case targeting do
+      %{"rule" => targeting_rule} ->
+        data_context = build_data_context(position_result, combat_state)
+        result = JsonLogic.resolve(targeting_rule, data_context)
+
+        if result do
+          {:ok, character}
+        else
+          {:error, "Target does not match targeting rule"}
+        end
+
+      _ ->
+        {:ok, character}
+    end
+  end
+
   # Build data context for JsonLogic evaluation including target and game state
   defp build_data_context(position_result, combat_state) do
     target_data = build_target_data(position_result)

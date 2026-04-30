@@ -70,8 +70,10 @@ defmodule GameWeb.CombatLive do
                     id={"character-#{character.id}"}
                     phx-key={to_string(character.id)}
                     phx-hook="CharacterEffects"
+                    phx-click="interact"
+                    phx-value-target_character_id={character.id}
                     class={[
-                      "character absolute top-0 left-0 pointer-events-auto !bg-cover !bg-no-repeat",
+                      "character absolute top-0 left-0 pointer-events-auto cursor-pointer !bg-cover !bg-no-repeat",
                       character_bg(character)
                     ]}
                     data-character-id={character.id}
