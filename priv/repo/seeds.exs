@@ -373,6 +373,80 @@ end)
 
 # Create BaseClass records
 alias Game.Content.BaseClass
+alias Game.FormulaAliases.FormulaAlias
+
+formula_aliases = [
+  %{
+    name: "self",
+    description: "Target is the caster",
+    expression: %{"===" => [%{"var" => "caster.id"}, %{"var" => "target.id"}]}
+  },
+  %{
+    name: "not_self",
+    description: "Target is not the caster",
+    expression: %{"!" => [%{"===" => [%{"var" => "caster.id"}, %{"var" => "target.id"}]}]}
+  },
+  %{
+    name: "ally",
+    description: "Target is on the same team as the caster",
+    expression: %{"===" => [%{"var" => "caster.team"}, %{"var" => "target.team"}]}
+  },
+  %{
+    name: "enemy",
+    description: "Target is on a different team from the caster",
+    expression: %{"!==" => [%{"var" => "caster.team"}, %{"var" => "target.team"}]}
+  },
+  %{
+    name: "target_alive",
+    description: "Target has HP above zero",
+    expression: %{">" => [%{"var" => "target.hp"}, 0]}
+  },
+  %{
+    name: "target_enemy_alive",
+    description: "Target is an enemy with HP above zero",
+    expression: %{"and" => [
+      %{"!==" => [%{"var" => "caster.team"}, %{"var" => "target.team"}]},
+      %{">" => [%{"var" => "target.hp"}, 0]}
+    ]}
+  },
+  %{
+    name: "target_ally_alive",
+    description: "Target is an ally with HP above zero",
+    expression: %{"and" => [
+      %{"===" => [%{"var" => "caster.team"}, %{"var" => "target.team"}]},
+      %{">" => [%{"var" => "target.hp"}, 0]}
+    ]}
+  },
+  %{
+    name: "caster_missing_hp",
+    description: "How much HP the caster is missing",
+    expression: %{"-" => [%{"var" => "caster.max_hp"}, %{"var" => "caster.hp"}]}
+  },
+  %{
+    name: "target_missing_hp",
+    description: "How much HP the target is missing",
+    expression: %{"-" => [%{"var" => "target.max_hp"}, %{"var" => "target.hp"}]}
+  },
+  %{
+    name: "caster_hp_percent",
+    description: "Caster current HP as a fraction of max",
+    expression: %{"/" => [%{"var" => "caster.hp"}, %{"var" => "caster.max_hp"}]}
+  },
+  %{
+    name: "target_hp_percent",
+    description: "Target current HP as a fraction of max",
+    expression: %{"/" => [%{"var" => "target.hp"}, %{"var" => "target.max_hp"}]}
+  },
+  %{
+    name: "target_below_half",
+    description: "Target HP is below 50%",
+    expression: %{"<" => [%{"var" => "target.hp"}, %{"/" => [%{"var" => "target.max_hp"}, 2]}]}
+  }
+]
+
+Enum.each(formula_aliases, fn attrs ->
+  Repo.insert!(FormulaAlias.changeset(%FormulaAlias{}, attrs))
+end)
 
 Repo.insert!(%BaseClass{
   class: "fighter",
