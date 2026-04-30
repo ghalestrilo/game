@@ -53,6 +53,7 @@ defmodule GameWeb.Router do
       live_resources "/base_decks", Admin.BaseDeckLive
       live_resources "/base_classes", Admin.BaseClassLive
       live_resources "/formula_aliases", Admin.FormulaAliasLive
+      live_resources "/strategies", Admin.StrategyLive
     end
   end
 

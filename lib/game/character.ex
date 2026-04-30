@@ -23,7 +23,9 @@ defmodule Game.Character do
             movement_range: nil,
             # Team identifier
             team: nil,
-            dead: false
+            dead: false,
+            # AI strategy tactics (empty = human-controlled)
+            tactics: []
 
   @type t() :: %__MODULE__{
           id: integer(),
@@ -250,6 +252,15 @@ defmodule Game.Character do
   end
 
   def from_character_data(%Game.Content.BaseClass{} = base_class) do
+    tactics =
+      case base_class.strategy do
+        %Game.Content.Strategy{tactics: tactics} ->
+          Enum.map(tactics, fn t ->
+            %{"trigger" => t.trigger, "action" => t.action, "card_filter" => t.card_filter}
+          end)
+        _ -> []
+      end
+
     %__MODULE__{
       id: base_class.id,
       name: String.capitalize(base_class.class),
@@ -265,9 +276,13 @@ defmodule Game.Character do
         draw: Game.BaseDecks.BaseDeck.get_cards(base_class.deck),
         hand: [],
         discard: []
-      }
+      },
+      tactics: tactics
     }
   end
+
+  def is_ai_controlled?(%__MODULE__{tactics: [_ | _]}), do: true
+  def is_ai_controlled?(_), do: false
 
   def shuffle_deck(character) do
     update_in(character.cards.draw, &Enum.shuffle(&1))

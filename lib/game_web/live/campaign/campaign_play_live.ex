@@ -1,9 +1,7 @@
 defmodule GameWeb.Campaign.CampaignPlayLive do
   use GameWeb, :live_view
   alias Game
-  alias Game.Combat
-  alias Game.Character
-  alias Game.Content
+  alias Game.{Combat, Character, Content, AI}
 
   @impl true
   def mount(params, _session, socket) do
@@ -140,7 +138,7 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
         "#{socket.assigns.game_state.combat.current_turn.player.name} played card: #{card.name}"
 
       updated_log = [action | socket.assigns.action_log]
-      updated_game_state = %{socket.assigns.game_state | combat: combat}
+      updated_game_state = %{socket.assigns.game_state | combat: combat} |> maybe_run_ai_turn()
 
       # Sync GenServer state if combat ended
       sync_game_state_if_needed(socket.assigns.game_pid, updated_game_state)
@@ -173,7 +171,7 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
     with {:ok, combat} <- process_game_action(socket, {:move, player, position}) do
       action = "#{player.name} moved to position #{inspect(position)}"
       updated_log = [action | socket.assigns.action_log]
-      updated_game_state = %{socket.assigns.game_state | combat: combat}
+      updated_game_state = %{socket.assigns.game_state | combat: combat} |> maybe_run_ai_turn()
 
       # Sync GenServer state if combat ended
       sync_game_state_if_needed(socket.assigns.game_pid, updated_game_state)
@@ -209,7 +207,7 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
     with {:ok, combat} <- process_game_action(socket, {:skip_turn, player}) do
       action = "#{player.name} skipped their turn"
       updated_log = [action | socket.assigns.action_log]
-      updated_game_state = %{socket.assigns.game_state | combat: combat}
+      updated_game_state = %{socket.assigns.game_state | combat: combat} |> maybe_run_ai_turn()
 
       # Sync GenServer state if combat ended
       sync_game_state_if_needed(socket.assigns.game_pid, updated_game_state)
@@ -374,6 +372,11 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
       %{character: campaign.character, team: 1, position: {0, 0, 0}, id: 0},
       %{class: "wolf", team: 2, position: {2, -1, -1}, id: 1}
     ])
+  end
+
+  defp maybe_run_ai_turn(%{combat: combat} = game_state) do
+    {:ok, updated_combat} = AI.advance_through_ai_turns(combat)
+    %{game_state | combat: updated_combat}
   end
 
   defp process_game_action(socket, action) do

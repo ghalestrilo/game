@@ -2,6 +2,7 @@ defmodule Game.Content.BaseClass do
   use Ecto.Schema
   import Ecto.Changeset
   alias Game.BaseDecks.BaseDeck, as: Deck
+  alias Game.Content.Strategy
 
   schema "base_classes" do
     field :class, :string
@@ -10,6 +11,7 @@ defmodule Game.Content.BaseClass do
     field :base_ap, :integer
     field :base_movement, :integer
     belongs_to :deck, Deck
+    belongs_to :strategy, Strategy
 
     timestamps(type: :utc_datetime)
   end
@@ -17,7 +19,7 @@ defmodule Game.Content.BaseClass do
   @doc false
   def changeset(base_class, attrs) do
     base_class
-    |> cast(attrs, [:class, :avatar_url, :base_hp, :base_ap, :base_movement, :deck_id])
+    |> cast(attrs, [:class, :avatar_url, :base_hp, :base_ap, :base_movement, :deck_id, :strategy_id])
     |> validate_required([:class, :base_hp, :base_ap, :base_movement])
   end
 end

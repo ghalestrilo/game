@@ -45,6 +45,13 @@ defmodule GameWeb.Admin.BaseClassLive do
         label: "Deck",
         display_field: :name,
         live_resource: GameWeb.Admin.BaseDeckLive
+      },
+      strategy: %{
+        module: Backpex.Fields.BelongsTo,
+        label: "Strategy",
+        display_field: :name,
+        live_resource: GameWeb.Admin.StrategyLive,
+        prompt: "No strategy (human-controlled)"
       }
     ]
   end

@@ -47,6 +47,16 @@ defmodule GameWeb.Admin.HomeLive do
             <p class="text-sm opacity-70">Manage formula shorthands</p>
           </div>
         </.link>
+        <.link
+          navigate={~p"/admin/strategies"}
+          class=" hover:bg-base-300 transition-colors"
+        >
+          <div class="card-body">
+            <Backpex.HTML.CoreComponents.icon name="hero-cpu-chip" class="size-8 mb-2" />
+            <h2 class="card-title">Strategies</h2>
+            <p class="text-sm opacity-70">Manage enemy AI tactic lists</p>
+          </div>
+        </.link>
       </div>
     </div>
     """

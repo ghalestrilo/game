@@ -42,7 +42,7 @@ defmodule Game.Content do
     do:
       BaseClass
       |> Repo.get_by!([class: class], preload: [:deck])
-      |> Repo.preload(deck: [:cards])
+      |> Repo.preload(deck: [:cards], strategy: [])
 
   @doc """
   Creates a base_class.

@@ -81,17 +81,40 @@ defmodule GameWeb.MultiplayerPlayLive do
   @impl true
   def handle_event(
         "interact",
-        params,
+        %{"target_character_id" => character_id},
         %{
-          assigns: %{game_state: %{combat: %{state: :card_selected, current_turn: %{card: card}}}}
+          assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}
         } = socket
       ) do
     if not my_turn?(socket) do
       {:noreply, put_flash(socket, :error, "It's not your turn")}
     else
-      with {:ok, position} <- parse_position(params["target_position"]) do
+      character =
+        Game.CombatState.get_current_queue(combat)
+        |> Enum.find(&(to_string(&1.id) == character_id))
+
+      if character do
+        Game.process_action(socket.assigns.game_pid, {:play_card_on_character, character})
+        {:noreply, socket}
+      else
+        {:noreply, put_flash(socket, :error, "Target not found")}
+      end
+    end
+  end
+
+  @impl true
+  def handle_event(
+        "interact",
+        %{"target_position" => target_position},
+        %{
+          assigns: %{game_state: %{combat: %{state: :card_selected}}}
+        } = socket
+      ) do
+    if not my_turn?(socket) do
+      {:noreply, put_flash(socket, :error, "It's not your turn")}
+    else
+      with {:ok, position} <- parse_position(target_position) do
         Game.process_action(socket.assigns.game_pid, {:play_card, position})
-        _ = card
         {:noreply, socket}
       else
         {:error, reason} -> {:noreply, put_flash(socket, :error, "#{reason}")}

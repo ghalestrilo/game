@@ -186,12 +186,14 @@ defmodule Game do
   def handle_call({:process_action, action}, _from, state) do
     case Combat.process_action(state.combat, action) do
       {:ok, updated_combat} ->
-        new_state = %{state | combat: updated_combat}
+        {:ok, final_combat} = Game.AI.advance_through_ai_turns(updated_combat)
+        new_state = %{state | combat: final_combat}
         broadcast(self(), new_state)
         {:reply, {:ok, new_state}, new_state}
 
       {:ok, updated_combat, animations} ->
-        new_state = %{state | combat: updated_combat}
+        {:ok, final_combat} = Game.AI.advance_through_ai_turns(updated_combat)
+        new_state = %{state | combat: final_combat}
         broadcast(self(), new_state)
         {:reply, {:ok, new_state, animations}, new_state}
 
