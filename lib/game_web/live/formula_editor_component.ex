@@ -20,9 +20,9 @@ defmodule GameWeb.FormulaEditorComponent do
       socket
       |> assign(assigns)
       |> assign_new(:path, fn -> [] end)
-      |> assign_new(:value, fn -> %{} end)
+      |> assign_new(:value, fn -> "" end)
       |> assign_new(:root_id, fn -> assigns.id end)
-      |> assign_new(:root_value, fn -> assigns[:value] || %{} end)
+      |> assign_new(:root_value, fn -> assigns[:value] || "" end)
       |> assign_new(:aliases, fn -> Formula.available_aliases() end)
       |> assign_new(:variables, fn -> Formula.available_variables(assigns[:context]) end)
       |> then(fn s ->
@@ -61,68 +61,91 @@ defmodule GameWeb.FormulaEditorComponent do
     <div class="formula-editor-node border border-base-300 rounded p-3 mb-2 bg-base-100">
       <div class="flex items-start gap-2">
         <div class="flex-grow">
-          <.operator_select
-            path={@path}
-            operator={@operator}
-            field_name={@field || "formula"}
-            myself={@myself}
-            aliases={@aliases}
-          />
-
-          <%= if @operator do %>
-            <div class="ml-4 mt-2 space-y-2">
-              <%= for {arg, idx} <- Enum.with_index(@args) do %>
-                <div class="formula-arg border-l-2 border-blue-300 pl-3">
-                  <.arg_editor
-                    arg={arg}
-                    operator={@operator}
-                    arg_index={idx}
-                    path={@path ++ [idx]}
-                    field={@field || "formula"}
-                    id={"#{@id}-arg-#{idx}"}
-                    myself={@myself}
-                    root_id={@root_id}
-                    root_value={@root_value}
-                    aliases={@aliases}
-                    variables={@variables}
-                  />
-                </div>
-              <% end %>
-
+          <%= if @args != [] and is_nil(@operator) do %>
+            <%!-- Literal mode: plain value with option to switch to formula --%>
+            <div class="flex gap-2 items-center">
+              <input
+                type="text"
+                name={build_field_name(@field || "formula", @path, "value")}
+                value={to_string(List.first(@args))}
+                placeholder="Literal value"
+                class="border border-base-300 rounded px-3 py-2 text-sm flex-1 bg-base-100 text-base-content"
+              />
               <button
                 type="button"
-                phx-click="add_arg"
+                phx-click="convert_to_formula"
+                phx-value-path={Jason.encode!(@path)}
                 phx-target={@myself}
-                class="text-sm text-blue-600 hover:text-blue-800"
+                class="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 border border-blue-300 rounded whitespace-nowrap"
+                title="Convert to formula"
               >
-                + Add argument
+                ƒx
               </button>
             </div>
+          <% else %>
+            <%!-- Formula mode: operator dropdown (possibly with no operator selected yet) --%>
+            <div class="flex items-center gap-2">
+              <.operator_select
+                path={@path}
+                operator={@operator}
+                field_name={@field || "formula"}
+                myself={@myself}
+                aliases={@aliases}
+              />
+              <button
+                type="button"
+                phx-click="convert_to_value"
+                phx-target={@myself}
+                class="text-xs text-base-content/70 hover:text-base-content px-2 py-1 border border-base-300 rounded"
+                title="Convert to simple value"
+              >
+                123
+              </button>
+              <%= if @path != [] do %>
+                <button
+                  type="button"
+                  phx-click="remove_node"
+                  phx-target={@myself}
+                  class="text-red-600 hover:text-red-800 text-sm px-2"
+                  title="Remove"
+                >
+                  ✕
+                </button>
+              <% end %>
+            </div>
+
+            <%= if @operator do %>
+              <div class="ml-4 mt-2 space-y-2">
+                <%= for {arg, idx} <- Enum.with_index(@args) do %>
+                  <div class="formula-arg border-l-2 border-blue-300 pl-3">
+                    <.arg_editor
+                      arg={arg}
+                      operator={@operator}
+                      arg_index={idx}
+                      path={@path ++ [idx]}
+                      field={@field || "formula"}
+                      id={"#{@id}-arg-#{idx}"}
+                      myself={@myself}
+                      root_id={@root_id}
+                      root_value={@root_value}
+                      aliases={@aliases}
+                      variables={@variables}
+                    />
+                  </div>
+                <% end %>
+
+                <button
+                  type="button"
+                  phx-click="add_arg"
+                  phx-target={@myself}
+                  class="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  + Add argument
+                </button>
+              </div>
+            <% end %>
           <% end %>
         </div>
-
-        <%= if @path != [] do %>
-          <div class="flex gap-1">
-            <button
-              type="button"
-              phx-click="convert_to_value"
-              phx-target={@myself}
-              class="text-xs text-base-content/70 hover:text-base-content px-2 py-1 border border-base-300 rounded"
-              title="Convert to simple value"
-            >
-              123
-            </button>
-            <button
-              type="button"
-              phx-click="remove_node"
-              phx-target={@myself}
-              class="text-red-600 hover:text-red-800 text-sm px-2"
-              title="Remove"
-            >
-              ✕
-            </button>
-          </div>
-        <% end %>
       </div>
     </div>
     """
@@ -305,6 +328,10 @@ defmodule GameWeb.FormulaEditorComponent do
   def handle_event("convert_to_value", _params, socket) do
     push_root_update(socket, socket.assigns.path, "")
     {:noreply, socket}
+  end
+
+  defp push_root_update(socket, [], new_node) do
+    Phoenix.LiveView.send_update(__MODULE__, id: socket.assigns.root_id, value: new_node)
   end
 
   defp push_root_update(socket, path, new_node) do

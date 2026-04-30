@@ -3,6 +3,11 @@ defmodule GameWeb.FormulaEditorComponentTest do
   import Phoenix.LiveViewTest
   alias GameWeb.FormulaEditorComponent
 
+  defp switch_to_formula_mode(view) do
+    view |> element("button[title='Convert to formula']") |> render_click()
+    view
+  end
+
   defp get_result_json(view) do
     html = render(view)
     # Extract JSON from the <pre id="result-json"> tag
@@ -45,6 +50,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
   describe "handle_event/3 with browser-style params" do
     test "handles browser form event for change_operator", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
+      switch_to_formula_mode(view)
 
       # Simulate browser-style form event with nested params structure
       # This is what Phoenix sends when a form field changes in the browser
@@ -74,6 +80,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
   describe "recursive expression tree UI" do
     test "shows convert to formula button on simple values", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
+      switch_to_formula_mode(view)
 
       # Select > operator
       view
@@ -121,16 +128,104 @@ defmodule GameWeb.FormulaEditorComponentTest do
     end
   end
 
+  describe "typing a literal value character by character" do
+    test "stays in literal mode and accumulates the value on each keystroke", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      for {char, expected} <- [{"w", "w"}, {"o", "wo"}, {"l", "wol"}, {"f", "wolf"}] do
+        view
+        |> form("form", formula: %{"value" => expected})
+        |> render_change()
+
+        html = render(view)
+        assert html =~ ~s(value="#{expected}")
+        assert has_element?(view, "input[name='formula[value]']")
+        refute has_element?(view, "select[name='formula[operator]']"),
+          "operator dropdown appeared after typing '#{char}'"
+      end
+
+      view |> form("form") |> render_submit()
+
+      assert has_element?(view, "#result-json")
+      assert get_result_json(view) == "wolf"
+    end
+
+    test "stays in literal mode when parent re-renders with the typed string value (simulates FormulaField after validate)", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      # FormulaField.render_form passes the current string value back to the component
+      # on every validate event. This test ensures the component stays in literal mode
+      # and does not flip to formula mode (operator dropdown) between keystrokes.
+      for {char, expected} <- [{"w", "w"}, {"o", "wo"}, {"l", "wol"}, {"f", "wolf"}] do
+        view
+        |> form("form", formula: %{"value" => expected})
+        |> render_change()
+
+        # Simulate FormulaField passing the string value back to the component on re-render
+        Phoenix.LiveView.send_update(view.pid, GameWeb.FormulaEditorComponent,
+          id: "formula-editor",
+          value: expected
+        )
+        render(view)
+
+        assert has_element?(view, "input[name='formula[value]']"),
+          "literal input disappeared after parent re-render while typing '#{char}'"
+        refute has_element?(view, "select[name='formula[operator]']"),
+          "operator dropdown appeared after parent re-render while typing '#{char}'"
+      end
+    end
+  end
+
+  describe "literal/formula mode toggling" do
+    test "shows literal input and fx button on first load (empty value)", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      assert has_element?(view, "input[name='formula[value]']")
+      assert has_element?(view, "button[title='Convert to formula']")
+      refute has_element?(view, "select[name='formula[operator]']")
+    end
+
+    test "clicking fx switches to formula mode (operator dropdown + 123 button)", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      view |> element("button[title='Convert to formula']") |> render_click()
+
+      assert has_element?(view, "select[name='formula[operator]']")
+      refute has_element?(view, "input[name='formula[value]']")
+    end
+
+    test "clicking 123 switches back to literal input", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      view |> element("button[title='Convert to formula']") |> render_click()
+      view |> element("button[title='Convert to simple value']") |> render_click()
+
+      assert has_element?(view, "input[name='formula[value]']")
+      assert has_element?(view, "button[title='Convert to formula']")
+      refute has_element?(view, "select[name='formula[operator]']")
+    end
+
+    test "123 button appears in formula mode even before selecting an operator", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      view |> element("button[title='Convert to formula']") |> render_click()
+
+      assert has_element?(view, "button[title='Convert to simple value']")
+    end
+  end
+
   describe "FormulaEditor component rendering" do
     test "renders with empty formula", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
 
-      assert has_element?(view, "select[name='formula[operator]']")
-      assert has_element?(view, "option", "-- Select operator --")
+      assert has_element?(view, "input[name='formula[value]']")
+      assert has_element?(view, "button[title='Convert to formula']")
     end
 
-    test "shows all available operators in dropdown", %{conn: conn} do
+    test "shows all available operators in dropdown after switching to formula mode", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
+
+      view |> element("button[title='Convert to formula']") |> render_click()
 
       keywords = FormulaEditorComponent.list_available_keywords()
 
@@ -153,6 +248,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
   describe "simple formula editing" do
     test "creates var formula", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
+      switch_to_formula_mode(view)
 
       # Select var operator
       view
@@ -178,6 +274,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
 
     test "creates simple comparison formula", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
+      switch_to_formula_mode(view)
 
       # Select > operator
       view
@@ -211,6 +308,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
 
     test "creates logical AND formula", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
+      switch_to_formula_mode(view)
 
       # Select and operator
       view
@@ -284,6 +382,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
   describe "formula validation" do
     test "generates valid map for simple var", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
+      switch_to_formula_mode(view)
 
       # Select var operator
       view
@@ -311,6 +410,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
 
     test "generates valid map for comparison", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
+      switch_to_formula_mode(view)
 
       # Select > operator
       view
@@ -394,6 +494,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
   describe "type coercion" do
     test "parses integers correctly", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
+      switch_to_formula_mode(view)
 
       # Select + operator
       view
@@ -426,6 +527,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
 
     test "parses floats correctly", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
+      switch_to_formula_mode(view)
 
       # Select / operator
       view

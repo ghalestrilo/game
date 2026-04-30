@@ -25,7 +25,9 @@ defmodule GameWeb.Admin.Fields.FormulaField do
     value =
       case value do
         v when is_map(v) -> v
-        _ -> %{}
+        v when is_binary(v) -> v
+        v when is_number(v) -> v
+        _ -> ""
       end
 
     assigns = assign(assigns, :formula_value, value)

@@ -9,7 +9,7 @@ defmodule GameWeb.FormulaEditorTestLive do
   def mount(_params, _session, socket) do
     socket =
       socket
-      |> assign(:formula, %{})
+      |> assign(:formula, "")
       |> assign(:form, to_form(%{"formula" => %{}}))
 
     {:ok, socket}

@@ -171,7 +171,7 @@ defmodule GameWeb.CombatHUD do
           <span
             :for={
               _shield <- List.duplicate(nil, case Game.Character.get_status_effect(@character, :shield) do
-                %{value: value} -> value
+                %{value: value} -> round(value)
                 _ -> 0
               end)
             }

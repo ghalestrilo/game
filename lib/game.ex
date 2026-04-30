@@ -190,6 +190,11 @@ defmodule Game do
         broadcast(self(), new_state)
         {:reply, {:ok, new_state}, new_state}
 
+      {:ok, updated_combat, animations} ->
+        new_state = %{state | combat: updated_combat}
+        broadcast(self(), new_state)
+        {:reply, {:ok, new_state, animations}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
