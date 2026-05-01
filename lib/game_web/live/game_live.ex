@@ -1,5 +1,6 @@
 defmodule GameWeb.GameLive do
   use GameWeb, :live_view
+  import GameWeb.CombatActionHelpers
   alias Game
   alias Game.CombatState.StateSave
 
@@ -46,7 +47,6 @@ defmodule GameWeb.GameLive do
     if params["initial_state"] do
       case decode_initial_state(params["initial_state"]) do
         {:ok, initial_state} ->
-          # Create the game state
           {:ok, game_pid} = Game.start_link()
 
           combat_state = Game.Combat.initialize_from_char_params_list(initial_state)
@@ -58,7 +58,6 @@ defmodule GameWeb.GameLive do
             combat: combat_state
           }
 
-          # Set the game state in the GenServer
           :ok = GenServer.call(game_pid, {:set_state, game_state})
 
           {:noreply,
@@ -149,10 +148,8 @@ defmodule GameWeb.GameLive do
 
   @impl true
   def handle_event("reset", _params, socket) do
-    # {game_pid, game_state} = initialize_game()
     {:noreply,
      assign(socket,
-       # game_pid: game_pid,
        game_state: socket.assigns.initial_game_state,
        action_log: []
      )}
@@ -164,7 +161,7 @@ defmodule GameWeb.GameLive do
 
     combat =
       with {:ok, updated_combat} <-
-             process_game_action(socket, {:pick_card, current_turn.player, card}) do
+             apply_combat_action(socket.assigns.game_state.combat, {:pick_card, current_turn.player, card}) do
         updated_combat
       else
         {:error, _error} ->
@@ -241,7 +238,7 @@ defmodule GameWeb.GameLive do
           assigns: %{game_state: %{combat: %{state: :card_selected, current_turn: %{card: card}}}}
         } = socket
       ) do
-    with {:ok, position} <- parse_target_position(params["target_position"]),
+    with {:ok, position} <- parse_hex_position(params["target_position"]),
          {:ok, combat, animations} <-
            Game.Combat.process_action(socket.assigns.game_state.combat, {:play_card, position}) do
       action =
@@ -282,11 +279,7 @@ defmodule GameWeb.GameLive do
       {:noreply, socket}
     else
       {:error, error} ->
-        socket =
-          socket
-          |> put_flash(:error, "#{error}")
-
-        {:noreply, socket}
+        {:noreply, put_flash(socket, :error, "#{error}")}
     end
   end
 
@@ -297,9 +290,9 @@ defmodule GameWeb.GameLive do
           assigns: %{game_state: %{combat: %{state: :running, current_turn: %{player: player}}}}
         } = socket
       ) do
-    {:ok, position} = parse_target_position(target_position)
+    {:ok, position} = parse_hex_position(target_position)
 
-    with {:ok, combat} <- process_game_action(socket, {:move, player, position}) do
+    with {:ok, combat} <- apply_combat_action(socket.assigns.game_state.combat, {:move, player, position}) do
       action = "#{player.name} moved to position #{inspect(position)}"
       updated_log = [action | socket.assigns.action_log]
 
@@ -312,11 +305,7 @@ defmodule GameWeb.GameLive do
        )}
     else
       {:error, error} ->
-        socket =
-          socket
-          |> put_flash(:error, "#{error}")
-
-        {:noreply, socket}
+        {:noreply, put_flash(socket, :error, "#{error}")}
     end
   end
 
@@ -331,7 +320,7 @@ defmodule GameWeb.GameLive do
           assigns: %{game_state: %{combat: %{current_turn: %{player: player}}}}
         } = socket
       ) do
-    with {:ok, combat} <- process_game_action(socket, {:skip_turn, player}) do
+    with {:ok, combat} <- apply_combat_action(socket.assigns.game_state.combat, {:skip_turn, player}) do
       action = "#{player.name} skipped their turn"
       updated_log = [action | socket.assigns.action_log]
 
@@ -344,58 +333,26 @@ defmodule GameWeb.GameLive do
        )}
     else
       {:error, error} ->
-        socket =
-          socket
-          |> put_flash(:error, "#{error}")
-
-        {:noreply, socket}
+        {:noreply, put_flash(socket, :error, "#{error}")}
     end
   end
 
   def handle_event("win_match", _params, socket) do
-    if socket.assigns.game_state.combat.current_turn.player do
-      current_player = socket.assigns.game_state.combat.current_turn.player
-      winning_team = current_player.team
+    current_player = socket.assigns.game_state.combat.current_turn.player
 
-      # Mark all characters from other teams as dead
-      updated_queue =
-        Enum.map(socket.assigns.game_state.combat.queue, fn char ->
-          if char.team != winning_team do
-            %{char | dead: true, hp: 0}
-          else
-            char
-          end
-        end)
-
-      # Update current player if they're not on the winning team
-      updated_current_player =
-        if current_player.team != winning_team do
-          %{current_player | dead: true, hp: 0}
-        else
-          current_player
-        end
-
-      # Set combat state to game_over
-      updated_combat = %{
-        socket.assigns.game_state.combat
-        | state: :game_over,
-          queue: updated_queue,
-          current_turn: %{
-            socket.assigns.game_state.combat.current_turn
-            | player: updated_current_player
-          }
-      }
-
+    if is_nil(current_player) do
+      {:noreply, put_flash(socket, :error, "No active player")}
+    else
+      updated_combat = force_game_over(socket.assigns.game_state.combat, current_player.team)
       updated_game_state = %{socket.assigns.game_state | combat: updated_combat}
 
       checkpoint_combat(socket.assigns.session_id, updated_combat)
 
-      # Sync the updated state to the GenServer
       if socket.assigns.game_pid do
         :ok = GenServer.call(socket.assigns.game_pid, {:set_state, updated_game_state})
       end
 
-      action = "#{current_player.name}'s team (#{winning_team}) wins the match!"
+      action = "#{current_player.name}'s team (#{current_player.team}) wins the match!"
       updated_log = [action | socket.assigns.action_log]
 
       {:noreply,
@@ -403,19 +360,15 @@ defmodule GameWeb.GameLive do
          game_state: updated_game_state,
          action_log: updated_log
        )}
-    else
-      {:noreply, put_flash(socket, :error, "No active player")}
     end
   end
 
   def handle_event("enter_shop", _params, socket) do
     if socket.assigns.game_state.combat.state == :game_over && socket.assigns.game_pid do
-      # Transition to shop
       case Game.enter_shop(socket.assigns.game_pid) do
         {:ok, updated_state} ->
           {:ok, updated_state}
 
-          # Add current_view: :shop to the updated state
           updated_state = Map.put(updated_state, :current_view, :shop)
 
           {:noreply,
@@ -442,7 +395,6 @@ defmodule GameWeb.GameLive do
         grid = combat.grid
         characters = combat.queue
 
-        # Create the game state with our combat struct
         game_state = %{
           current_view: :combat,
           grid: grid,
@@ -450,7 +402,6 @@ defmodule GameWeb.GameLive do
           combat: combat
         }
 
-        # Set the game state in the GenServer
         :ok = GenServer.call(socket.assigns.game_pid, {:set_state, game_state})
 
         {:noreply,
@@ -467,46 +418,12 @@ defmodule GameWeb.GameLive do
   end
 
   def handle_event("select_shop_card", %{"card_index" => _card_index}, socket) do
-    # For now, just return to combat view
-    # TODO: Add the selected card to a player's deck
     updated_game_state = Map.put(socket.assigns.game_state, :current_view, :combat)
 
     {:noreply,
      socket
      |> assign(game_state: updated_game_state)
      |> put_flash(:info, "Card selected! Returning to combat...")}
-  end
-
-  defp process_game_action(socket, action) do
-    with {:ok, updated_combat} <-
-           Game.Combat.process_action(
-             socket.assigns.game_state.combat,
-             action
-           ) do
-      {:ok, updated_combat}
-    else
-      {:error, error} ->
-        {:error, error}
-    end
-  end
-
-  defp checkpoint_combat(session_id, combat_state) do
-    if combat_state.state == :game_over do
-      Game.CombatSaves.delete(session_id)
-    else
-      Game.CombatSaves.save(session_id, combat_state)
-    end
-  end
-
-  defp parse_target_position(target_position) do
-    with [q, r, s] <-
-           target_position
-           |> String.split("_")
-           |> Enum.map(&String.to_integer/1) do
-      {:ok, {q, r, s}}
-    else
-      _ -> {:error, "Invalid target position"}
-    end
   end
 
   @impl true

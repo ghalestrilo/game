@@ -1,5 +1,6 @@
 defmodule GameWeb.MultiplayerPlayLive do
   use GameWeb, :live_view
+  import GameWeb.CombatActionHelpers
 
   alias Game.Lobby
 
@@ -60,12 +61,6 @@ defmodule GameWeb.MultiplayerPlayLive do
     handle_event(event_name, params, socket)
   end
 
-  defp my_turn?(socket) do
-    me = socket.assigns.current_player
-    current = socket.assigns.game_state.combat.current_turn.player
-    me && current && me.id == current.id
-  end
-
   @impl true
   def handle_event("pick_card", params, socket) do
     if not my_turn?(socket) do
@@ -113,7 +108,7 @@ defmodule GameWeb.MultiplayerPlayLive do
     if not my_turn?(socket) do
       {:noreply, put_flash(socket, :error, "It's not your turn")}
     else
-      with {:ok, position} <- parse_position(target_position) do
+      with {:ok, position} <- parse_hex_position(target_position) do
         Game.process_action(socket.assigns.game_pid, {:play_card, position})
         {:noreply, socket}
       else
@@ -132,7 +127,7 @@ defmodule GameWeb.MultiplayerPlayLive do
     if not my_turn?(socket) do
       {:noreply, put_flash(socket, :error, "It's not your turn")}
     else
-      with {:ok, position} <- parse_position(target_position) do
+      with {:ok, position} <- parse_hex_position(target_position) do
         Game.process_action(socket.assigns.game_pid, {:move, player, position})
         {:noreply, socket}
       else
@@ -160,20 +155,12 @@ defmodule GameWeb.MultiplayerPlayLive do
 
   @impl true
   def handle_event("win_match", _params, socket) do
-    combat = socket.assigns.game_state.combat
-    current_player = combat.current_turn.player
+    current_player = socket.assigns.game_state.combat.current_turn.player
 
     if is_nil(current_player) do
       {:noreply, put_flash(socket, :error, "No active player")}
     else
-      winning_team = current_player.team
-
-      updated_queue =
-        Enum.map(combat.queue, fn char ->
-          if char.team != winning_team, do: %{char | dead: true, hp: 0}, else: char
-        end)
-
-      updated_combat = %{combat | state: :game_over, queue: updated_queue}
+      updated_combat = force_game_over(socket.assigns.game_state.combat, current_player.team)
       new_state = %{socket.assigns.game_state | combat: updated_combat}
 
       GenServer.call(socket.assigns.game_pid, {:set_state, new_state})
@@ -202,12 +189,5 @@ defmodule GameWeb.MultiplayerPlayLive do
       <% end %>
     </div>
     """
-  end
-
-  defp parse_position(str) do
-    case str |> String.split("_") |> Enum.map(&String.to_integer/1) do
-      [q, r, s] -> {:ok, {q, r, s}}
-      _ -> {:error, "Invalid position"}
-    end
   end
 end

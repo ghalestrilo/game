@@ -1,7 +1,8 @@
 defmodule GameWeb.Campaign.CampaignPlayLive do
   use GameWeb, :live_view
+  import GameWeb.CombatActionHelpers
   alias Game
-  alias Game.{Combat, Character, Content, AI}
+  alias Game.{Character, Content}
 
   @impl true
   def mount(params, _session, socket) do
@@ -75,7 +76,6 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
     """
   end
 
-  # Event handlers - similar to GameLive
   @impl true
   def handle_event("reset", _params, socket) do
     campaign = socket.assigns.game_state.campaign
@@ -103,7 +103,7 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
 
     combat =
       with {:ok, updated_combat} <-
-             process_game_action(socket, {:pick_card, current_turn.player, card}) do
+             apply_combat_action(socket.assigns.game_state.combat, {:pick_card, current_turn.player, card}) do
         updated_combat
       else
         {:error, _error} ->
@@ -114,7 +114,6 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
     updated_log = [action | socket.assigns.action_log]
     updated_game_state = %{socket.assigns.game_state | combat: combat}
 
-    # Sync GenServer state if combat ended
     sync_game_state_if_needed(socket.assigns.game_pid, updated_game_state)
 
     {:noreply,
@@ -132,15 +131,14 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
           assigns: %{game_state: %{combat: %{state: :card_selected, current_turn: %{card: card}}}}
         } = socket
       ) do
-    with {:ok, position} <- parse_target_position(params["target_position"]),
-         {:ok, combat} <- process_game_action(socket, {:play_card, position}) do
+    with {:ok, position} <- parse_hex_position(params["target_position"]),
+         {:ok, combat} <- apply_combat_action(socket.assigns.game_state.combat, {:play_card, position}) do
       action =
         "#{socket.assigns.game_state.combat.current_turn.player.name} played card: #{card.name}"
 
       updated_log = [action | socket.assigns.action_log]
       updated_game_state = %{socket.assigns.game_state | combat: combat} |> maybe_run_ai_turn()
 
-      # Sync GenServer state if combat ended
       sync_game_state_if_needed(socket.assigns.game_pid, updated_game_state)
 
       {:noreply,
@@ -150,11 +148,7 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
        )}
     else
       {:error, error} ->
-        socket =
-          socket
-          |> put_flash(:error, "#{error}")
-
-        {:noreply, socket}
+        {:noreply, put_flash(socket, :error, "#{error}")}
     end
   end
 
@@ -166,14 +160,12 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
           assigns: %{game_state: %{combat: %{state: :running, current_turn: %{player: player}}}}
         } = socket
       ) do
-    {:ok, position} = parse_target_position(target_position)
-
-    with {:ok, combat} <- process_game_action(socket, {:move, player, position}) do
+    with {:ok, position} <- parse_hex_position(target_position),
+         {:ok, combat} <- apply_combat_action(socket.assigns.game_state.combat, {:move, player, position}) do
       action = "#{player.name} moved to position #{inspect(position)}"
       updated_log = [action | socket.assigns.action_log]
       updated_game_state = %{socket.assigns.game_state | combat: combat} |> maybe_run_ai_turn()
 
-      # Sync GenServer state if combat ended
       sync_game_state_if_needed(socket.assigns.game_pid, updated_game_state)
 
       {:noreply,
@@ -183,11 +175,7 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
        )}
     else
       {:error, error} ->
-        socket =
-          socket
-          |> put_flash(:error, "#{error}")
-
-        {:noreply, socket}
+        {:noreply, put_flash(socket, :error, "#{error}")}
     end
   end
 
@@ -204,12 +192,11 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
           assigns: %{game_state: %{combat: %{current_turn: %{player: player}}}}
         } = socket
       ) do
-    with {:ok, combat} <- process_game_action(socket, {:skip_turn, player}) do
+    with {:ok, combat} <- apply_combat_action(socket.assigns.game_state.combat, {:skip_turn, player}) do
       action = "#{player.name} skipped their turn"
       updated_log = [action | socket.assigns.action_log]
       updated_game_state = %{socket.assigns.game_state | combat: combat} |> maybe_run_ai_turn()
 
-      # Sync GenServer state if combat ended
       sync_game_state_if_needed(socket.assigns.game_pid, updated_game_state)
 
       {:noreply,
@@ -219,53 +206,25 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
        )}
     else
       {:error, error} ->
-        socket =
-          socket
-          |> put_flash(:error, "#{error}")
-
-        {:noreply, socket}
+        {:noreply, put_flash(socket, :error, "#{error}")}
     end
   end
 
   @impl true
   def handle_event("win_match", _params, socket) do
-    if socket.assigns.game_state.combat.current_turn.player do
-      current_player = socket.assigns.game_state.combat.current_turn.player
-      winning_team = current_player.team
+    current_player = socket.assigns.game_state.combat.current_turn.player
 
-      updated_queue =
-        Enum.map(socket.assigns.game_state.combat.queue, fn char ->
-          if char.team != winning_team do
-            %{char | dead: true, hp: 0}
-          else
-            char
-          end
-        end)
-
-      updated_current_player =
-        if current_player.team != winning_team do
-          %{current_player | dead: true, hp: 0}
-        else
-          current_player
-        end
-
-      updated_combat = %{
-        socket.assigns.game_state.combat
-        | state: :game_over,
-          queue: updated_queue,
-          current_turn: %{
-            socket.assigns.game_state.combat.current_turn
-            | player: updated_current_player
-          }
-      }
-
+    if is_nil(current_player) do
+      {:noreply, put_flash(socket, :error, "No active player")}
+    else
+      updated_combat = force_game_over(socket.assigns.game_state.combat, current_player.team)
       updated_game_state = %{socket.assigns.game_state | combat: updated_combat}
 
       if socket.assigns.game_pid do
         :ok = GenServer.call(socket.assigns.game_pid, {:set_state, updated_game_state})
       end
 
-      action = "#{current_player.name}'s team (#{winning_team}) wins the match!"
+      action = "#{current_player.name}'s team (#{current_player.team}) wins the match!"
       updated_log = [action | socket.assigns.action_log]
 
       {:noreply,
@@ -273,8 +232,6 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
          game_state: updated_game_state,
          action_log: updated_log
        )}
-    else
-      {:noreply, put_flash(socket, :error, "No active player")}
     end
   end
 
@@ -303,14 +260,10 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
 
   @impl true
   def handle_event("select_shop_card", params, socket) do
-    # Get the selected card from shop
     card_index = String.to_integer(params["card_index"])
     selected_card = Enum.at(socket.assigns.game_state.combat.shop_cards, card_index)
 
-    # Get the campaign state and add the selected card to the character's deck
     campaign = socket.assigns.game_state.campaign
-
-    # Add the selected card to the character's draw pile (deck)
     character = campaign.character
     new_card_id = length(character.cards.draw)
     new_card = %{selected_card | id: new_card_id}
@@ -320,10 +273,7 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
       | cards: %{character.cards | draw: [new_card | character.cards.draw]}
     }
 
-    # Update the campaign with the modified character
     updated_campaign = %{campaign | character: updated_character}
-
-    # Reinitialize combat based on the updated campaign state
     combat_state = initialize_combat_from_campaign(updated_campaign)
 
     updated_game_state = %{
@@ -333,7 +283,6 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
         campaign: updated_campaign
     }
 
-    # Update the GenServer state
     if socket.assigns.game_pid do
       :ok = GenServer.call(socket.assigns.game_pid, {:set_state, updated_game_state})
     end
@@ -349,13 +298,10 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
     handle_event(event_name, params, socket)
   end
 
-  # Helper functions
   defp create_campaign_from_params(params) do
-    # Get character class from params, default to ranger if not provided
     character_class = params["class"] || "ranger"
     player_name = params["player_name"] || "Hero"
 
-    # Load the character from database
     base_class = Content.get_base_class_by_class!(character_class)
     player_character = Character.from_character_data(base_class)
 
@@ -374,36 +320,6 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
     ])
   end
 
-  defp maybe_run_ai_turn(%{combat: combat} = game_state) do
-    {:ok, updated_combat} = AI.advance_through_ai_turns(combat)
-    %{game_state | combat: updated_combat}
-  end
-
-  defp process_game_action(socket, action) do
-    with {:ok, updated_combat} <-
-           Combat.process_action(
-             socket.assigns.game_state.combat,
-             action
-           ) do
-      {:ok, updated_combat}
-    else
-      {:error, error} ->
-        {:error, error}
-    end
-  end
-
-  defp parse_target_position(target_position) do
-    with [q, r, s] <-
-           target_position
-           |> String.split("_")
-           |> Enum.map(&String.to_integer/1) do
-      {:ok, {q, r, s}}
-    else
-      _ -> {:error, "Invalid target position"}
-    end
-  end
-
-  # Syncs the GenServer state when combat ends to ensure shop entry works correctly
   defp sync_game_state_if_needed(game_pid, game_state) do
     if game_pid && game_state.combat.state == :game_over do
       :ok = GenServer.call(game_pid, {:set_state, game_state})
