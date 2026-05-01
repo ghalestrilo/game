@@ -4,9 +4,13 @@ defmodule Game.ProdRepo do
   @impl true
   def init(_type, _config) do
     url =
-      System.get_env("PROD_DATABASE_KEY") ||
-        raise "PROD_DATABASE_KEY environment variable is missing"
+      System.get_env("PROD_DATABASE_URL") ||
+        raise "PROD_DATABASE_URL environment variable is missing"
 
-    {:ok, [url: url, pool_size: 2, ssl: true]}
+    {:ok, [telemetry_prefix: [:game, :prod_repo], url: url, pool_size: 2,
+        timeout: :infinity,
+    ownership_timeout: :infinity,
+    queue_target: 10_000,
+    queue_interval: 10_000, ssl: false]}
   end
 end

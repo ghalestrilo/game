@@ -10,7 +10,7 @@ defmodule GameWeb.CombatHUD do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="fixed z-10 grid [grid-template-areas:'queue_._action'_'draw_hand_discard'] [grid-template-columns:280px_1fr_280px] [grid-template-rows:1fr_auto] gap-4 p-4 pointer-events-none origin-top-left scale-75 w-[133%] h-[133%] pb-12">
+    <div class="fixed z-10 grid [grid-template-areas:'queue_._action'_'draw_hand_discard'] [grid-template-columns:280px_1fr_280px] [grid-template-rows:1fr_auto] gap-4 p-4 pointer-events-none origin-top-left  w-[133%] h-[133%] pb-12">
       <div
         :if={@game_state}
         class="[grid-area:queue] bg-gray-800 self-start pointer-events-auto p-2 rounded"

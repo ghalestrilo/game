@@ -9,14 +9,19 @@ defmodule Mix.Tasks.Game.PullContentSync do
 
   @impl Mix.Task
   def run(_args) do
-    unless System.get_env("PROD_DATABASE_KEY") do
-      Mix.shell().error("PROD_DATABASE_KEY environment variable is not set")
+    # TODO: UPDATE PULL TO REFLECT CHANGES ON PUSH
+    Mix.shell().error("PULL SCRIPT IS OUTDATED WITH PUSH, PLEASE FIX BEFORE RUNNING")
+    exit({:shutdown, 1})
+
+    unless System.get_env("PROD_DATABASE_URL") do
+      Mix.shell().error("PROD_DATABASE_URL environment variable is not set")
       exit({:shutdown, 1})
     end
 
     {:ok, _} = Application.ensure_all_started(:game)
 
-    Migrator.with_repo(Game.ProdRepo, fn _prod_repo ->
+    Migrator.with_repo(Game.ProdRepo, [    queue_target: 10_000,
+    queue_interval: 10_000], fn _prod_repo ->
       Mix.shell().info("Reading production data...")
 
       prod_cards = Game.ProdRepo.all(BaseCard)
