@@ -1,4 +1,4 @@
-defmodule GameWeb.GameLiveTest do
+defmodule GameWeb.SandboxLiveTest do
   use GameWeb.ConnCase
 
   import Phoenix.LiveViewTest

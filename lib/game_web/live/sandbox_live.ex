@@ -1,4 +1,4 @@
-defmodule GameWeb.GameLive do
+defmodule GameWeb.SandboxLive do
   use GameWeb, :live_view
   import GameWeb.CombatActionHelpers
   alias Game

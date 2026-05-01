@@ -25,7 +25,7 @@ defmodule GameWeb.Router do
     get "/", PageController, :home
 
     live_session :game, layout: {GameWeb.Layouts, :game} do
-      live "/sandbox", GameLive
+      live "/sandbox", SandboxLive
     end
 
     live "/campaign/character-select", Campaign.CharacterSelectLive
