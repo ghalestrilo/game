@@ -151,8 +151,8 @@ defmodule GameWeb.CombatHUD do
         <div class="w-10 h-10 rounded-full bg-base-300 flex-shrink-0" />
       <% end %>
       <div class={["flex-1 min-w-0", if(@same_team, do: "items-start", else: "items-end text-end")]}>
-        <div class="font-medium mb-1">
-          {@character.name}
+        <div class={["flex gap-1 mb-1 items-center", if(@same_team, do: "", else: "flex-row-reverse")]}>
+          <span>{@character.name}</span>
           <span :if={@current} class="badge badge-success badge-xs ml-1">current</span>
         </div>
         <div class={["flex gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>

@@ -133,17 +133,17 @@ defmodule Game.Card do
 
   # Helper function to apply multiple card effects; returns {combat_state, animations}
   defp apply_card_effects(initial_combat_state, effects, target) when is_list(effects) do
-    effects
-    |> temporary_hack_filter_only_allowed_effects()
-    |> Enum.reduce({initial_combat_state, []}, fn effect, {combat_state, anims} ->
-      resolved =
-        effect
-        |> get_structured_effect()
-        |> resolve_effect_value(target, combat_state)
+    Enum.reduce(effects, {initial_combat_state, []}, fn effect, {combat_state, anims} ->
+      case get_structured_effect(effect) do
+        :skip ->
+          {combat_state, anims}
 
-      new_combat = CardEffect.process(resolved, target, combat_state)
-      new_anim = CardEffect.animate(resolved)
-      {new_combat, if(new_anim, do: [new_anim | anims], else: anims)}
+        resolved ->
+          resolved = resolve_effect_value(resolved, target, combat_state)
+          new_combat = CardEffect.process(resolved, target, combat_state)
+          new_anim = CardEffect.animate(resolved)
+          {new_combat, if(new_anim, do: [new_anim | anims], else: anims)}
+      end
     end)
     |> then(fn {combat, anims} -> {combat, Enum.reverse(anims)} end)
   end
@@ -173,11 +173,12 @@ defmodule Game.Card do
     map
   end
 
-  def get_structured_effect(%CardEffect{} = effect), do: effect
+  # Already a concrete CardEffect impl struct (e.g. %CardEffects.Damage{}) — pass through
+  def get_structured_effect(%_{type: _} = effect)
+      when not is_struct(effect, Game.BaseCards.BaseCard.Effect),
+      do: effect
 
-  # Already a concrete effect struct (e.g. %CardEffects.Stealth{}) — pass through
-  def get_structured_effect(%_{type: _} = effect) when not is_struct(effect, Game.BaseCards.BaseCard.Effect), do: effect
-
+  # Ecto-loaded embedded schema from the database
   def get_structured_effect(%Game.BaseCards.BaseCard.Effect{type: type} = effect) do
     effect_data =
       effect
@@ -189,62 +190,32 @@ defmodule Game.Card do
             {int, ""} -> int
             _ -> v
           end
-
-        v ->
-          v
+        v -> v
       end)
 
-    if type && Map.has_key?(@effect_types, type) do
-      Logger.info("Processing Card Effect: #{inspect(effect)}")
-
-      @effect_types
-      |> Map.fetch!(type)
-      |> struct(effect_data)
-    else
-      Logger.warning("Effect not implemented, ignoring: #{inspect(effect)}")
-      nil
-    end
+    build_effect_struct(type, effect_data)
   end
 
+  # Raw string-keyed map (e.g. from seeds or test fixtures)
   def get_structured_effect(%{"type" => type} = effect) do
-    effect_data =
-      Enum.reduce(effect, %{}, fn {key, value}, acc ->
-        Map.put(acc, String.to_atom(key), value)
-      end)
-
-    if type && Map.has_key?(@effect_types, type) do
-      Logger.info("Processing Card Effect: #{inspect(effect)}")
-
-      @effect_types
-      |> Map.fetch!(type)
-      |> struct(effect_data)
-    else
-      Logger.warning("Effect not implemented, ignoring: #{inspect(effect)}")
-      nil
-    end
+    effect_data = Map.new(effect, fn {k, v} -> {String.to_atom(k), v} end)
+    build_effect_struct(type, effect_data)
   end
 
-  defp temporary_hack_filter_only_allowed_effects(effects) do
-    Enum.filter(effects, fn effect ->
-      # Extract type directly from effect without calling get_structured_effect
-      # to avoid KeyError for unimplemented effects
-      type =
-        case effect do
-          %{"type" => t} -> t
-          %{type: t} -> t
-          _ -> nil
-        end
+  def get_structured_effect(effect) do
+    Logger.warning("Unrecognized effect shape, ignoring: #{inspect(effect)}")
+    :skip
+  end
 
-      type_key = if is_atom(type), do: Atom.to_string(type), else: type
+  defp build_effect_struct(type, effect_data) do
+    case Map.fetch(@effect_types, type) do
+      {:ok, module} ->
+        struct(module, effect_data)
 
-      if type_key && Map.has_key?(@effect_types, type_key) do
-        Logger.info("Processing Card Effect: #{inspect(effect)}")
-        true
-      else
-        Logger.warning("Effect not implemented, ignoring: #{inspect(effect)}")
-        false
-      end
-    end)
+      :error ->
+        Logger.warning("Effect not implemented, ignoring: #{inspect(effect_data)}")
+        :skip
+    end
   end
 
   def selectable?(%__MODULE__{cost: cost}, combat_state) do
