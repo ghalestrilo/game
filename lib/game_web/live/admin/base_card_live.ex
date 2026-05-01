@@ -73,7 +73,6 @@ defmodule GameWeb.Admin.BaseCardLive do
     ]
   end
 
-
   @impl Backpex.LiveResource
   def filters do
     [

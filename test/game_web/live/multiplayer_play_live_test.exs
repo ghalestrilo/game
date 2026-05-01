@@ -124,7 +124,6 @@ defmodule GameWeb.MultiplayerPlayLiveTest do
       end
     end
 
-
     test "after game ends lobby shows players unready with classes kept", %{
       conn1: conn1,
       conn2: conn2,

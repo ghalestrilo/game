@@ -25,19 +25,19 @@ defmodule GameWeb.CombatHUD do
             Win Match
           </button>
         </div>
-
+        
     <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
           <span class="badge badge-info badge-sm ml-1">{@game_state.combat.state}</span>
         </div>
 
-    <.character_turn_queue
-            combat={@game_state.combat}
-            current_player={@current_player}
-          />
+        <.character_turn_queue
+          combat={@game_state.combat}
+          current_player={@current_player}
+        />
       </div>
-
+      
     <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
@@ -47,7 +47,7 @@ defmodule GameWeb.CombatHUD do
           </ul>
         </div>
       </div>
-
+      
     <!-- Card piles -->
       <%= if @game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id) do %>
@@ -125,7 +125,7 @@ defmodule GameWeb.CombatHUD do
       <h3 class="text-base font-bold mb-2">Next up</h3>
       <ul class="text-sm flex flex-col gap-2">
         <.character_queue_card
-          :for={character <- Enum.filter(queue, & &1 != nil)}
+          :for={character <- Enum.filter(queue, &(&1 != nil))}
           character={character}
           same_team={same_team?(character, @current_player)}
           current={character == @combat.current_turn.player}
@@ -158,22 +158,35 @@ defmodule GameWeb.CombatHUD do
         <div class={["flex gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span
             :for={hp <- 1..Game.Character.get_max_hp(@character)}
-            class={["max-w-[20px] flex-1 h-2 rounded-[2px]", if(hp > @character.hp, do: "bg-base-300", else: "bg-error")]}
+            class={[
+              "max-w-[20px] flex-1 h-2 rounded-[2px]",
+              if(hp > @character.hp, do: "bg-base-300", else: "bg-error")
+            ]}
           />
         </div>
         <div class={["flex gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span
             :for={ap <- 1..Game.Character.get_max_ap(@character)}
-            class={["max-w-[20px] flex-1 h-2 rounded-[2px]", if(ap > @character.ap, do: "bg-base-300", else: "bg-warning")]}
+            class={[
+              "max-w-[20px] flex-1 h-2 rounded-[2px]",
+              if(ap > @character.ap, do: "bg-base-300", else: "bg-warning")
+            ]}
           />
         </div>
-        <div class={["flex gap-1", if(@same_team, do: "justify-start", else: "justify-end flex-row-reverse")]}>
+        <div class={[
+          "flex gap-1",
+          if(@same_team, do: "justify-start", else: "justify-end flex-row-reverse")
+        ]}>
           <span
             :for={
-              _shield <- List.duplicate(nil, case Game.Character.get_status_effect(@character, :shield) do
-                %{value: value} -> round(value)
-                _ -> 0
-              end)
+              _shield <-
+                List.duplicate(
+                  nil,
+                  case Game.Character.get_status_effect(@character, :shield) do
+                    %{value: value} -> round(value)
+                    _ -> 0
+                  end
+                )
             }
             class="bg-info max-w-[20px] flex-1 h-2 rounded-[2px]"
           />

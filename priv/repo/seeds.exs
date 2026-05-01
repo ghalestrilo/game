@@ -404,18 +404,22 @@ formula_aliases = [
   %{
     name: "target_enemy_alive",
     description: "Target is an enemy with HP above zero",
-    expression: %{"and" => [
-      %{"!==" => [%{"var" => "caster.team"}, %{"var" => "target.team"}]},
-      %{">" => [%{"var" => "target.hp"}, 0]}
-    ]}
+    expression: %{
+      "and" => [
+        %{"!==" => [%{"var" => "caster.team"}, %{"var" => "target.team"}]},
+        %{">" => [%{"var" => "target.hp"}, 0]}
+      ]
+    }
   },
   %{
     name: "target_ally_alive",
     description: "Target is an ally with HP above zero",
-    expression: %{"and" => [
-      %{"===" => [%{"var" => "caster.team"}, %{"var" => "target.team"}]},
-      %{">" => [%{"var" => "target.hp"}, 0]}
-    ]}
+    expression: %{
+      "and" => [
+        %{"===" => [%{"var" => "caster.team"}, %{"var" => "target.team"}]},
+        %{">" => [%{"var" => "target.hp"}, 0]}
+      ]
+    }
   },
   %{
     name: "caster_missing_hp",
@@ -445,7 +449,9 @@ formula_aliases = [
   %{
     name: "caster_is_hidden",
     description: "True if the caster currently has the stealth status effect",
-    expression: %{"some" => [%{"var" => "caster.status_effects"}, %{"===" => [%{"var" => "type"}, "stealth"]}]}
+    expression: %{
+      "some" => [%{"var" => "caster.status_effects"}, %{"===" => [%{"var" => "type"}, "stealth"]}]
+    }
   }
 ]
 

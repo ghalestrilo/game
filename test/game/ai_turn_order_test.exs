@@ -35,9 +35,9 @@ defmodule Game.AITurnOrderTest do
 
     grid = %Grid{
       tiles: %{
-        {0, 0, 0}   => %{terrain: :plain, occupied_by: Enum.at(chars, 0)},
-        {1, 0, -1}  => %{terrain: :plain, occupied_by: Enum.at(chars, 1)},
-        {2, 0, -2}  => %{terrain: :plain, occupied_by: Enum.at(chars, 2)}
+        {0, 0, 0} => %{terrain: :plain, occupied_by: Enum.at(chars, 0)},
+        {1, 0, -1} => %{terrain: :plain, occupied_by: Enum.at(chars, 1)},
+        {2, 0, -2} => %{terrain: :plain, occupied_by: Enum.at(chars, 2)}
       }
     }
 

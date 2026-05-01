@@ -35,7 +35,11 @@ defmodule Game.FormulaAliasTest do
           expression: %{"-" => [%{"var" => "caster.max_hp"}, %{"var" => "caster.hp"}]}
         })
 
-      result = Formula.resolve(%{"alias" => "caster_missing_hp"}, %{"caster" => %{"max_hp" => 30, "hp" => 22}})
+      result =
+        Formula.resolve(%{"alias" => "caster_missing_hp"}, %{
+          "caster" => %{"max_hp" => 30, "hp" => 22}
+        })
+
       assert result == 8
     end
 

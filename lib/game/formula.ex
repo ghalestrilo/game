@@ -20,6 +20,7 @@ defmodule Game.Formula do
   @spec resolve(map() | nil, map() | nil) :: term()
   def resolve(logic, data \\ nil) do
     aliases = load_aliases(logic)
+
     logic
     |> expand_aliases(aliases)
     |> JsonLogic.resolve(data)
@@ -149,7 +150,10 @@ defmodule Game.Formula do
       %{name: "caster.id", description: "Caster ID"},
       %{name: "caster.team", description: "Caster team"},
       %{name: "caster.dead", description: "Caster dead flag"},
-      %{name: "caster.status_effects", description: "Caster active status effects (list of maps with :type and :value)"},
+      %{
+        name: "caster.status_effects",
+        description: "Caster active status effects (list of maps with :type and :value)"
+      },
       %{name: "caster.cards.hand", description: "Caster hand (list of cards)"},
       %{name: "caster.cards.draw", description: "Caster draw pile"},
       %{name: "caster.cards.discard", description: "Caster discard pile"},
@@ -159,9 +163,15 @@ defmodule Game.Formula do
       %{name: "target.occupied", description: "Target tile occupied"},
       %{name: "target.position", description: "Target grid position"},
       %{name: "target.id", description: "Target ID"},
-      %{name: "target.cards.hand", description: "Target hand (list of cards, character targets only)"},
+      %{
+        name: "target.cards.hand",
+        description: "Target hand (list of cards, character targets only)"
+      },
       %{name: "target.cards.draw", description: "Target draw pile (character targets only)"},
-      %{name: "target.cards.discard", description: "Target discard pile (character targets only)"},
+      %{
+        name: "target.cards.discard",
+        description: "Target discard pile (character targets only)"
+      },
       %{name: "state.current_turn.player.team", description: "Current turn player team"},
       %{name: "state.queue", description: "Turn queue"}
     ]
@@ -343,10 +353,12 @@ defmodule Game.Formula do
 
   @doc "Updates the formula tree node at the given path index list."
   @spec update_at_path(map(), list(), any()) :: map()
-  def update_at_path(formula, [_index | _rest] = path, new_value) when is_map(formula) and map_size(formula) == 0 do
+  def update_at_path(formula, [_index | _rest] = path, new_value)
+      when is_map(formula) and map_size(formula) == 0 do
     # Can't navigate into an empty formula — no-op
     formula
   end
+
   def update_at_path(_formula, [], new_value), do: new_value
 
   def update_at_path(formula, [index | rest], new_value) when is_map(formula) do
@@ -358,7 +370,6 @@ defmodule Game.Formula do
 
     %{op => updated_args}
   end
-
 
   @doc "Removes the formula tree node at the given path index list."
   @spec remove_at_path(map(), list()) :: map()

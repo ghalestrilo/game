@@ -7,10 +7,16 @@ defmodule Game.ProdRepo do
       System.get_env("PROD_DATABASE_URL") ||
         raise "PROD_DATABASE_URL environment variable is missing"
 
-    {:ok, [telemetry_prefix: [:game, :prod_repo], url: url, pool_size: 2,
-        timeout: :infinity,
-    ownership_timeout: :infinity,
-    queue_target: 10_000,
-    queue_interval: 10_000, ssl: false]}
+    {:ok,
+     [
+       telemetry_prefix: [:game, :prod_repo],
+       url: url,
+       pool_size: 2,
+       timeout: :infinity,
+       ownership_timeout: :infinity,
+       queue_target: 10_000,
+       queue_interval: 10_000,
+       ssl: false
+     ]}
   end
 end

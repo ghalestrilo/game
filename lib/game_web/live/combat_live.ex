@@ -216,11 +216,13 @@ defmodule GameWeb.CombatLive do
   # A stealthy character is only visible to players on the same team.
   # nil current_player means single-player/campaign — show everyone.
   defp visible_to?(_character, nil), do: true
+
   defp visible_to?(character, current_player) do
     not stealthy?(character) or character.team == current_player.team
   end
 
   if Mix.env() == :test do
-    def visible_to_for_test?(character, current_player), do: visible_to?(character, current_player)
+    def visible_to_for_test?(character, current_player),
+      do: visible_to?(character, current_player)
   end
 end

@@ -190,7 +190,9 @@ defmodule Game.Card do
             {int, ""} -> int
             _ -> v
           end
-        v -> v
+
+        v ->
+          v
       end)
 
     build_effect_struct(type, effect_data)
@@ -282,7 +284,11 @@ defmodule Game.Card do
     end
   end
 
-  def is_target_valid_for_character?(%__MODULE__{targeting: targeting} = _card, character, combat_state) do
+  def is_target_valid_for_character?(
+        %__MODULE__{targeting: targeting} = _card,
+        character,
+        combat_state
+      ) do
     position_result = {:ok, character}
 
     case targeting do
@@ -329,10 +335,12 @@ defmodule Game.Card do
     base_overlay =
       Map.new(in_range, fn coord ->
         position_result = Game.Grid.get_object(combat.grid, coord)
+
         data_context = %{
           "target" => build_target_data(position_result),
           "state" => %{"combat" => state_map}
         }
+
         valid? = targeting_rule && JsonLogic.resolve(targeting_rule, data_context)
         {coord, if(valid?, do: :valid, else: :invalid)}
       end)

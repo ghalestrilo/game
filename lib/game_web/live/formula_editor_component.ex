@@ -188,7 +188,10 @@ defmodule GameWeb.FormulaEditorComponent do
           <option value="">-- Select variable --</option>
           <%= for var <- @variables do %>
             <option value={var.name} selected={var.name == @arg}>
-              {var.name}<%= if var.description do %> - {var.description}<% end %>
+              {var.name}
+              <%= if var.description do %>
+                - {var.description}
+              <% end %>
             </option>
           <% end %>
         </select>
@@ -216,7 +219,10 @@ defmodule GameWeb.FormulaEditorComponent do
           <option value="">-- Select alias --</option>
           <%= for alias_entry <- @aliases do %>
             <option value={alias_entry.name} selected={alias_entry.name == @arg}>
-              {alias_entry.name}<%= if alias_entry.description do %> - {alias_entry.description}<% end %>
+              {alias_entry.name}
+              <%= if alias_entry.description do %>
+                - {alias_entry.description}
+              <% end %>
             </option>
           <% end %>
         </select>

@@ -19,7 +19,15 @@ defmodule Game.Content.BaseClass do
   @doc false
   def changeset(base_class, attrs) do
     base_class
-    |> cast(attrs, [:class, :avatar_url, :base_hp, :base_ap, :base_movement, :deck_id, :strategy_id])
+    |> cast(attrs, [
+      :class,
+      :avatar_url,
+      :base_hp,
+      :base_ap,
+      :base_movement,
+      :deck_id,
+      :strategy_id
+    ])
     |> validate_required([:class, :base_hp, :base_ap, :base_movement])
   end
 end

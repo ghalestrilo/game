@@ -2,17 +2,16 @@ import Config
 
 # Configure your database
 config :game, Game.Repo,
-username: System.get_env("DATABASE_USERNAME") || "postgres",
-password: System.get_env("DATABASE_PASSWORD") || "postgres",
-hostname: System.get_env("DATABASE_HOSTNAME") || "localhost",
-database: System.get_env("DATABASE_NAME") || "game_dev",
-port: System.get_env("DATABASE_PORT") || 5432,
-stacktrace: true,
-show_sensitive_data_on_connection_error: true,
-pool_size: 10
+  username: System.get_env("DATABASE_USERNAME") || "postgres",
+  password: System.get_env("DATABASE_PASSWORD") || "postgres",
+  hostname: System.get_env("DATABASE_HOSTNAME") || "localhost",
+  database: System.get_env("DATABASE_NAME") || "game_dev",
+  port: System.get_env("DATABASE_PORT") || 5432,
+  stacktrace: true,
+  show_sensitive_data_on_connection_error: true,
+  pool_size: 10
 
-config :game, Game.ProdRepo,
-  telemetry_prefix: [:game, :prod_repo]
+config :game, Game.ProdRepo, telemetry_prefix: [:game, :prod_repo]
 
 # For development, we disable any cache and enable
 # debugging and code reloading.

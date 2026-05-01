@@ -97,7 +97,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
 
       # Set up a simple comparison
-      send(view.pid, {:formula_updated, "formula-editor", [],%{">" => [5, 10]}})
+      send(view.pid, {:formula_updated, "formula-editor", [], %{">" => [5, 10]}})
 
       # Convert first argument to a formula by clicking the ƒx button
       # This sends a convert_to_formula event
@@ -112,7 +112,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
 
       # Set up a nested formula
-      send(view.pid, {:formula_updated, "formula-editor", [],%{">" => [%{"var" => ["hp"]}, 10]}})
+      send(view.pid, {:formula_updated, "formula-editor", [], %{">" => [%{"var" => ["hp"]}, 10]}})
 
       html = render(view)
       # Should show the "123" button to convert back to simple value
@@ -140,8 +140,9 @@ defmodule GameWeb.FormulaEditorComponentTest do
         html = render(view)
         assert html =~ ~s(value="#{expected}")
         assert has_element?(view, "input[name='formula[value]']")
+
         refute has_element?(view, "select[name='formula[operator]']"),
-          "operator dropdown appeared after typing '#{char}'"
+               "operator dropdown appeared after typing '#{char}'"
       end
 
       view |> form("form") |> render_submit()
@@ -150,7 +151,8 @@ defmodule GameWeb.FormulaEditorComponentTest do
       assert get_result_json(view) == "wolf"
     end
 
-    test "stays in literal mode when parent re-renders with the typed string value (simulates FormulaField after validate)", %{conn: conn} do
+    test "stays in literal mode when parent re-renders with the typed string value (simulates FormulaField after validate)",
+         %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
 
       # FormulaField.render_form passes the current string value back to the component
@@ -166,12 +168,14 @@ defmodule GameWeb.FormulaEditorComponentTest do
           id: "formula-editor",
           value: expected
         )
+
         render(view)
 
         assert has_element?(view, "input[name='formula[value]']"),
-          "literal input disappeared after parent re-render while typing '#{char}'"
+               "literal input disappeared after parent re-render while typing '#{char}'"
+
         refute has_element?(view, "select[name='formula[operator]']"),
-          "operator dropdown appeared after parent re-render while typing '#{char}'"
+               "operator dropdown appeared after parent re-render while typing '#{char}'"
       end
     end
   end
@@ -222,7 +226,9 @@ defmodule GameWeb.FormulaEditorComponentTest do
       assert has_element?(view, "button[title='Convert to formula']")
     end
 
-    test "shows all available operators in dropdown after switching to formula mode", %{conn: conn} do
+    test "shows all available operators in dropdown after switching to formula mode", %{
+      conn: conn
+    } do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
 
       view |> element("button[title='Convert to formula']") |> render_click()
@@ -238,7 +244,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
 
       # Simulate having a formula already set
-      send(view.pid, {:formula_updated, "formula-editor", [],%{"var" => "hp"}})
+      send(view.pid, {:formula_updated, "formula-editor", [], %{"var" => "hp"}})
 
       html = render(view)
       assert html =~ "var"
@@ -341,7 +347,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
 
       # Send a formula_updated message to set up nested structure
-      send(view.pid, {:formula_updated, "formula-editor", [],%{">" => [%{"var" => ["hp"]}, 5]}})
+      send(view.pid, {:formula_updated, "formula-editor", [], %{">" => [%{"var" => ["hp"]}, 5]}})
 
       # Submit the form
       view
@@ -365,7 +371,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
         ]
       }
 
-      send(view.pid, {:formula_updated, "formula-editor", [],nested_formula})
+      send(view.pid, {:formula_updated, "formula-editor", [], nested_formula})
 
       # Submit the form
       view
@@ -442,7 +448,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
 
       # Send pre-built nested formula
       nested_formula = %{"<" => [%{"var" => ["hp"]}, %{"var" => ["max_hp"]}]}
-      send(view.pid, {:formula_updated, "formula-editor", [],nested_formula})
+      send(view.pid, {:formula_updated, "formula-editor", [], nested_formula})
 
       view
       |> form("form")
@@ -469,7 +475,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
         ]
       }
 
-      send(view.pid, {:formula_updated, "formula-editor", [],nested_formula})
+      send(view.pid, {:formula_updated, "formula-editor", [], nested_formula})
 
       view
       |> form("form")
@@ -558,7 +564,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
 
       # Send pre-built nested formula
       nested_formula = %{"==" => [%{"var" => ["name"]}, "Hero"]}
-      send(view.pid, {:formula_updated, "formula-editor", [],nested_formula})
+      send(view.pid, {:formula_updated, "formula-editor", [], nested_formula})
 
       view
       |> form("form")

@@ -79,7 +79,8 @@ defmodule Game.Combat.CardEffects.StealthTest do
       combat_fighter_turn2 = CombatState.rotate_queue(combat_mage_setup)
       combat_fighter_setup2 = CombatState.setup_player_turn(combat_fighter_turn2)
 
-      assert Character.get_status_effect(combat_fighter_setup2.current_turn.player, :stealth).value == 1
+      assert Character.get_status_effect(combat_fighter_setup2.current_turn.player, :stealth).value ==
+               1
     end
 
     test "stealth expires (is removed) when the counter reaches 0", %{

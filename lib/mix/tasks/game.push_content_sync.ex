@@ -79,7 +79,16 @@ defmodule Mix.Tasks.Game.PushContentSync do
           Enum.reduce(local_cards, %{}, fn local_card, acc ->
             effects_attrs =
               Enum.map(local_card.effects, fn e ->
-                Map.take(e, [:type, :value, :value_label, :aoe, :range, :multi, :scaling, :conditional])
+                Map.take(e, [
+                  :type,
+                  :value,
+                  :value_label,
+                  :aoe,
+                  :range,
+                  :multi,
+                  :scaling,
+                  :conditional
+                ])
               end)
 
             prod_card =
@@ -128,7 +137,7 @@ defmodule Mix.Tasks.Game.PushContentSync do
             base_ap: cls.base_ap,
             base_movement: cls.base_movement,
             deck_id: prod_deck_id,
-            strategy_id: prod_strategy_id,
+            strategy_id: prod_strategy_id
           })
           |> Game.ProdRepo.insert!()
         end)

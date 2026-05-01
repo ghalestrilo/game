@@ -161,7 +161,10 @@ defmodule GameWeb.SandboxLive do
 
     combat =
       with {:ok, updated_combat} <-
-             apply_combat_action(socket.assigns.game_state.combat, {:pick_card, current_turn.player, card}) do
+             apply_combat_action(
+               socket.assigns.game_state.combat,
+               {:pick_card, current_turn.player, card}
+             ) do
         updated_combat
       else
         {:error, _error} ->
@@ -257,10 +260,13 @@ defmodule GameWeb.SandboxLive do
           {:ok, %{id: id}} ->
             target_id = to_string(id)
 
-            hit_color = animations |> List.first() |> then(fn
-              %{color: color} -> color
-              _ -> :yellow
-            end)
+            hit_color =
+              animations
+              |> List.first()
+              |> then(fn
+                %{color: color} -> color
+                _ -> :yellow
+              end)
 
             socket
             |> push_event("hit", %{id: target_id, color: hit_color})
@@ -292,7 +298,8 @@ defmodule GameWeb.SandboxLive do
       ) do
     {:ok, position} = parse_hex_position(target_position)
 
-    with {:ok, combat} <- apply_combat_action(socket.assigns.game_state.combat, {:move, player, position}) do
+    with {:ok, combat} <-
+           apply_combat_action(socket.assigns.game_state.combat, {:move, player, position}) do
       action = "#{player.name} moved to position #{inspect(position)}"
       updated_log = [action | socket.assigns.action_log]
 
@@ -320,7 +327,8 @@ defmodule GameWeb.SandboxLive do
           assigns: %{game_state: %{combat: %{current_turn: %{player: player}}}}
         } = socket
       ) do
-    with {:ok, combat} <- apply_combat_action(socket.assigns.game_state.combat, {:skip_turn, player}) do
+    with {:ok, combat} <-
+           apply_combat_action(socket.assigns.game_state.combat, {:skip_turn, player}) do
       action = "#{player.name} skipped their turn"
       updated_log = [action | socket.assigns.action_log]
 

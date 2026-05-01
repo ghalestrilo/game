@@ -258,7 +258,9 @@ defmodule Game.Character do
           Enum.map(tactics, fn t ->
             %{"trigger" => t.trigger, "action" => t.action, "card_filter" => t.card_filter}
           end)
-        _ -> []
+
+        _ ->
+          []
       end
 
     %__MODULE__{

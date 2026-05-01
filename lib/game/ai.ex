@@ -38,7 +38,10 @@ defmodule Game.AI do
   end
 
   defp do_run(combat, _tactics, 0) do
-    Logger.warning("AI circuit-breaker tripped for #{inspect(CombatState.get_current_player(combat).name)}")
+    Logger.warning(
+      "AI circuit-breaker tripped for #{inspect(CombatState.get_current_player(combat).name)}"
+    )
+
     {:ok, combat}
   end
 
@@ -55,7 +58,9 @@ defmodule Game.AI do
 
       gambit ->
         case execute(gambit, caster, combat) do
-          {:ok, updated_combat} -> do_run(updated_combat, tactics, remaining - 1)
+          {:ok, updated_combat} ->
+            do_run(updated_combat, tactics, remaining - 1)
+
           {:error, reason} ->
             Logger.debug("AI gambit failed (#{reason}), trying next")
             # Skip the failed gambit and try the rest of the list
@@ -73,23 +78,29 @@ defmodule Game.AI do
 
   defp execute(%{"action" => "move_closer"}, caster, combat) do
     case best_move(caster, combat, :closer) do
-      nil -> {:error, "no reachable tile closer to enemy"}
-      pos -> elem(Combat.process_action(combat, {:move, caster, pos}), 0)
-             |> case do
-               :ok -> Combat.process_action(combat, {:move, caster, pos})
-               _ -> {:error, "move rejected"}
-             end
+      nil ->
+        {:error, "no reachable tile closer to enemy"}
+
+      pos ->
+        elem(Combat.process_action(combat, {:move, caster, pos}), 0)
+        |> case do
+          :ok -> Combat.process_action(combat, {:move, caster, pos})
+          _ -> {:error, "move rejected"}
+        end
     end
   end
 
   defp execute(%{"action" => "move_away"}, caster, combat) do
     case best_move(caster, combat, :away) do
-      nil -> {:error, "no reachable tile further from enemy"}
-      pos -> Combat.process_action(combat, {:move, caster, pos})
-             |> case do
-               {:ok, updated} -> {:ok, updated}
-               _ -> {:error, "move rejected"}
-             end
+      nil ->
+        {:error, "no reachable tile further from enemy"}
+
+      pos ->
+        Combat.process_action(combat, {:move, caster, pos})
+        |> case do
+          {:ok, updated} -> {:ok, updated}
+          _ -> {:error, "move rejected"}
+        end
     end
   end
 
@@ -100,7 +111,8 @@ defmodule Game.AI do
     with {:ok, card} <- pick_card(caster, filter),
          {:ok, target_pos} <- find_target(card, caster, combat),
          {:ok, combat_after_pick} <- Combat.process_action(combat, {:pick_card, caster, card}),
-         {:ok, result, _anims} <- Combat.process_action(combat_after_pick, {:play_card, target_pos}) do
+         {:ok, result, _anims} <-
+           Combat.process_action(combat_after_pick, {:play_card, target_pos}) do
       {:ok, result}
     end
   end
@@ -149,13 +161,19 @@ defmodule Game.AI do
       |> Enum.reject(&Grid.tile_blocked?(combat.grid, &1))
       |> Enum.reject(&(&1 == caster.position))
 
-    nearest_enemy = Enum.min_by(enemies, &Grid.distance(combat.grid, caster.position, &1.position))
+    nearest_enemy =
+      Enum.min_by(enemies, &Grid.distance(combat.grid, caster.position, &1.position))
 
     case direction do
       :closer ->
-        Enum.min_by(reachable, &Grid.distance(combat.grid, &1, nearest_enemy.position), fn -> nil end)
+        Enum.min_by(reachable, &Grid.distance(combat.grid, &1, nearest_enemy.position), fn ->
+          nil
+        end)
+
       :away ->
-        Enum.max_by(reachable, &Grid.distance(combat.grid, &1, nearest_enemy.position), fn -> nil end)
+        Enum.max_by(reachable, &Grid.distance(combat.grid, &1, nearest_enemy.position), fn ->
+          nil
+        end)
     end
   end
 

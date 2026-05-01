@@ -103,7 +103,10 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
 
     combat =
       with {:ok, updated_combat} <-
-             apply_combat_action(socket.assigns.game_state.combat, {:pick_card, current_turn.player, card}) do
+             apply_combat_action(
+               socket.assigns.game_state.combat,
+               {:pick_card, current_turn.player, card}
+             ) do
         updated_combat
       else
         {:error, _error} ->
@@ -132,7 +135,8 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
         } = socket
       ) do
     with {:ok, position} <- parse_hex_position(params["target_position"]),
-         {:ok, combat} <- apply_combat_action(socket.assigns.game_state.combat, {:play_card, position}) do
+         {:ok, combat} <-
+           apply_combat_action(socket.assigns.game_state.combat, {:play_card, position}) do
       action =
         "#{socket.assigns.game_state.combat.current_turn.player.name} played card: #{card.name}"
 
@@ -161,7 +165,8 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
         } = socket
       ) do
     with {:ok, position} <- parse_hex_position(target_position),
-         {:ok, combat} <- apply_combat_action(socket.assigns.game_state.combat, {:move, player, position}) do
+         {:ok, combat} <-
+           apply_combat_action(socket.assigns.game_state.combat, {:move, player, position}) do
       action = "#{player.name} moved to position #{inspect(position)}"
       updated_log = [action | socket.assigns.action_log]
       updated_game_state = %{socket.assigns.game_state | combat: combat} |> maybe_run_ai_turn()
@@ -192,7 +197,8 @@ defmodule GameWeb.Campaign.CampaignPlayLive do
           assigns: %{game_state: %{combat: %{current_turn: %{player: player}}}}
         } = socket
       ) do
-    with {:ok, combat} <- apply_combat_action(socket.assigns.game_state.combat, {:skip_turn, player}) do
+    with {:ok, combat} <-
+           apply_combat_action(socket.assigns.game_state.combat, {:skip_turn, player}) do
       action = "#{player.name} skipped their turn"
       updated_log = [action | socket.assigns.action_log]
       updated_game_state = %{socket.assigns.game_state | combat: combat} |> maybe_run_ai_turn()

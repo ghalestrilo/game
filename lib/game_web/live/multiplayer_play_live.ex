@@ -21,7 +21,9 @@ defmodule GameWeb.MultiplayerPlayLive do
           Game.subscribe(lobby.game_pid)
 
           game_state = Game.get_state(lobby.game_pid)
-          current_player = lobby.players |> Enum.find(&(&1.id == user.id)) |> Map.put(:team, user.id)
+
+          current_player =
+            lobby.players |> Enum.find(&(&1.id == user.id)) |> Map.put(:team, user.id)
 
           {:ok,
            assign(socket,

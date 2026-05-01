@@ -14,7 +14,7 @@ defmodule GameWeb.Admin.Fields.FormulaField do
     assigns = assign(assigns, :label, label)
 
     ~H"""
-    <span class="font-mono text-xs"><%= @label %></span>
+    <span class="font-mono text-xs">{@label}</span>
     """
   end
 
