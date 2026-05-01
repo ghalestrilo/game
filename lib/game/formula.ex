@@ -149,6 +149,7 @@ defmodule Game.Formula do
       %{name: "caster.id", description: "Caster ID"},
       %{name: "caster.team", description: "Caster team"},
       %{name: "caster.dead", description: "Caster dead flag"},
+      %{name: "caster.status_effects", description: "Caster active status effects (list of maps with :type and :value)"},
       %{name: "caster.cards.hand", description: "Caster hand (list of cards)"},
       %{name: "caster.cards.draw", description: "Caster draw pile"},
       %{name: "caster.cards.discard", description: "Caster discard pile"},

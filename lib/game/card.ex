@@ -10,7 +10,8 @@ defmodule Game.Card do
     "draw" => CardEffects.Draw,
     "discard" => CardEffects.Discard,
     "shield" => CardEffects.Shield,
-    "summon" => CardEffects.Summon
+    "summon" => CardEffects.Summon,
+    "stealth" => CardEffects.Stealth
   }
 
   def effect_types, do: @effect_types
@@ -104,13 +105,14 @@ defmodule Game.Card do
 
     updated_combat =
       combat_state
-      # Process ap cost, hand, etc
+      # Process ap cost, hand, etc — and break stealth before effects resolve
       |> CombatState.update_target(
         current_player,
         current_player
         |> Game.Character.discard_card(card)
         |> Game.Character.spend_ap(card.cost)
       )
+      |> CombatState.dispel_stealth()
 
     # For tile targeting (like summon), target is a position tuple
     # For character targeting, target is a character struct
@@ -173,6 +175,9 @@ defmodule Game.Card do
 
   def get_structured_effect(%CardEffect{} = effect), do: effect
 
+  # Already a concrete effect struct (e.g. %CardEffects.Stealth{}) — pass through
+  def get_structured_effect(%_{type: _} = effect) when not is_struct(effect, Game.BaseCards.BaseCard.Effect), do: effect
+
   def get_structured_effect(%Game.BaseCards.BaseCard.Effect{type: type} = effect) do
     effect_data =
       effect
@@ -230,7 +235,9 @@ defmodule Game.Card do
           _ -> nil
         end
 
-      if type && Map.has_key?(@effect_types, type) do
+      type_key = if is_atom(type), do: Atom.to_string(type), else: type
+
+      if type_key && Map.has_key?(@effect_types, type_key) do
         Logger.info("Processing Card Effect: #{inspect(effect)}")
         true
       else

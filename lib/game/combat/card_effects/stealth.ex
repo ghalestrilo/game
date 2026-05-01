@@ -9,6 +9,7 @@ defmodule Game.Combat.CardEffects.Stealth do
   alias Game.CombatState
   alias Game.Character
 
+  @derive Jason.Encoder
   defstruct type: :stealth, value: 0, value_label: nil
 
   @type t() :: %__MODULE__{

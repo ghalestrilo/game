@@ -109,10 +109,14 @@ defmodule Game.CombatState do
   end
 
   def setup_player_turn(%{current_turn: %{player: next_player}} = combat) do
-    combat
-    |> put_in([:state], :running)
-    |> put_in([:current_turn], new_turn(next_player))
-    |> draw_cards_for_player(next_player, 5)
+    ticked =
+      combat
+      |> put_in([:state], :running)
+      |> put_in([:current_turn], new_turn(next_player))
+      |> tick_status_effects()
+
+    ticked
+    |> draw_cards_for_player(ticked.current_turn.player, 5)
     |> restore_max_ap()
   end
 
@@ -280,6 +284,25 @@ defmodule Game.CombatState do
     combat_state
     |> put_in([:current_turn, :player], updated_player)
     |> put_in([:queue], updated_queue)
+  end
+
+  def tick_status_effects(%CombatState{current_turn: %{player: player}} = combat) do
+    updated_effects =
+      player.status_effects
+      |> Enum.map(fn
+        %{type: :stealth, value: v} -> %{type: :stealth, value: v - 1}
+        effect -> effect
+      end)
+      |> Enum.reject(fn %{value: v} -> v <= 0 end)
+
+    updated_player = %{player | status_effects: updated_effects}
+    put_in(combat, [:current_turn, :player], updated_player)
+  end
+
+  def dispel_stealth(%CombatState{current_turn: %{player: player}} = combat) do
+    updated_effects = Enum.reject(player.status_effects, &(&1.type == :stealth))
+    updated_player = %{player | status_effects: updated_effects}
+    put_in(combat, [:current_turn, :player], updated_player)
   end
 
   def get_current_player(%{current_turn: %{player: player}}), do: player

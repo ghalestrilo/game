@@ -325,8 +325,8 @@ defmodule Game.Combat do
       "draw",
       "summon",
       "shield",
-      "discard"
-      # "stealth",
+      "discard",
+      "stealth",
       # "stun",
       # "burn",
       # "cleanse",

@@ -132,7 +132,7 @@ cards = [
     name: "Backstab",
     headline: "Strike an enemy from behind for massive damage",
     ap: 1,
-    effects: [%{type: "damage", value: 3, conditional: %{type: "position", bonus: 7}}],
+    effects: [%{type: "damage", value: %{"if" => [%{"alias" => "caster_is_hidden"}, 10, 3]}}],
     rarity: :uncommon
   },
   %{
@@ -441,6 +441,11 @@ formula_aliases = [
     name: "target_below_half",
     description: "Target HP is below 50%",
     expression: %{"<" => [%{"var" => "target.hp"}, %{"/" => [%{"var" => "target.max_hp"}, 2]}]}
+  },
+  %{
+    name: "caster_is_hidden",
+    description: "True if the caster currently has the stealth status effect",
+    expression: %{"some" => [%{"var" => "caster.status_effects"}, %{"===" => [%{"var" => "type"}, "stealth"]}]}
   }
 ]
 

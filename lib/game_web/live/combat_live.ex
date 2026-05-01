@@ -65,7 +65,7 @@ defmodule GameWeb.CombatLive do
               
     <!-- Entity layer -->
               <div class="absolute inset-0 pointer-events-none">
-                <%= for character <- queue, character != nil do %>
+                <%= for character <- queue, character != nil, visible_to?(character, @current_player) do %>
                   <div
                     id={"character-#{character.id}"}
                     phx-key={to_string(character.id)}
@@ -208,4 +208,19 @@ defmodule GameWeb.CombatLive do
     do: "!bg-[url('#{url}')]"
 
   defp character_bg(_), do: ""
+
+  defp stealthy?(character) do
+    Game.Character.get_status_effect(character, :stealth) != nil
+  end
+
+  # A stealthy character is only visible to players on the same team.
+  # nil current_player means single-player/campaign — show everyone.
+  defp visible_to?(_character, nil), do: true
+  defp visible_to?(character, current_player) do
+    not stealthy?(character) or character.team == current_player.team
+  end
+
+  if Mix.env() == :test do
+    def visible_to_for_test?(character, current_player), do: visible_to?(character, current_player)
+  end
 end
