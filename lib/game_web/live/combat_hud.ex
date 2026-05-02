@@ -49,8 +49,8 @@ defmodule GameWeb.CombatHUD do
       </div>
       
     <!-- Card piles -->
-      <%= if @game_state.combat.current_turn.player &&
-               (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id) do %>
+      <%= if Map.get(assigns, :game_mode, nil) == :sandbox || (@game_state.combat.current_turn.player &&
+               (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id)) do %>
         <div class="[grid-area:draw] flex flex-col gap-3 text-xs pointer-events-auto">
           <h4 class="font-semibold text-base-content/70 mb-1">
             Draw ({length(@game_state.combat.current_turn.player.cards.draw)})
@@ -61,9 +61,10 @@ defmodule GameWeb.CombatHUD do
         </div>
         <div
           :if={
-            get_in(@game_state, [:combat, :current_turn, :player]) &&
-              (@current_player == nil ||
-                 @current_player.id == @game_state.combat.current_turn.player.id)
+            Map.get(assigns, :game_mode, nil) == :sandbox ||
+              (get_in(@game_state, [:combat, :current_turn, :player]) &&
+                 (@current_player == nil ||
+                    @current_player.id == @game_state.combat.current_turn.player.id))
           }
           class="[grid-area:hand] card-row pointer-events-auto"
         >

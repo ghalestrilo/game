@@ -15,3 +15,24 @@
     ('target_hp_percent','Target current HP as a fraction of max',   '{"/": [{"var": "target.hp"}, {"var": "target.max_hp"}]}',                                            NOW(), NOW()),                                                 
     ('target_below_half','Target HP is below 50%',                   '{"<": [{"var": "target.hp"}, {"/": [{"var": "target.max_hp"}, 2]}]}',                               NOW(), NOW());                                                  
                                                                                                                                                                                                                              
+
+
+
+
+
+
+
+
+
+
+
+
+
+INSERT INTO formula_aliases (name, description, expression, inserted_at, updated_at) VALUES                                                                                                                                             
+    -- ('caster_hand_size',      'Number of cards in caster hand',      '{"reduce":[{"map":[{"var":["caster.cards.hand"]},{"*":[1,1]}]},{"+": [  {"var": "current"},  {"var": "accumulator"}  ]},0]}', NOW(), NOW()),
+    ('caster_graveyard_size', 'Number of cards in caster graveyard', '{"reduce":[{"var":["caster.cards.graveyard"]},{"+": [  {"var": "current"},  1  ]},0]}',                                       NOW(), NOW()),
+    ('caster_draw_size',      'Number of cards in caster draw',      '{"reduce":[{"var":["caster.cards.draw"]},{"+": [  {"var": "current"},  1  ]},0]}',                                            NOW(), NOW()),
+    ('target_hand_size',      'Number of cards in target hand',      '{"reduce":[{"map":[{"var":["target.cards.hand"]},{"*":[1,1]}]},{"+": [  {"var": "current"},  {"var": "accumulator"}  ]},0]}', NOW(), NOW()),
+    -- ('target_graveyard_size', 'Number of cards in target graveyard', '{"reduce":[{"var":["target.cards.graveyard"]},{"+": [  {"var": "current"},  1  ]},0]}',                                       NOW(), NOW())
+    ('target_draw_size',      'Number of cards in target draw',      '{"reduce":[{"var":["target.cards.draw"]},{"+": [  {"var": "current"},  1  ]},0]}',                                            NOW(), NOW()),
+;

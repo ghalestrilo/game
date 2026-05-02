@@ -33,6 +33,15 @@ defmodule GameWeb.FormulaEditorComponent do
     {:ok, socket}
   end
 
+  defp available_variables(context) do
+    # Special variables for _reduce_ operation
+    Formula.available_variables(context) ++
+      [
+        %{name: "current", description: "Current item in list"},
+        %{name: "accumulator", description: "Current value of 'reduce' operation accumulator"}
+      ]
+  end
+
   defp assign_operator_and_args(socket) do
     value = socket.assigns.value
 

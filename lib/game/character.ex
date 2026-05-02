@@ -93,6 +93,7 @@ defmodule Game.Character do
   @doc """
   Heals a character
   """
+  @deprecated "use -apply_damage instead"
   def apply_healing(character, amount) do
     %{character | hp: min(character.hp + amount, get_max_hp(character))}
   end

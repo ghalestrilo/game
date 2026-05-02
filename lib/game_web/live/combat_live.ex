@@ -30,6 +30,7 @@ defmodule GameWeb.CombatLive do
         game_state={@game_state}
         action_log={@action_log}
         current_player={@current_player}
+        game_mode={Map.get(assigns, :game_mode)}
       />
       
     <!-- Game area -->
