@@ -2,7 +2,12 @@
 elixir = "1.18.4"
 erlang = "28"
 
+[env]
+_.file = ".envrc"
+
+
 [tasks]
 dev = "iex -S mix phx.server"
 seed = "mix run priv/repo/seeds.exs"
 proxy = "fly proxy -a hexdecks-db 5433:5432"
+push_content_sync = "mix game.push_contents_sync"

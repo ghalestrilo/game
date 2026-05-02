@@ -36,3 +36,16 @@ INSERT INTO formula_aliases (name, description, expression, inserted_at, updated
     -- ('target_graveyard_size', 'Number of cards in target graveyard', '{"reduce":[{"var":["target.cards.graveyard"]},{"+": [  {"var": "current"},  1  ]},0]}',                                       NOW(), NOW())
     ('target_draw_size',      'Number of cards in target draw',      '{"reduce":[{"var":["target.cards.draw"]},{"+": [  {"var": "current"},  1  ]},0]}',                                            NOW(), NOW()),
 ;
+
+
+
+INSERT INTO formula_aliases (name, description, expression, inserted_at, updated_at) VALUES                                                                 
+    ('count',                 'Expression to be used inside recude, counting the items in a list',                  '{"+": [  {"var": "accumulator"},  1  ]}',      NOW(), NOW()),
+    )                                                                            
+    ('caster_hand_size',      'Number of cards in caster hand',      '{"reduce":[{"var":["target.cards.hand"]},      {"+": [  {"var": "accumulator"},  1  ]}, 0]}', NOW(), NOW()),
+    ('caster_graveyard_size', 'Number of cards in caster graveyard', '{"reduce":[{"var":["caster.cards.graveyard"]}, {"+": [  {"var": "accumulator"},  1  ]}, 0]}', NOW(), NOW()),
+    ('caster_draw_size',      'Number of cards in caster draw',      '{"reduce":[{"var":["caster.cards.draw"]},      {"+": [  {"var": "accumulator"},  1  ]}, 0]}', NOW(), NOW()),
+    ('target_hand_size',      'Number of cards in target hand',      '{"reduce":[{"var":["target.cards.hand"]},      {"+": [  {"var": "accumulator"},  1  ]}, 0]}', NOW(), NOW()),
+    ('target_graveyard_size', 'Number of cards in target graveyard', '{"reduce":[{"var":["target.cards.graveyard"]}, {"+": [  {"var": "accumulator"},  1  ]}, 0]}', NOW(), NOW())
+    ('target_draw_size',      'Number of cards in target draw',      '{"reduce":[{"var":["target.cards.draw"]},      {"+": [  {"var": "accumulator"},  1  ]}, 0]}', NOW(), NOW())
+;
