@@ -41,12 +41,16 @@ defmodule GameWeb.Router do
   # end
   #
   scope "/admin", GameWeb do
-    pipe_through :browser
+    pipe_through [:browser, :require_authenticated_user, :require_admin]
 
     backpex_routes()
 
     live_session :admin,
-      on_mount: Backpex.InitAssigns do
+      on_mount: [
+        {GameWeb.UserAuth, :require_authenticated},
+        {GameWeb.UserAuth, :require_admin},
+        Backpex.InitAssigns
+      ] do
       live "/", Admin.HomeLive
 
       live_resources "/base_cards", Admin.BaseCardLive

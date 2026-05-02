@@ -30,4 +30,7 @@ defmodule Game.Accounts.Scope do
   end
 
   def for_user(nil), do: nil
+
+  def admin?(%__MODULE__{user: %User{role: "admin"}}), do: true
+  def admin?(_), do: false
 end

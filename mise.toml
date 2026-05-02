@@ -11,3 +11,10 @@ dev = "iex -S mix phx.server"
 seed = "mix run priv/repo/seeds.exs"
 proxy = "fly proxy -a hexdecks-db 5433:5432"
 push_content_sync = "mix game.push_contents_sync"
+
+[tasks."remote:promote_admin"]
+description = "Promote a user to admin on the remote Fly.io machine"
+run = """
+#!/usr/bin/env bash
+fly ssh console --app game -C "bin/game rpc 'import Ecto.Changeset; Game.Accounts.get_user_by_email(\\\"$1\\\") |> change(role: \\\"admin\\\") |> Game.Repo.update!()'"
+"""
