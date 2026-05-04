@@ -1,8 +1,17 @@
 defmodule Game.LobbyServer do
   use GenServer
 
-  def start_link(id) do
-    GenServer.start_link(__MODULE__, id, name: via(id))
+  def start_link({id, :pvp}) do
+    GenServer.start_link(__MODULE__, {id, :pvp}, name: via(id))
+  end
+
+  def start_link({id, mode, build_opts}) when mode in [:campaign, :sandbox] do
+    GenServer.start_link(__MODULE__, {id, mode, build_opts}, name: via(id))
+  end
+
+  # Keep backward compat for PvP lobbies started with just an id
+  def start_link(id) when is_binary(id) do
+    GenServer.start_link(__MODULE__, {id, :pvp}, name: via(id))
   end
 
   def get_state(id) do
@@ -32,8 +41,13 @@ defmodule Game.LobbyServer do
   defp via(id), do: {:via, Registry, {Game.LobbyRegistry, id}}
 
   @impl true
-  def init(id) do
-    {:ok, %{id: id, players: [], status: :waiting, game_pid: nil}}
+  def init({id, :pvp}) do
+    {:ok, %{id: id, mode: :pvp, players: [], status: :waiting, game_pid: nil}}
+  end
+
+  def init({id, mode, build_opts}) when mode in [:campaign, :sandbox] do
+    state = %{id: id, mode: mode, players: [], status: :ready, game_pid: nil}
+    {:ok, start_single_player_game(state, build_opts)}
   end
 
   @impl true
@@ -135,6 +149,16 @@ defmodule Game.LobbyServer do
   end
 
   defp maybe_start_game(state), do: state
+
+  defp start_single_player_game(state, build_opts) do
+    {:ok, game_pid} = Game.start_link()
+    combat = Game.CombatBuilder.build(build_opts.combatants)
+
+    game_state = Map.merge(%{current_view: :combat, combat: combat}, build_opts[:extra_state] || %{})
+    :ok = GenServer.call(game_pid, {:set_state, game_state})
+
+    %{state | game_pid: game_pid}
+  end
 
   defp broadcast(state) do
     Phoenix.PubSub.broadcast(Game.PubSub, "lobby:#{state.id}", {:lobby_updated, state})

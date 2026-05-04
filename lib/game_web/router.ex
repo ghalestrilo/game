@@ -25,11 +25,11 @@ defmodule GameWeb.Router do
     get "/", PageController, :home
 
     live_session :game, layout: {GameWeb.Layouts, :game} do
-      live "/sandbox", SandboxLive
+      live "/sandbox", GameLive, :sandbox
+      live "/campaign/play", GameLive, :campaign
     end
 
     live "/campaign/character-select", Campaign.CharacterSelectLive
-    live "/campaign/play", Campaign.CampaignPlayLive
 
     # Catch-all: redirect any other /campaign/* routes to character select
     live "/campaign/*path", Campaign.CatchAllLive
@@ -100,7 +100,7 @@ defmodule GameWeb.Router do
       on_mount: [{GameWeb.UserAuth, :require_authenticated}] do
       live "/multiplayer", MultiplayerLive
       live "/multiplayer/:id", LobbyLive
-      live "/multiplayer/:id/play", MultiplayerPlayLive
+      live "/multiplayer/:id/play", GameLive, :pvp
     end
 
     post "/users/update-password", UserSessionController, :update_password

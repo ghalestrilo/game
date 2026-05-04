@@ -3,7 +3,20 @@ defmodule Game.Lobby do
 
   def create() do
     id = Base.encode16(:crypto.strong_rand_bytes(8), case: :lower)
-    {:ok, _pid} = DynamicSupervisor.start_child(Game.LobbySupervisor, {LobbyServer, id})
+    {:ok, _pid} = DynamicSupervisor.start_child(Game.LobbySupervisor, {LobbyServer, {id, :pvp}})
+    {:ok, id}
+  end
+
+  @doc """
+  Creates a single-player lobby for :campaign or :sandbox mode.
+
+  build_opts must include:
+    - combatants: list of combatant configs passed to CombatBuilder.build/1
+    - extra_state: (optional) map merged into the initial game state (e.g. campaign data)
+  """
+  def create_single_player(mode, build_opts) when mode in [:campaign, :sandbox] do
+    id = Base.encode16(:crypto.strong_rand_bytes(8), case: :lower)
+    {:ok, _pid} = DynamicSupervisor.start_child(Game.LobbySupervisor, {LobbyServer, {id, mode, build_opts}})
     {:ok, id}
   end
 

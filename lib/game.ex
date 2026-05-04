@@ -32,8 +32,8 @@ defmodule Game do
 
   defp topic(game_pid), do: "game:#{inspect(game_pid)}"
 
-  defp broadcast(game_pid, state) do
-    Phoenix.PubSub.broadcast(Game.PubSub, topic(game_pid), {:game_updated, state})
+  defp broadcast(game_pid, state, animations \\ []) do
+    Phoenix.PubSub.broadcast(Game.PubSub, topic(game_pid), {:game_updated, state, animations})
   end
 
   # Initialize combat with a random grid with two characters
@@ -194,13 +194,27 @@ defmodule Game do
       {:ok, updated_combat, animations} ->
         {:ok, final_combat} = Game.AI.advance_through_ai_turns(updated_combat)
         new_state = %{state | combat: final_combat}
-        broadcast(self(), new_state)
-        {:reply, {:ok, new_state, animations}, new_state}
+        target_id = resolve_animation_target(state.combat, action)
+        tagged_animations = Enum.map(animations, &Map.put(&1, :target_id, target_id))
+        broadcast(self(), new_state, tagged_animations)
+        {:reply, {:ok, new_state, tagged_animations}, new_state}
 
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
   end
+
+  defp resolve_animation_target(_combat, {:play_card_on_character, character}),
+    do: to_string(character.id)
+
+  defp resolve_animation_target(combat, {:play_card, position}) do
+    case Game.Grid.get_object(combat.grid, position) do
+      {:ok, %{id: id}} -> to_string(id)
+      _ -> nil
+    end
+  end
+
+  defp resolve_animation_target(_combat, _action), do: nil
 
   def handle_call(:enter_shop, _from, state) do
     if state.combat.state == :game_over do

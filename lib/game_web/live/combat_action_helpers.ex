@@ -46,9 +46,21 @@ defmodule GameWeb.CombatActionHelpers do
     end
   end
 
+  # nil current_player means single-player mode — always allowed
   def my_turn?(socket) do
     me = socket.assigns.current_player
     current = socket.assigns.game_state.combat.current_turn.player
-    me && current && me.id == current.id
+    is_nil(me) or (me && current && me.id == current.id)
+  end
+
+  def push_animations(socket, animations) do
+    Enum.reduce(animations, socket, fn %{target_id: target_id} = anim, s ->
+      color = Map.get(anim, :color, :yellow)
+      label = Map.get(anim, :label, "")
+
+      s
+      |> Phoenix.LiveView.push_event("hit", %{id: target_id, color: color})
+      |> Phoenix.LiveView.push_event("float", %{id: target_id, label: label, color: color})
+    end)
   end
 end
