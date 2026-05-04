@@ -145,7 +145,7 @@ defmodule GameWeb.CombatHUD do
     <li class={[
       "p-3 border-2 border-base-content/10 rounded-lg flex items-start gap-2 bg-base-100",
       if(@same_team, do: "flex-row", else: "flex-row-reverse"),
-      if(@current, do: "border-success shadow-md shadow-success")
+      if(@current, do: "border-success shadow-md shadow-success animate-pulse")
     ]}>
       <%= if @character.avatar_url && @character.avatar_url != "" do %>
         <img src={@character.avatar_url} class="w-10 h-10 rounded-full object-cover flex-shrink-0" />
