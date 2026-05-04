@@ -1,7 +1,7 @@
 defmodule GameWeb.Components.FormulaTreeComponent do
   use Phoenix.LiveComponent
 
-  def render(%{ value: %{ "alias" => alias } } = assigns) do
+  def render(%{value: %{"alias" => alias}} = assigns) do
     ~H"""
     <div class="jl-node">
       <span class="badge badge-soft">alias</span> {@value["alias"]}

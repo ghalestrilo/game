@@ -62,16 +62,17 @@ defmodule GameWeb.Admin.BaseCardLive do
             module: Backpex.Fields.Select,
             label: "Type",
             options:
-              Game.Card.effect_types() |> Map.keys() |> Enum.map(&{String.capitalize(&1), &1}),
+              Game.Card.effect_types() |> Map.keys() |> Enum.map(&{String.capitalize(&1), &1})
           },
           value: %{
             module: GameWeb.Admin.Fields.FormulaField,
             label: "Value",
             render: fn assigns ->
               id = :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
+
               ~H"""
               <div>
-                <.live_component id={id} module={GameWeb.Components.FormulaTreeComponent} value={@item.value}/>
+                <.live_component id={id} module={GameWeb.Components.FormulaTreeComponent} value={@item.value} />
               </div>
               """
             end

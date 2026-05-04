@@ -608,15 +608,18 @@ defmodule GameWeb.CoreComponents do
     ~H"""
     <ul class="flex flex-col items-stretch gap-2 text-xs text-base-content/70">
       <li
-        :for={{raw, index} <- @card.effects |> Enum.filter(&Game.Card.effect_implemented?/1) |> Enum.with_index()}
+        :for={
+          {raw, index} <-
+            @card.effects |> Enum.filter(&Game.Card.effect_implemented?/1) |> Enum.with_index()
+        }
         class="flex items-row gap-1 card bg-amber-500/10 p-2"
       >
         <% effect = Game.Card.get_structured_effect(raw) %>
         <span>
-        <.icon name={Game.Combat.CardEffect.get_icon(effect)} class="w-3 h-3" />
-        {effect.type}
+          <.icon name={Game.Combat.CardEffect.get_icon(effect)} class="w-3 h-3" />
+          {effect.type}
         </span>
-        <%= GameWeb.Components.FormulaTreeComponent.render(effect) %>
+        {GameWeb.Components.FormulaTreeComponent.render(effect)}
       </li>
     </ul>
     """

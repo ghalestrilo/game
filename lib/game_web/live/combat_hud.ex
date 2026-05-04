@@ -194,7 +194,7 @@ defmodule GameWeb.CombatHUD do
           />
         </div>
         <span class="badge badge-soft">
-          <%= "Deck: #{Enum.count(@character.cards.draw)} / #{Enum.count(@character.cards.hand)} / #{Enum.count(@character.cards.discard)}" %>
+          {"Deck: #{Enum.count(@character.cards.draw)} / #{Enum.count(@character.cards.hand)} / #{Enum.count(@character.cards.discard)}"}
         </span>
       </div>
     </li>
