@@ -606,13 +606,17 @@ defmodule GameWeb.CoreComponents do
 
   def effect_list(assigns) do
     ~H"""
-    <ul class="flex flex-wrap gap-2 text-xs text-base-content/70">
+    <ul class="flex flex-col items-stretch gap-2 text-xs text-base-content/70">
       <li
-        :for={raw <- Enum.filter(@card.effects, &Game.Card.effect_implemented?/1)}
-        class="flex items-center gap-1"
+        :for={{raw, index} <- @card.effects |> Enum.filter(&Game.Card.effect_implemented?/1) |> Enum.with_index()}
+        class="flex items-row gap-1 card bg-amber-500/10 p-2"
       >
         <% effect = Game.Card.get_structured_effect(raw) %>
+        <span>
         <.icon name={Game.Combat.CardEffect.get_icon(effect)} class="w-3 h-3" />
+        {effect.type}
+        </span>
+        <%= GameWeb.Components.FormulaTreeComponent.render(effect) %>
       </li>
     </ul>
     """
@@ -661,15 +665,7 @@ defmodule GameWeb.CoreComponents do
         </div>
       </div>
       <div class="mb-2 text-xs text-base-content/80 min-h-[3rem]">
-        {@card.description}
-        <!-- TODO: temporarily describe full effects as JSON in card content -->
-        <li :for={raw <- @card.effects} class="flex items-center gap-1">
-          <span class="text-base-content/40">
-            {Jason.encode!(Map.from_struct(raw), pretty: true)}
-          </span>
-        </li>
-      </div>
-      <div class="mt-auto pt-2 border-t border-base-300 w-full">
+        {Map.get(@card, :headline)}
         <.effect_list card={@card} />
       </div>
     </div>
