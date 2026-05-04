@@ -40,7 +40,7 @@ defmodule GameWeb.LobbyLiveTest do
       updated_html1 = render(lobby_view1)
       assert updated_html1 =~ user1.email
       assert updated_html1 =~ user2.email
-      assert updated_html1 =~ "Both players connected"
+      assert updated_html1 =~ "Players connected"
     end
 
     test "single player lobby shows waiting status", %{conn1: conn1, user1: user1} do
@@ -52,7 +52,7 @@ defmodule GameWeb.LobbyLiveTest do
 
       html = render(lobby_view)
       assert html =~ user1.email
-      assert html =~ "Waiting for opponent"
+      assert html =~ "Waiting for players"
     end
 
     test "navigating to nonexistent lobby redirects to /multiplayer", %{conn1: conn1} do
@@ -60,10 +60,7 @@ defmodule GameWeb.LobbyLiveTest do
                live(conn1, ~p"/multiplayer/doesnotexist00")
     end
 
-    test "full lobby rejects third player", %{conn1: conn1, conn2: conn2} do
-      user3 = Game.AccountsFixtures.user_fixture()
-      conn3 = Phoenix.ConnTest.build_conn() |> log_in_user(user3)
-
+    test "lobby allows up to 8 players", %{conn1: conn1, conn2: conn2} do
       {:ok, view1, _} = live(conn1, ~p"/multiplayer")
       view1 |> element("button[phx-click='create_lobby']") |> render_click()
       {lobby_path, _} = assert_redirect(view1)
@@ -71,7 +68,84 @@ defmodule GameWeb.LobbyLiveTest do
       {:ok, _lobby_view1, _} = live(conn1, lobby_path)
       {:ok, _lobby_view2, _} = live(conn2, lobby_path)
 
-      assert {:error, {:live_redirect, %{to: "/multiplayer"}}} = live(conn3, lobby_path)
+      # Players 3-8 can join successfully
+      for _ <- 3..8 do
+        extra_user = Game.AccountsFixtures.user_fixture()
+        extra_conn = Phoenix.ConnTest.build_conn() |> log_in_user(extra_user)
+        assert {:ok, _, _} = live(extra_conn, lobby_path)
+      end
+    end
+
+    test "lobby rejects 9th player when full (8 players)", %{conn1: conn1, conn2: conn2} do
+      {:ok, view1, _} = live(conn1, ~p"/multiplayer")
+      view1 |> element("button[phx-click='create_lobby']") |> render_click()
+      {lobby_path, _} = assert_redirect(view1)
+
+      {:ok, _lobby_view1, _} = live(conn1, lobby_path)
+      {:ok, _lobby_view2, _} = live(conn2, lobby_path)
+
+      # Fill up to 8 players
+      for _ <- 3..8 do
+        extra_user = Game.AccountsFixtures.user_fixture()
+        extra_conn = Phoenix.ConnTest.build_conn() |> log_in_user(extra_user)
+        {:ok, _, _} = live(extra_conn, lobby_path)
+      end
+
+      # 9th player is rejected
+      ninth_user = Game.AccountsFixtures.user_fixture()
+      ninth_conn = Phoenix.ConnTest.build_conn() |> log_in_user(ninth_user)
+      assert {:error, {:live_redirect, %{to: "/multiplayer"}}} = live(ninth_conn, lobby_path)
+    end
+
+    test "lobby is ready with 2 players and waiting with 1", %{conn1: conn1} do
+      {:ok, view1, _} = live(conn1, ~p"/multiplayer")
+      view1 |> element("button[phx-click='create_lobby']") |> render_click()
+      {lobby_path, _} = assert_redirect(view1)
+
+      {:ok, lobby_view1, html1} = live(conn1, lobby_path)
+      assert html1 =~ "Waiting for players"
+
+      user2 = Game.AccountsFixtures.user_fixture()
+      conn2 = Phoenix.ConnTest.build_conn() |> log_in_user(user2)
+      {:ok, _lobby_view2, _} = live(conn2, lobby_path)
+
+      assert render(lobby_view1) =~ "Players connected"
+    end
+
+    test "lobby stays ready when a 3rd player joins", %{conn1: conn1, conn2: conn2} do
+      {:ok, view1, _} = live(conn1, ~p"/multiplayer")
+      view1 |> element("button[phx-click='create_lobby']") |> render_click()
+      {lobby_path, _} = assert_redirect(view1)
+
+      {:ok, lobby_view1, _} = live(conn1, lobby_path)
+      {:ok, _lobby_view2, _} = live(conn2, lobby_path)
+
+      user3 = Game.AccountsFixtures.user_fixture()
+      conn3 = Phoenix.ConnTest.build_conn() |> log_in_user(user3)
+      {:ok, _lobby_view3, html3} = live(conn3, lobby_path)
+
+      assert html3 =~ "Players connected"
+      assert render(lobby_view1) =~ "Players connected"
+    end
+
+    test "lobby reverts to waiting when player count drops below 2", %{
+      conn1: conn1,
+      conn2: conn2,
+      user2: user2
+    } do
+      {:ok, view1, _} = live(conn1, ~p"/multiplayer")
+      view1 |> element("button[phx-click='create_lobby']") |> render_click()
+      {lobby_path, _} = assert_redirect(view1)
+
+      {:ok, lobby_view1, _} = live(conn1, lobby_path)
+      {:ok, _lobby_view2, _} = live(conn2, lobby_path)
+
+      assert render(lobby_view1) =~ "Players connected"
+
+      lobby_id = lobby_path |> String.split("/") |> List.last()
+      Game.Lobby.leave(lobby_id, user2.id)
+
+      assert render(lobby_view1) =~ "Waiting for players"
     end
   end
 

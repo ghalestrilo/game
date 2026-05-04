@@ -112,9 +112,9 @@ defmodule GameWeb.LobbyLive do
           Ready
         </button>
         <%= if @lobby.status == :ready do %>
-          <p>Both players connected. Game starting soon...</p>
+          <p>Players connected. Game starting soon...</p>
         <% else %>
-          <p>Waiting for opponent...</p>
+          <p>Waiting for players...</p>
         <% end %>
       <% else %>
         <p>Connecting...</p>
