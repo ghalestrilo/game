@@ -25,7 +25,7 @@ defmodule GameWeb.CombatHUD do
             Win Match
           </button>
         </div>
-        
+
     <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
@@ -37,7 +37,7 @@ defmodule GameWeb.CombatHUD do
           current_player={@current_player}
         />
       </div>
-      
+
     <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
@@ -47,7 +47,7 @@ defmodule GameWeb.CombatHUD do
           </ul>
         </div>
       </div>
-      
+
     <!-- Card piles -->
       <%= if Map.get(assigns, :game_mode, nil) == :sandbox || (@game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id)) do %>
@@ -124,7 +124,7 @@ defmodule GameWeb.CombatHUD do
     <div>
       <% queue = Game.CombatState.get_current_queue(@combat) %>
       <h3 class="text-base font-bold mb-2">Next up</h3>
-      <ul class="text-sm flex flex-col gap-2">
+      <ul class="text-sm flex flex-col gap-3">
         <.character_queue_card
           :for={character <- Enum.filter(queue, &(&1 != nil))}
           character={character}
@@ -143,8 +143,9 @@ defmodule GameWeb.CombatHUD do
   defp character_queue_card(assigns) do
     ~H"""
     <li class={[
-      "p-2 border border-base-content/20 rounded flex items-center gap-2",
-      if(@same_team, do: "flex-row", else: "flex-row-reverse")
+      "p-3 border-2 border-base-content/10 rounded-lg flex items-start gap-2 bg-base-100",
+      if(@same_team, do: "flex-row", else: "flex-row-reverse"),
+      if(@current, do: "border-success shadow-md shadow-success")
     ]}>
       <%= if @character.avatar_url && @character.avatar_url != "" do %>
         <img src={@character.avatar_url} class="w-10 h-10 rounded-full object-cover flex-shrink-0" />
@@ -192,6 +193,9 @@ defmodule GameWeb.CombatHUD do
             class="bg-info max-w-[20px] flex-1 h-2 rounded-[2px]"
           />
         </div>
+        <span class="badge badge-soft">
+          <%= "Deck: #{Enum.count(@character.cards.draw)} / #{Enum.count(@character.cards.hand)} / #{Enum.count(@character.cards.discard)}" %>
+        </span>
       </div>
     </li>
     """

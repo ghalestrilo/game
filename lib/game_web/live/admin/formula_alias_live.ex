@@ -1,6 +1,7 @@
 defmodule GameWeb.Admin.FormulaAliasLive do
   use Backpex.LiveResource,
     init_order: %{by: :name, direction: :asc},
+    per_page_default: 100,
     adapter_config: [
       schema: Game.FormulaAliases.FormulaAlias,
       repo: Game.Repo,
