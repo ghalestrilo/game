@@ -20,7 +20,7 @@ defmodule GameWeb.LobbyLive do
 
           case Lobby.join(id, user) do
             {:ok, lobby_state} ->
-              base_classes = Content.list_base_classes()
+              base_classes = Content.list_playable_classes()
 
               {:ok,
                assign(socket,

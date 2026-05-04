@@ -22,6 +22,10 @@ defmodule Game.Content do
     Repo.all(BaseClass)
   end
 
+  def list_playable_classes do
+    Repo.all(from bc in BaseClass, where: is_nil(bc.strategy_id))
+  end
+
   @doc """
   Gets a single base_class.
 
