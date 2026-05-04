@@ -1,23 +1,13 @@
-defmodule GameWeb.Components.JsonLogicNodeComponent do
+defmodule GameWeb.Components.FormulaTreeComponent do
   use Phoenix.LiveComponent
 
-  # def render(assigns) do
-  #   ~H"""
-  #   <div class="jl-node">
-  #     <%= case @node.type do %>
-
-  #       <% :value -> %>
-  #         <span class="jl-value">
-  #           <%= render_value(@node.value) %>
-  #         </span>
-
-  #       <% :op -> %>
-  #         <%= render_op(assigns) %>
-
-  #     <% end %>
-  #   </div>
-  #   """
-  # end
+  def render(assigns) do
+    ~H"""
+    <div class="jl-node">
+      unimplemented
+    </div>
+    """
+  end
 
   # # ---------- OPERATOR RENDERING ----------
 

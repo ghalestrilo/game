@@ -47,6 +47,7 @@ defmodule Game.LobbyServer do
       Enum.any?(players, &(&1.id == user.id)) ->
         {:reply, {:ok, state}, state}
 
+      # FIXME: allow more than two players
       length(players) >= 2 ->
         {:reply, {:error, :full}, state}
 
@@ -96,6 +97,7 @@ defmodule Game.LobbyServer do
   @impl true
   def handle_cast({:leave, user_id}, state) do
     new_players = Enum.reject(state.players, &(&1.id == user_id))
+    # FIXME: allow more than two players
     new_status = if length(new_players) == 2, do: :ready, else: :waiting
     new_state = %{state | players: new_players, status: new_status}
     broadcast(new_state)
@@ -111,12 +113,14 @@ defmodule Game.LobbyServer do
   end
 
   defp maybe_start_game(%{players: players, game_pid: nil} = state) do
+    # FIXME: allow more than two players
     all_ready = length(players) == 2 and Enum.all?(players, &(&1.ready and not is_nil(&1.class)))
 
     if all_ready do
       [p1, p2] = players
 
       combat =
+        # FIXME: allow more than two players
         Game.CombatBuilder.build([
           %{class: p1.class, team: p1.id, position: {0, 0, 0}, id: p1.id},
           %{class: p2.class, team: p2.id, position: {2, -1, -1}, id: p2.id}

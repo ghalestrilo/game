@@ -3,6 +3,8 @@ defmodule GameWeb.Admin.BaseDeckLiveTest do
   import Phoenix.LiveViewTest
   alias Game.{BaseCards, BaseDecks}
 
+  setup :register_and_log_in_admin
+
   setup do
     {:ok, card_a} =
       BaseCards.create_base_card(%{
