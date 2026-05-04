@@ -4,7 +4,7 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   def render(assigns) do
     ~H"""
     <div class="jl-node">
-      unimplemented
+      {inspect(@value)}
     </div>
     """
   end
