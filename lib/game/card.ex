@@ -134,18 +134,28 @@ defmodule Game.Card do
   # Helper function to apply multiple card effects; returns {combat_state, animations}
   defp apply_card_effects(initial_combat_state, effects, target) when is_list(effects) do
     Enum.reduce(effects, {initial_combat_state, []}, fn effect, {combat_state, anims} ->
+      current_target = refresh_target(target, combat_state)
+
       case get_structured_effect(effect) do
         :skip ->
           {combat_state, anims}
 
         resolved ->
-          resolved = resolve_effect_value(resolved, target, combat_state)
-          new_combat = CardEffect.process(resolved, target, combat_state)
+          resolved = resolve_effect_value(resolved, current_target, combat_state)
+          new_combat = CardEffect.process(resolved, current_target, combat_state)
           new_anim = CardEffect.animate(resolved)
           {new_combat, if(new_anim, do: [new_anim | anims], else: anims)}
       end
     end)
     |> then(fn {combat, anims} -> {combat, Enum.reverse(anims)} end)
+  end
+
+  defp refresh_target(target, _combat_state) when is_tuple(target), do: target
+
+  defp refresh_target(target, combat_state) do
+    CombatState.get_current_queue(combat_state)
+    |> Enum.find(fn char -> char.id == target.id end)
+    |> Kernel.||(target)
   end
 
   defp resolve_effect_value(%{value: value} = effect, target, combat_state) when is_map(value) do

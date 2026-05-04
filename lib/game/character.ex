@@ -66,6 +66,10 @@ defmodule Game.Character do
   @doc """
   Applies damage to a character, accounting for shield status effects
   """
+  def apply_damage(character, amount) when amount < 0 do
+    %{character | hp: character.hp - amount}
+  end
+
   def apply_damage(character, amount) do
     shield = get_status_effect(character, :shield)
 
