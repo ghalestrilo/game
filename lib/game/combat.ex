@@ -149,7 +149,8 @@ defmodule Game.Combat do
         {:error, "Out of range"}
 
       character.id != player.id and
-          Character.get_status_effect(character, :ethereal) != nil ->
+          (Character.get_status_effect(character, :ethereal) != nil or
+             Character.get_status_effect(character, :stealth) != nil) ->
         {:error, "Cannot target ethereal character"}
 
       true ->
@@ -199,7 +200,9 @@ defmodule Game.Combat do
 
       (case Grid.get_object(grid, target_position) do
          {:ok, char} when not is_nil(char) ->
-           char.id != player.id and Character.get_status_effect(char, :ethereal) != nil
+           char.id != player.id and
+             (Character.get_status_effect(char, :ethereal) != nil or
+                Character.get_status_effect(char, :stealth) != nil)
 
          _ ->
            false
