@@ -238,6 +238,20 @@ cards = [
     ap: 1,
     effects: [%{type: "damage", value: 3}, %{type: "burn", value: 2}],
     rarity: :common
+  },
+
+  # Sacrifice — a cursed card meant to be given to enemies via the give effect.
+  # When played, it deals 2 damage to the caster then removes itself from the deck.
+  %{
+    name: "Sacrifice",
+    headline: "A cursed gift that wounds its wielder and then vanishes",
+    ap: 0,
+    effects: [
+      %{type: "damage", value: 2},
+      %{type: "self_destruct"}
+    ],
+    targeting: %{"type" => "character"},
+    rarity: :rare
   }
 ]
 
@@ -247,6 +261,21 @@ cards_map =
   |> Enum.map(fn card -> Repo.insert!(%BaseCard{} |> BaseCard.changeset(card)) end)
   |> Enum.map(fn card -> {card.name, card} end)
   |> Enum.into(%{})
+
+# Insert cards that reference other cards by ID (must come after cards_map is built)
+sacrifice_id = cards_map["Sacrifice"].id
+
+cursed_gift =
+  Repo.insert!(%BaseCard{} |> BaseCard.changeset(%{
+    name: "Cursed Gift",
+    headline: "Give an enemy the Sacrifice card — a wound waiting to happen",
+    ap: 1,
+    effects: [%{type: "give", value: %{"card" => sacrifice_id, "pile" => "hand"}}],
+    targeting: %{"type" => "character"},
+    rarity: :rare
+  }))
+
+cards_map = Map.put(cards_map, "Cursed Gift", cursed_gift)
 
 # Create base decks for each class
 {:ok, warrior_deck} = Repo.insert(%BaseDeck{name: "Warrior Starter"})

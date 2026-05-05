@@ -350,7 +350,10 @@ defmodule Game.Combat do
       "dot",
       "regen",
       "cleanse",
-      "ethereal"
+      "ethereal",
+      "hex",
+      "self_destruct",
+      "give"
     ]
   end
 

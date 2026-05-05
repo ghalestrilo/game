@@ -67,31 +67,30 @@ defmodule Game.Character do
   Applies damage to a character, accounting for shield status effects
   """
   def apply_damage(character, amount) when amount < 0 do
-    %{character | hp: character.hp - amount}
+    # Healing (negative amount): hex flips it to damage
+    effective = if get_status_effect(character, :hex), do: -amount, else: amount
+    %{character | hp: character.hp - effective}
   end
 
   def apply_damage(character, amount) do
     shield = get_status_effect(character, :shield)
 
-    case shield do
-      %{value: shield_value} when shield_value > 0 ->
-        if shield_value >= amount do
-          # Shield absorbs all damage
-          updated_shield = %{shield | value: shield_value - amount}
-          update_status_effect(character, updated_shield)
-        else
-          # Shield absorbs some damage, rest goes to HP
-          remaining_damage = amount - shield_value
+    {char_after_shield, hp_damage} =
+      case shield do
+        %{value: shield_value} when shield_value > 0 ->
+          if shield_value >= amount do
+            {update_status_effect(character, %{shield | value: shield_value - amount}), 0}
+          else
+            {remove_status_effect(character, :shield), amount - shield_value}
+          end
 
-          character
-          |> remove_status_effect(:shield)
-          |> then(&%{&1 | hp: &1.hp - remaining_damage})
-        end
+        _ ->
+          {character, amount}
+      end
 
-      _ ->
-        # No shield, apply full damage
-        %{character | hp: character.hp - amount}
-    end
+    # Hex flips the post-shield damage: positive damage becomes healing (negative)
+    effective_damage = if get_status_effect(character, :hex), do: -hp_damage, else: hp_damage
+    %{char_after_shield | hp: char_after_shield.hp - effective_damage}
   end
 
   @doc """

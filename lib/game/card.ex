@@ -19,7 +19,10 @@ defmodule Game.Card do
     "dot" => CardEffects.Dot,
     "regen" => CardEffects.Regen,
     "cleanse" => CardEffects.Cleanse,
-    "ethereal" => CardEffects.Ethereal
+    "ethereal" => CardEffects.Ethereal,
+    "hex" => CardEffects.Hex,
+    "self_destruct" => CardEffects.SelfDestruct,
+    "give" => CardEffects.Give
   }
 
   def effect_types, do: @effect_types

@@ -62,18 +62,49 @@ defmodule GameWeb.Admin.Fields.EffectField do
       <%= for param <- @params do %>
         <div class="flex flex-col gap-1">
           <label class="label-text text-xs opacity-70">{param}</label>
-          <.live_component
-            module={GameWeb.FormulaEditorComponent}
-            id={"effect-#{@form[@name].id}-#{@name}-#{param}"}
-            value={Map.get(@value_map, param, %{})}
-            field={"#{@field_base}[#{param}]"}
-            path={[]}
-            context={:effect}
-          />
+          <%= cond do %>
+            <% param == "card" -> %>
+              <select name={"#{@field_base}[card][value]"} class="select select-sm w-full">
+                <option value="">-- Select card --</option>
+                <%= for base_card <- list_base_cards() do %>
+                  <option
+                    value={base_card.id}
+                    selected={to_string(base_card.id) == to_string(Map.get(@value_map, "card", ""))}
+                  >
+                    {base_card.name}
+                  </option>
+                <% end %>
+              </select>
+            <% param == "pile" -> %>
+              <select name={"#{@field_base}[pile][value]"} class="select select-sm w-full">
+                <%= for pile <- ["hand", "draw", "discard"] do %>
+                  <option
+                    value={pile}
+                    selected={pile == to_string(Map.get(@value_map, "pile", "hand"))}
+                  >
+                    {pile}
+                  </option>
+                <% end %>
+              </select>
+            <% true -> %>
+              <.live_component
+                module={GameWeb.FormulaEditorComponent}
+                id={"effect-#{@form[@name].id}-#{@name}-#{param}"}
+                value={Map.get(@value_map, param, %{})}
+                field={"#{@field_base}[#{param}]"}
+                path={[]}
+                context={:effect}
+              />
+          <% end %>
         </div>
       <% end %>
     </div>
     """
+  end
+
+  defp list_base_cards do
+    Game.BaseCards.list_basecards()
+    |> Enum.sort_by(& &1.name)
   end
 
   # A params map has multiple keys OR its single key is not a JsonLogic operator.

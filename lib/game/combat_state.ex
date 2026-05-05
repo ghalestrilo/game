@@ -321,6 +321,7 @@ defmodule Game.CombatState do
         %{type: :ethereal, value: v} = e -> %{e | value: v - 1}
         %{type: :stuck, value: v} = e -> %{e | value: v - 1}
         %{type: :stun, value: v} = e -> %{e | value: v - 1}
+        %{type: :hex, value: v} = e -> %{e | value: v - 1}
         %{type: :dot, value: v} = e -> %{e | value: v - 1}
         %{type: :regen, value: v} = e -> %{e | value: v - 1}
         %{type: :slow, duration: d} = e when is_integer(d) -> %{e | duration: d - 1}
