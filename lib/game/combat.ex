@@ -327,18 +327,13 @@ defmodule Game.Combat do
       "shield",
       "discard",
       "stealth"
-      # "stun",
-      # "burn",
-      # "cleanse",
-      # "dodge",
-      # "growth",
+      # "stuck",
       # "move",
-      # "poison",
-      # "position",
-      # "regen",
-      # "root",
+      # "stun",
+      # "dot",
       # "slow",
-      # "taunt"
+      # "cleanse",
+      # "regen",
     ]
   end
 end

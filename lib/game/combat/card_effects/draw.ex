@@ -30,7 +30,7 @@ defmodule Game.Combat.CardEffects.Draw do
     end
 
     @impl Game.Combat.CardEffect
-    def get_icon(%Draw{}), do: "hero-squares-2x2-mini"
+    def get_icon(%Draw{}), do: "hero-rectangle-stack-mini"
 
     @impl Game.Combat.CardEffect
     def get_value_label(%Draw{value: count}),
