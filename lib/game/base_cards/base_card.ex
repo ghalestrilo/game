@@ -26,7 +26,17 @@ defmodule Game.BaseCards.BaseCard do
     import Ecto.Changeset
 
     @derive {Jason.Encoder,
-             only: [:type, :value, :value_label, :aoe, :range, :multi, :scaling, :conditional]}
+             only: [
+               :type,
+               :value,
+               :value_label,
+               :aoe,
+               :range,
+               :multi,
+               :scaling,
+               :conditional,
+               :target_formula
+             ]}
     @primary_key false
     embedded_schema do
       field :type, :string
@@ -37,11 +47,22 @@ defmodule Game.BaseCards.BaseCard do
       field :multi, :integer
       field :scaling, :string
       field :conditional, :map
+      field :target_formula, :map
     end
 
     def changeset(effect, attrs) do
       effect
-      |> cast(attrs, [:type, :value, :value_label, :aoe, :range, :multi, :scaling, :conditional])
+      |> cast(attrs, [
+        :type,
+        :value,
+        :value_label,
+        :aoe,
+        :range,
+        :multi,
+        :scaling,
+        :conditional,
+        :target_formula
+      ])
       |> validate_required([:type])
     end
   end

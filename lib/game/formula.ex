@@ -175,7 +175,9 @@ defmodule Game.Formula do
       %{name: "state.current_turn.player.team", description: "Current turn player team"},
       %{name: "state.queue", description: "Turn queue"},
       %{name: "pull_delta", description: "Hex direction from target toward caster (q/r/s map)"},
+      %{name: "push_delta", description: "Hex direction from caster toward target (q/r/s map)"},
       %{name: "distance_from_caster", description: "Scalar hex distance between target and caster"},
+      %{name: "cast_distance", description: "Distance between caster and target at time of cast (frozen, unaffected by movement effects)"},
       %{
         name: "type",
         description: "Type field of the current item (use inside 'some'/'filter'/'map')"

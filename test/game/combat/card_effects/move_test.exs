@@ -237,4 +237,103 @@ defmodule Game.Combat.CardEffects.MoveTest do
       assert %{label: _, color: _} = CardEffect.animate(%Move{})
     end
   end
+
+  describe "Charge Strike card (move caster toward enemy, deal damage = cast distance)" do
+    # Layout:
+    #   {0,0,0}  fighter (caster)
+    #   {1,0,-1} empty
+    #   {2,0,-2} empty
+    #   {3,0,-3} mage (target/enemy)
+    #
+    # Effect 1: move caster one step toward enemy using push_delta, target_formula = caster.id
+    # Effect 2: deal damage to enemy equal to cast_distance (frozen before the move)
+    #
+    # cast_distance = 3; after move caster lands at {1,0,-1}; enemy takes 3 damage
+
+    defp charge_strike_card(caster_id) do
+      %Game.Card{
+        id: 99,
+        name: "Charge Strike",
+        cost: 2,
+        range: 5,
+        effects: [
+          %Game.BaseCards.BaseCard.Effect{
+            type: "move",
+            value: %{"var" => "push_delta"},
+            target_formula: %{"var" => "caster.id"}
+          },
+          %Game.BaseCards.BaseCard.Effect{
+            type: "damage",
+            value: %{"var" => "cast_distance"}
+          }
+        ],
+        targeting: %{"type" => "character"}
+      }
+    end
+
+    setup do
+      fighter = Fixtures.fighter()
+      enemy = %{Fixtures.mage() | position: {3, 0, -3}}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: nil},
+          {3, 0, -3} => %{terrain: :plain, occupied_by: enemy}
+        }
+      }
+
+      combat = %CombatState{
+        state: :running,
+        __constants__: %{players: [fighter, enemy]},
+        queue: [enemy],
+        grid: grid,
+        current_turn: %{starting_position: fighter.position, player: fighter, card: nil}
+      }
+
+      {:ok, combat: combat, fighter: fighter, enemy: enemy}
+    end
+
+    test "caster moves one step toward enemy", %{combat: combat, fighter: fighter, enemy: enemy} do
+      {updated, _anims} = Game.Card.process_card(combat, enemy, charge_strike_card(fighter.id))
+      assert updated.current_turn.player.position == {1, 0, -1}
+    end
+
+    test "enemy takes damage equal to cast_distance (3), not post-move distance (2)", %{
+      combat: combat,
+      fighter: fighter,
+      enemy: enemy
+    } do
+      {updated, _anims} = Game.Card.process_card(combat, enemy, charge_strike_card(fighter.id))
+      updated_enemy = Enum.find(updated.queue, &(&1.id == enemy.id))
+      assert enemy.hp - updated_enemy.hp == 3
+    end
+
+    test "caster does not move when the next tile is occupied, but damage still uses cast_distance",
+         %{combat: combat, fighter: fighter, enemy: enemy} do
+      # Block the tile at {1,0,-1}
+      blocker = %{Fixtures.fighter() | id: 99, position: {1, 0, -1}}
+
+      blocked_combat = %{
+        combat
+        | grid: %{
+            combat.grid
+            | tiles:
+                Map.put(combat.grid.tiles, {1, 0, -1}, %{terrain: :plain, occupied_by: blocker})
+          },
+          __constants__: %{players: [fighter, enemy, blocker]},
+          queue: [enemy, blocker]
+      }
+
+      {updated, _anims} =
+        Game.Card.process_card(blocked_combat, enemy, charge_strike_card(fighter.id))
+
+      # Caster stays put
+      assert updated.current_turn.player.position == fighter.position
+      # Enemy still takes 3 damage (cast_distance frozen before the (failed) move)
+      updated_enemy = Enum.find(updated.queue, &(&1.id == enemy.id))
+      assert enemy.hp - updated_enemy.hp == 3
+    end
+  end
 end

@@ -145,6 +145,8 @@ defmodule Game.Card do
 
   # Helper function to apply multiple card effects; returns {combat_state, animations}
   defp apply_card_effects(initial_combat_state, effects, target) when is_list(effects) do
+    cast_distance = compute_cast_distance(initial_combat_state, target)
+
     Enum.reduce(effects, {initial_combat_state, []}, fn effect, {combat_state, anims} ->
       current_target = refresh_target(target, combat_state)
 
@@ -153,8 +155,15 @@ defmodule Game.Card do
           {combat_state, anims}
 
         resolved ->
-          resolved = resolve_effect_value(resolved, current_target, combat_state)
-          new_combat = CardEffect.process(resolved, current_target, combat_state)
+          # resolve_effect_target runs on the raw effect (before get_structured_effect strips
+          # target_formula), so we use the original `effect` from the outer closure.
+          effective_target = resolve_effect_target(effect, current_target, combat_state)
+          # Formula context always uses the card's selected target for directional variables
+          # (push_delta, pull_delta, etc.), even when the effect itself targets someone else.
+          resolved =
+            resolve_effect_value(resolved, current_target, combat_state, cast_distance)
+
+          new_combat = CardEffect.process(resolved, effective_target, combat_state)
           new_anim = CardEffect.animate(resolved)
           {new_combat, if(new_anim, do: [new_anim | anims], else: anims)}
       end
@@ -170,14 +179,33 @@ defmodule Game.Card do
     |> Kernel.||(target)
   end
 
-  defp resolve_effect_value(%{value: value} = effect, target, combat_state) when is_map(value) do
-    context = build_effect_context(target, combat_state)
+  defp resolve_effect_target(%{target_formula: formula}, _target, combat_state)
+       when is_map(formula) and map_size(formula) > 0 do
+    caster = CombatState.get_current_player(combat_state)
+    {:ok, caster_json} = Jason.encode(caster)
+    {:ok, caster_map} = Jason.decode(caster_json)
+    id = Game.Formula.resolve(formula, %{"caster" => caster_map})
+
+    CombatState.get_current_queue(combat_state)
+    |> Enum.find(&(&1.id == id))
+    |> Kernel.||(caster)
+  end
+
+  defp resolve_effect_target(_effect, target, _combat_state), do: target
+
+  defp resolve_effect_value(%{value: value} = effect, target, combat_state, cast_distance)
+       when is_map(value) do
+    context = build_effect_context(target, combat_state, cast_distance)
     %{effect | value: Game.Formula.resolve(value, context)}
   end
 
-  defp resolve_effect_value(effect, _target, _combat_state), do: effect
+  defp resolve_effect_value(effect, _target, _combat_state, _cast_distance), do: effect
 
-  defp build_effect_context(target, combat_state) do
+  # Backwards-compatible arity-3 clause used by existing callers
+  defp resolve_effect_value(effect, target, combat_state),
+    do: resolve_effect_value(effect, target, combat_state, nil)
+
+  defp build_effect_context(target, combat_state, cast_distance \\ nil) do
     caster = CombatState.get_current_player(combat_state)
     {:ok, state_json} = Jason.encode(combat_state)
     {:ok, state_map} = Jason.decode(state_json)
@@ -189,7 +217,9 @@ defmodule Game.Card do
       "target" => encode_target(target),
       "state" => state_map,
       "pull_delta" => compute_pull_delta(caster, target, combat_state),
-      "distance_from_caster" => compute_distance_from_caster(caster, target, combat_state)
+      "push_delta" => compute_push_delta(caster, target, combat_state),
+      "distance_from_caster" => compute_distance_from_caster(caster, target, combat_state),
+      "cast_distance" => cast_distance
     }
   end
 
@@ -200,11 +230,25 @@ defmodule Game.Card do
 
   defp compute_pull_delta(_caster, _target, _combat_state), do: nil
 
+  defp compute_push_delta(caster, target, combat_state) when is_struct(target) do
+    {dq, dr, ds} = Grid.direction_toward(combat_state.grid, caster.position, target.position)
+    %{"q" => dq, "r" => dr, "s" => ds}
+  end
+
+  defp compute_push_delta(_caster, _target, _combat_state), do: nil
+
   defp compute_distance_from_caster(caster, target, combat_state) when is_struct(target) do
     Grid.distance(combat_state.grid, target.position, caster.position)
   end
 
   defp compute_distance_from_caster(_caster, _target, _combat_state), do: nil
+
+  defp compute_cast_distance(combat_state, target) when is_struct(target) do
+    caster = CombatState.get_current_player(combat_state)
+    Grid.distance(combat_state.grid, caster.position, target.position)
+  end
+
+  defp compute_cast_distance(_combat_state, _target), do: nil
 
   defp encode_target(target) when is_tuple(target),
     do: %{"position" => Tuple.to_list(target)}
