@@ -32,14 +32,14 @@ defmodule GameWeb.CombatLive do
         current_player={@current_player}
         game_mode={Map.get(assigns, :game_mode)}
       />
-      
+
     <!-- Game area -->
       <div class="flex-1 flex flex-col overflow-hidden">
         <%= if @game_state do %>
           <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
           <% rows = Game.Grid.to_rows(@game_state.combat.grid) %>
           <% pos = build_position_index(rows) %>
-          
+
     <!-- Board -->
           <div class="flex-1 flex items-center justify-center overflow-hidden">
             <div class="game-board">
@@ -63,7 +63,7 @@ defmodule GameWeb.CombatLive do
                   <% end %>
                 </div>
               <% end %>
-              
+
     <!-- Entity layer -->
               <div class="absolute inset-0 pointer-events-none">
                 <%= for character <- queue, character != nil, visible_to?(character, @current_player) do %>
@@ -75,7 +75,6 @@ defmodule GameWeb.CombatLive do
                     phx-value-target_character_id={character.id}
                     class={[
                       "character absolute top-0 left-0 pointer-events-auto cursor-pointer !bg-cover !bg-no-repeat",
-                      character_bg(character)
                     ]}
                     data-character-id={character.id}
                     style={character_style(pos, character)}
@@ -90,7 +89,7 @@ defmodule GameWeb.CombatLive do
           </div>
         <% end %>
       </div>
-      
+
     <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}
@@ -192,21 +191,23 @@ defmodule GameWeb.CombatLive do
   end
 
   defp character_style(pos, character) do
+    background = "background: #{character_bg(character)};"
     padding = 20
     r = 32
     vertical_scaling = 0.92
 
     case Map.get(pos, character.position) do
       {left, top} ->
-        "translate: #{left - r + padding}px calc(#{vertical_scaling} * #{top - r + padding}px);"
+        background <> "translate: #{left - r + padding}px calc(#{vertical_scaling} * #{top - r + padding}px);"
 
       nil ->
-        "display: none;"
+        background <> "display: none;"
     end
   end
 
   defp character_bg(%{avatar_url: url}) when is_binary(url) and url != "",
-    do: "!bg-[url('#{url}')]"
+    do: "url('#{url}')"
+    # do: "!bg-[url('#{url}')]"
 
   defp character_bg(_), do: ""
 
