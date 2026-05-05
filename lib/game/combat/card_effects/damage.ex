@@ -28,7 +28,7 @@ defmodule Game.Combat.CardEffects.Damage do
     end
 
     @impl Game.Combat.CardEffect
-    def get_icon(%Damage{}), do: "hero-bolt-mini"
+    def get_icon(%Damage{}), do: "hero-arrow-down-mini"
 
     @impl Game.Combat.CardEffect
     def get_value_label(%Damage{value_label: label}) when is_binary(label), do: label

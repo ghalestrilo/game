@@ -1,3 +1,4 @@
+@source inline("hero-{arrow-down,arrow-up,rectangle-stack,shield-check,eye-slash,user-plus}-mini")
 @keyframes float-up {
   0%   { opacity: 1; translate: -50% 0; }
   25%   { opacity: 1; translate: -50% -1.6rem; }

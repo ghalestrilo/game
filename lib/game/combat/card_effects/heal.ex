@@ -32,7 +32,7 @@ defmodule Game.Combat.CardEffects.Heal do
     end
 
     @impl Game.Combat.CardEffect
-    def get_icon(%Heal{}), do: "hero-heart-mini"
+    def get_icon(%Heal{}), do: "hero-arrow-up-mini"
 
     @impl Game.Combat.CardEffect
     def get_value_label(%Heal{value_label: label}) when is_binary(label), do: label
