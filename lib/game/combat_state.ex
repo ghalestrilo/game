@@ -115,9 +115,20 @@ defmodule Game.CombatState do
       |> put_in([:current_turn], new_turn(next_player))
       |> tick_status_effects()
 
-    ticked
-    |> draw_cards_for_player(ticked.current_turn.player, 5)
-    |> restore_max_ap()
+    if stun_active?(ticked.current_turn.player) do
+      ticked |> rotate_queue() |> setup_player_turn()
+    else
+      ticked
+      |> draw_cards_for_player(ticked.current_turn.player, 5)
+      |> restore_max_ap()
+    end
+  end
+
+  defp stun_active?(player) do
+    case Character.get_status_effect(player, :stun) do
+      %{value: v} when v > 0 -> true
+      _ -> false
+    end
   end
 
   def update_grid_for_player(%{current_turn: %{player: player}} = combat) do
@@ -287,20 +298,46 @@ defmodule Game.CombatState do
   end
 
   def tick_status_effects(%CombatState{current_turn: %{player: player}} = combat) do
+    # Step 1: apply per-turn triggers (dot damage, regen healing)
+    player_after_triggers =
+      Enum.reduce(player.status_effects, player, fn effect, acc ->
+        case effect do
+          %{type: :dot, damage: dmg, value: v} when v > 0 ->
+            Character.apply_damage(acc, dmg)
+
+          %{type: :regen, heal: h, value: v} when v > 0 ->
+            %{acc | hp: min(acc.hp + h, Character.get_max_hp(acc))}
+
+          _ ->
+            acc
+        end
+      end)
+
+    # Step 2: decrement durations and remove expired effects
     updated_effects =
-      player.status_effects
+      player_after_triggers.status_effects
       |> Enum.map(fn
-        %{type: :stealth, value: v} -> %{type: :stealth, value: v - 1}
+        %{type: :stealth, value: v} = e -> %{e | value: v - 1}
+        %{type: :ethereal, value: v} = e -> %{e | value: v - 1}
+        %{type: :stuck, value: v} = e -> %{e | value: v - 1}
+        %{type: :stun, value: v} = e -> %{e | value: v - 1}
+        %{type: :dot, value: v} = e -> %{e | value: v - 1}
+        %{type: :regen, value: v} = e -> %{e | value: v - 1}
+        %{type: :slow, duration: d} = e when is_integer(d) -> %{e | duration: d - 1}
         effect -> effect
       end)
-      |> Enum.reject(fn %{value: v} -> v <= 0 end)
+      |> Enum.reject(fn
+        %{type: :slow, duration: d} when is_integer(d) -> d <= 0
+        %{value: v} -> v <= 0
+        _ -> false
+      end)
 
-    updated_player = %{player | status_effects: updated_effects}
+    updated_player = %{player_after_triggers | status_effects: updated_effects}
     put_in(combat, [:current_turn, :player], updated_player)
   end
 
   def dispel_stealth(%CombatState{current_turn: %{player: player}} = combat) do
-    updated_effects = Enum.reject(player.status_effects, &(&1.type == :stealth))
+    updated_effects = Enum.reject(player.status_effects, &(&1.type in [:stealth, :ethereal]))
     updated_player = %{player | status_effects: updated_effects}
     put_in(combat, [:current_turn, :player], updated_player)
   end

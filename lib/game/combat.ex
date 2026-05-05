@@ -111,7 +111,7 @@ defmodule Game.Combat do
       not CombatState.is_players_turn?(combat, player) ->
         {:error, "Not player's turn"}
 
-      Grid.distance(grid, starting_position, target_position) > player.movement_range ->
+      Grid.distance(grid, starting_position, target_position) > effective_movement_range(player) ->
         {:error, "Not enough movement"}
 
       Grid.tile_blocked?(grid, target_position) ->
@@ -147,6 +147,10 @@ defmodule Game.Combat do
 
       Grid.distance(grid, player.position, target_position) > card.range ->
         {:error, "Out of range"}
+
+      character.id != player.id and
+          Character.get_status_effect(character, :ethereal) != nil ->
+        {:error, "Cannot target ethereal character"}
 
       true ->
         case Game.Card.is_target_valid_for_character?(card, character, combat) do
@@ -192,6 +196,15 @@ defmodule Game.Combat do
 
       Grid.distance(grid, player.position, target_position) > card.range ->
         {:error, "Out of range"}
+
+      (case Grid.get_object(grid, target_position) do
+         {:ok, char} when not is_nil(char) ->
+           char.id != player.id and Character.get_status_effect(char, :ethereal) != nil
+
+         _ ->
+           false
+       end) ->
+        {:error, "Cannot target ethereal character"}
 
       true ->
         # Use Card module to validate the target
@@ -326,14 +339,28 @@ defmodule Game.Combat do
       "summon",
       "shield",
       "discard",
-      "stealth"
-      # "stuck",
-      # "move",
-      # "stun",
-      # "dot",
-      # "slow",
-      # "cleanse",
-      # "regen",
+      "stealth",
+      "stuck",
+      "slow",
+      "stun",
+      "move",
+      "dot",
+      "regen",
+      "cleanse",
+      "ethereal"
     ]
+  end
+
+  defp effective_movement_range(player) do
+    cond do
+      Character.get_status_effect(player, :stuck) != nil ->
+        0
+
+      (slow = Character.get_status_effect(player, :slow)) != nil ->
+        max(0, player.movement_range - slow.value)
+
+      true ->
+        player.movement_range
+    end
   end
 end

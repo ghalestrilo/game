@@ -11,7 +11,15 @@ defmodule Game.Card do
     "discard" => CardEffects.Discard,
     "shield" => CardEffects.Shield,
     "summon" => CardEffects.Summon,
-    "stealth" => CardEffects.Stealth
+    "stealth" => CardEffects.Stealth,
+    "stuck" => CardEffects.Stuck,
+    "slow" => CardEffects.Slow,
+    "stun" => CardEffects.Stun,
+    "move" => CardEffects.Move,
+    "dot" => CardEffects.Dot,
+    "regen" => CardEffects.Regen,
+    "cleanse" => CardEffects.Cleanse,
+    "ethereal" => CardEffects.Ethereal
   }
 
   def effect_types, do: @effect_types
