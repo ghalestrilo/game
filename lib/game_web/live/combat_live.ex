@@ -52,8 +52,8 @@ defmodule GameWeb.CombatLive do
                       phx-value-target_position={"#{q}_#{r}_#{s}"}
                       class={[
                         "hex-cell border border-base-content/20 w-20 h-20 flex items-center justify-center bg-base-100",
-                        if(within_movement_range?(@game_state.combat, {q, r, s}), do: "bg-warning/10"),
-                        if(current_player_at?(@game_state.combat, queue, {q, r, s}),
+                        if(current_turn_visible?(@game_state.combat, queue, @current_player) && within_movement_range?(@game_state.combat, {q, r, s}), do: "bg-warning/10"),
+                        if(current_turn_visible?(@game_state.combat, queue, @current_player) && current_player_at?(@game_state.combat, queue, {q, r, s}),
                           do: "!bg-success/30"
                         ),
                         tile_overlay_class(Map.get(@tile_overlay, {q, r, s}))
@@ -159,6 +159,11 @@ defmodule GameWeb.CombatLive do
         coord,
         Game.CombatState.get_current_turn(combat).starting_position
       ) <= Game.CombatState.get_current_player(combat).movement_range
+  end
+
+  defp current_turn_visible?(combat, queue, current_player) do
+    current_turn_character = Enum.find(queue, fn c -> c && c == combat.current_turn.player end)
+    current_turn_character == nil or visible_to?(current_turn_character, current_player)
   end
 
   defp current_player_at?(combat, queue, coord) do
