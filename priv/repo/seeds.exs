@@ -266,14 +266,17 @@ cards_map =
 sacrifice_id = cards_map["Sacrifice"].id
 
 cursed_gift =
-  Repo.insert!(%BaseCard{} |> BaseCard.changeset(%{
-    name: "Cursed Gift",
-    headline: "Give an enemy the Sacrifice card — a wound waiting to happen",
-    ap: 1,
-    effects: [%{type: "give", value: %{"card" => sacrifice_id, "pile" => "hand"}}],
-    targeting: %{"type" => "character"},
-    rarity: :rare
-  }))
+  Repo.insert!(
+    %BaseCard{}
+    |> BaseCard.changeset(%{
+      name: "Cursed Gift",
+      headline: "Give an enemy the Sacrifice card — a wound waiting to happen",
+      ap: 1,
+      effects: [%{type: "give", value: %{"card" => sacrifice_id, "pile" => "hand"}}],
+      targeting: %{"type" => "character"},
+      rarity: :rare
+    })
+  )
 
 cards_map = Map.put(cards_map, "Cursed Gift", cursed_gift)
 

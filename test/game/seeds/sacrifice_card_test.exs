@@ -45,11 +45,7 @@ defmodule Game.Seeds.SacrificeCardTest do
     }
 
     {:ok,
-     combat: combat,
-     fighter: fighter,
-     mage: mage,
-     sacrifice: sacrifice,
-     cursed_gift: cursed_gift}
+     combat: combat, fighter: fighter, mage: mage, sacrifice: sacrifice, cursed_gift: cursed_gift}
   end
 
   defp to_game_card(base_card, id) do
@@ -146,7 +142,11 @@ defmodule Game.Seeds.SacrificeCardTest do
       original_hp = mage_player.hp
 
       # Mage plays Sacrifice targeting themselves
-      mage_combat = %{mage_combat | current_turn: %{mage_combat.current_turn | card: sacrifice_card}}
+      mage_combat = %{
+        mage_combat
+        | current_turn: %{mage_combat.current_turn | card: sacrifice_card}
+      }
+
       {after_sacrifice, _} = Card.process_card(mage_combat, mage_player, sacrifice_card)
 
       updated_mage_after = after_sacrifice.current_turn.player

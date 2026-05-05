@@ -25,7 +25,7 @@ defmodule GameWeb.CombatHUD do
             Win Match
           </button>
         </div>
-
+        
     <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
@@ -37,7 +37,7 @@ defmodule GameWeb.CombatHUD do
           current_player={@current_player}
         />
       </div>
-
+      
     <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
@@ -47,7 +47,7 @@ defmodule GameWeb.CombatHUD do
           </ul>
         </div>
       </div>
-
+      
     <!-- Card piles -->
       <%= if Map.get(assigns, :game_mode, nil) == :sandbox || (@game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id)) do %>

@@ -201,8 +201,8 @@ defmodule Game.Combat do
       (case Grid.get_object(grid, target_position) do
          {:ok, char} when not is_nil(char) ->
            char.id != player.id and
-             (Character.get_status_effect(char, :ethereal) != nil or
-                Character.get_status_effect(char, :stealth) != nil)
+               (Character.get_status_effect(char, :ethereal) != nil or
+                  Character.get_status_effect(char, :stealth) != nil)
 
          _ ->
            false

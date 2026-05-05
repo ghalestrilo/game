@@ -248,7 +248,9 @@ defmodule Game.Card do
   # When value is a plain params map (not a JsonLogic formula), unpack its keys as top-level
   # struct fields so e.g. %{"damage" => 5, "value" => 3} becomes damage: 5, value: 3.
   # A formula map has exactly one key which is a known JsonLogic operator.
-  @formula_operators MapSet.new(~w(var == === != !== ! !! if or and > >= < <= max min + - * / % map filter reduce all none some in cat log alias))
+  @formula_operators MapSet.new(
+                       ~w(var == === != !== ! !! if or and > >= < <= max min + - * / % map filter reduce all none some in cat log alias)
+                     )
 
   defp unpack_params_map(%{value: value} = effect_data) when is_map(value) do
     keys = Map.keys(value)

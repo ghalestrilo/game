@@ -15,7 +15,11 @@ defmodule Game.Combat.CardEffects.SelfDestruct do
 
     # The played card is already in the current player's discard (moved there by process_card/3
     # before effects run). Remove it so the card is gone from the deck entirely.
-    def process(%SelfDestruct{}, _target, %CombatState{current_turn: %{card: played_card}} = combat_state)
+    def process(
+          %SelfDestruct{},
+          _target,
+          %CombatState{current_turn: %{card: played_card}} = combat_state
+        )
         when not is_nil(played_card) do
       player = CombatState.get_current_player(combat_state)
 

@@ -109,7 +109,9 @@ defmodule GameWeb.Admin.Fields.EffectField do
 
   # A params map has multiple keys OR its single key is not a JsonLogic operator.
   # A formula map has exactly one key which is a known operator (e.g. %{"+" => [...]}).
-  @formula_operators MapSet.new(~w(var == === != !== ! !! if or and > >= < <= max min + - * / % map filter reduce all none some in cat log alias))
+  @formula_operators MapSet.new(
+                       ~w(var == === != !== ! !! if or and > >= < <= max min + - * / % map filter reduce all none some in cat log alias)
+                     )
 
   defp params_map?(map) do
     keys = Map.keys(map)

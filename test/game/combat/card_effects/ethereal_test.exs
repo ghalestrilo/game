@@ -70,7 +70,11 @@ defmodule Game.Combat.CardEffects.EtherealTest do
         %{combat | grid: grid, queue: [ethereal_mage]}
         |> CombatState.replace_player(fighter)
 
-      combat = %{combat | state: :card_selected, current_turn: %{combat.current_turn | card: card}}
+      combat = %{
+        combat
+        | state: :card_selected,
+          current_turn: %{combat.current_turn | card: card}
+      }
 
       result = Game.Combat.process_action(combat, {:play_card_on_character, ethereal_mage})
       assert {:error, _} = result

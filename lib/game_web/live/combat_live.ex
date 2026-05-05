@@ -32,14 +32,14 @@ defmodule GameWeb.CombatLive do
         current_player={@current_player}
         game_mode={Map.get(assigns, :game_mode)}
       />
-
+      
     <!-- Game area -->
       <div class="flex-1 flex flex-col overflow-hidden">
         <%= if @game_state do %>
           <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
           <% rows = Game.Grid.to_rows(@game_state.combat.grid) %>
           <% pos = build_position_index(rows) %>
-
+          
     <!-- Board -->
           <div class="flex-1 flex items-center justify-center overflow-hidden">
             <div class="game-board">
@@ -52,8 +52,14 @@ defmodule GameWeb.CombatLive do
                       phx-value-target_position={"#{q}_#{r}_#{s}"}
                       class={[
                         "hex-cell border border-base-content/20 w-20 h-20 flex items-center justify-center bg-base-100",
-                        if(current_turn_visible?(@game_state.combat, queue, @current_player) && within_movement_range?(@game_state.combat, {q, r, s}), do: "bg-warning/10"),
-                        if(current_turn_visible?(@game_state.combat, queue, @current_player) && current_player_at?(@game_state.combat, queue, {q, r, s}),
+                        if(
+                          current_turn_visible?(@game_state.combat, queue, @current_player) &&
+                            within_movement_range?(@game_state.combat, {q, r, s}),
+                          do: "bg-warning/10"
+                        ),
+                        if(
+                          current_turn_visible?(@game_state.combat, queue, @current_player) &&
+                            current_player_at?(@game_state.combat, queue, {q, r, s}),
                           do: "!bg-success/30"
                         ),
                         tile_overlay_class(Map.get(@tile_overlay, {q, r, s}))
@@ -63,7 +69,7 @@ defmodule GameWeb.CombatLive do
                   <% end %>
                 </div>
               <% end %>
-
+              
     <!-- Entity layer -->
               <div class="absolute inset-0 pointer-events-none">
                 <%= for character <- queue, character != nil, visible_to?(character, @current_player) do %>
@@ -74,7 +80,7 @@ defmodule GameWeb.CombatLive do
                     phx-click="interact"
                     phx-value-target_character_id={character.id}
                     class={[
-                      "character absolute top-0 left-0 pointer-events-auto cursor-pointer !bg-cover !bg-no-repeat",
+                      "character absolute top-0 left-0 pointer-events-auto cursor-pointer !bg-cover !bg-no-repeat"
                     ]}
                     data-character-id={character.id}
                     style={character_style(pos, character)}
@@ -89,7 +95,7 @@ defmodule GameWeb.CombatLive do
           </div>
         <% end %>
       </div>
-
+      
     <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}
@@ -203,7 +209,8 @@ defmodule GameWeb.CombatLive do
 
     case Map.get(pos, character.position) do
       {left, top} ->
-        background <> "translate: #{left - r + padding}px calc(#{vertical_scaling} * #{top - r + padding}px);"
+        background <>
+          "translate: #{left - r + padding}px calc(#{vertical_scaling} * #{top - r + padding}px);"
 
       nil ->
         background <> "display: none;"
@@ -212,7 +219,8 @@ defmodule GameWeb.CombatLive do
 
   defp character_bg(%{avatar_url: url}) when is_binary(url) and url != "",
     do: "url('#{url}')"
-    # do: "!bg-[url('#{url}')]"
+
+  # do: "!bg-[url('#{url}')]"
 
   defp character_bg(_), do: ""
 

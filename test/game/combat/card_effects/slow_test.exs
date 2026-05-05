@@ -75,7 +75,12 @@ defmodule Game.Combat.CardEffects.SlowTest do
       # fighter movement_range: 2, slow by 1 → effective range 1
       # {1, 0, -1} is distance 1, should succeed
       slowed_fighter = Character.add_status_effect(fighter, %{type: :slow, value: 1, duration: 2})
-      combat = %{combat | queue: [slowed_fighter], current_turn: %{combat.current_turn | player: slowed_fighter}}
+
+      combat = %{
+        combat
+        | queue: [slowed_fighter],
+          current_turn: %{combat.current_turn | player: slowed_fighter}
+      }
 
       result = Game.Combat.process_action(combat, {:move, slowed_fighter, {1, 0, -1}})
       assert {:error, _} = result
@@ -146,7 +151,9 @@ defmodule Game.Combat.CardEffects.SlowTest do
       combat: combat,
       fighter: fighter
     } do
-      slowed_fighter = Character.add_status_effect(fighter, %{type: :slow, value: 1, duration: nil})
+      slowed_fighter =
+        Character.add_status_effect(fighter, %{type: :slow, value: 1, duration: nil})
+
       combat = %{combat | current_turn: %{combat.current_turn | player: slowed_fighter}}
 
       # After several full rotations, fighter's slow should still be present

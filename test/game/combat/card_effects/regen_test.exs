@@ -62,7 +62,10 @@ defmodule Game.Combat.CardEffects.RegenTest do
     test "regen does not exceed max_hp", %{combat: combat, mage: mage} do
       # mage max_hp: 15, current hp: 14
       almost_full_mage = %{mage | hp: 14, max_hp: 15}
-      regen_mage = Character.add_status_effect(almost_full_mage, %{type: :regen, heal: 5, value: 1})
+
+      regen_mage =
+        Character.add_status_effect(almost_full_mage, %{type: :regen, heal: 5, value: 1})
+
       combat = %{combat | queue: [regen_mage]}
 
       next =

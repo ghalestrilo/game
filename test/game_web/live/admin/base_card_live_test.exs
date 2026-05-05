@@ -317,9 +317,12 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       {:ok, view, _} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
 
       view
-      |> form("#resource-form", card_form_params("Stuck Test", [
-        %{"type" => "stuck", "value" => "2"}
-      ]))
+      |> form(
+        "#resource-form",
+        card_form_params("Stuck Test", [
+          %{"type" => "stuck", "value" => "2"}
+        ])
+      )
       |> render_submit(%{"save-type" => "save"})
 
       # parse_effect_value flattens single-param maps: %{"value" => 2} → 2
@@ -341,11 +344,15 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
 
       fighter = Fixtures.fighter()
       mage = %{Fixtures.mage() | position: {1, 0, -1}}
-      grid = %Grid{tiles: %{
-        {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-        {1, 0, -1} => %{terrain: :plain, occupied_by: mage},
-        {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
-      }}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: mage},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
+        }
+      }
+
       combat = %CombatState{
         state: :running,
         __constants__: %{players: [fighter, mage]},
@@ -372,9 +379,12 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       {:ok, view, _} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
 
       view
-      |> form("#resource-form", card_form_params("Slow Test", [
-        %{"type" => "slow", "value" => "1", "duration" => "3"}
-      ]))
+      |> form(
+        "#resource-form",
+        card_form_params("Slow Test", [
+          %{"type" => "slow", "value" => "1", "duration" => "3"}
+        ])
+      )
       |> render_submit(%{"save-type" => "save"})
 
       reloaded = BaseCards.get_base_card!(card_db.id)
@@ -394,10 +404,14 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
 
       fighter = Fixtures.fighter()
       mage = %{Fixtures.mage() | position: {1, 0, -1}}
-      grid = %Grid{tiles: %{
-        {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-        {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
-      }}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
+        }
+      }
+
       combat = %CombatState{
         state: :running,
         __constants__: %{players: [fighter, mage]},
@@ -427,9 +441,12 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       {:ok, view, _} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
 
       view
-      |> form("#resource-form", card_form_params("Stun Test", [
-        %{"type" => "stun", "value" => "2"}
-      ]))
+      |> form(
+        "#resource-form",
+        card_form_params("Stun Test", [
+          %{"type" => "stun", "value" => "2"}
+        ])
+      )
       |> render_submit(%{"save-type" => "save"})
 
       reloaded = BaseCards.get_base_card!(card_db.id)
@@ -447,10 +464,14 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
 
       fighter = Fixtures.fighter()
       mage = %{Fixtures.mage() | position: {1, 0, -1}}
-      grid = %Grid{tiles: %{
-        {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-        {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
-      }}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
+        }
+      }
+
       combat = %CombatState{
         state: :running,
         __constants__: %{players: [fighter, mage]},
@@ -477,9 +498,12 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       {:ok, view, _} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
 
       view
-      |> form("#resource-form", card_form_params("DoT Test", [
-        %{"type" => "dot", "value" => "3", "damage" => "5"}
-      ]))
+      |> form(
+        "#resource-form",
+        card_form_params("DoT Test", [
+          %{"type" => "dot", "value" => "3", "damage" => "5"}
+        ])
+      )
       |> render_submit(%{"save-type" => "save"})
 
       reloaded = BaseCards.get_base_card!(card_db.id)
@@ -498,10 +522,14 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
 
       fighter = Fixtures.fighter()
       mage = %{Fixtures.mage() | position: {1, 0, -1}}
-      grid = %Grid{tiles: %{
-        {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-        {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
-      }}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
+        }
+      }
+
       combat = %CombatState{
         state: :running,
         __constants__: %{players: [fighter, mage]},
@@ -531,9 +559,12 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       {:ok, view, _} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
 
       view
-      |> form("#resource-form", card_form_params("Regen Test", [
-        %{"type" => "regen", "value" => "3", "heal" => "4"}
-      ]))
+      |> form(
+        "#resource-form",
+        card_form_params("Regen Test", [
+          %{"type" => "regen", "value" => "3", "heal" => "4"}
+        ])
+      )
       |> render_submit(%{"save-type" => "save"})
 
       reloaded = BaseCards.get_base_card!(card_db.id)
@@ -552,10 +583,14 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
 
       fighter = Fixtures.fighter()
       mage = %{Fixtures.mage() | hp: 10, position: {1, 0, -1}}
-      grid = %Grid{tiles: %{
-        {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-        {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
-      }}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
+        }
+      }
+
       combat = %CombatState{
         state: :running,
         __constants__: %{players: [fighter, mage]},
@@ -585,9 +620,12 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       {:ok, view, _} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
 
       view
-      |> form("#resource-form", card_form_params("Cleanse Test", [
-        %{"type" => "cleanse", "value" => ""}
-      ]))
+      |> form(
+        "#resource-form",
+        card_form_params("Cleanse Test", [
+          %{"type" => "cleanse", "value" => ""}
+        ])
+      )
       |> render_submit(%{"save-type" => "save"})
 
       reloaded = BaseCards.get_base_card!(card_db.id)
@@ -611,10 +649,13 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
         |> Character.add_status_effect(%{type: :stun, value: 2})
         |> Character.add_status_effect(%{type: :dot, damage: 5, value: 2})
 
-      grid = %Grid{tiles: %{
-        {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-        {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
-      }}
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
+        }
+      }
+
       combat = %CombatState{
         state: :running,
         __constants__: %{players: [fighter, mage]},
@@ -642,9 +683,12 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       {:ok, view, _} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
 
       view
-      |> form("#resource-form", card_form_params("Ethereal Test", [
-        %{"type" => "ethereal", "value" => "2"}
-      ]))
+      |> form(
+        "#resource-form",
+        card_form_params("Ethereal Test", [
+          %{"type" => "ethereal", "value" => "2"}
+        ])
+      )
       |> render_submit(%{"save-type" => "save"})
 
       reloaded = BaseCards.get_base_card!(card_db.id)
@@ -661,10 +705,14 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       }
 
       fighter = Fixtures.fighter()
-      grid = %Grid{tiles: %{
-        {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-        {1, 0, -1} => %{terrain: :plain, occupied_by: nil}
-      }}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: nil}
+        }
+      }
+
       combat = %CombatState{
         state: :running,
         __constants__: %{players: [fighter]},
@@ -692,9 +740,12 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       {:ok, view, _} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
 
       view
-      |> form("#resource-form", card_form_params("Move Test", [
-        %{"type" => "move", "q" => "1", "r" => "0", "s" => "-1"}
-      ]))
+      |> form(
+        "#resource-form",
+        card_form_params("Move Test", [
+          %{"type" => "move", "q" => "1", "r" => "0", "s" => "-1"}
+        ])
+      )
       |> render_submit(%{"save-type" => "save"})
 
       reloaded = BaseCards.get_base_card!(card_db.id)
@@ -714,11 +765,15 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       fighter = Fixtures.fighter()
       # mage at {2,0,-2}, pushed by {1,0,-1} → {3,0,-3}
       mage = %{Fixtures.mage() | position: {2, 0, -2}}
-      grid = %Grid{tiles: %{
-        {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
-        {2, 0, -2} => %{terrain: :plain, occupied_by: mage},
-        {3, 0, -3} => %{terrain: :plain, occupied_by: nil}
-      }}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: mage},
+          {3, 0, -3} => %{terrain: :plain, occupied_by: nil}
+        }
+      }
+
       combat = %CombatState{
         state: :running,
         __constants__: %{players: [fighter, mage]},

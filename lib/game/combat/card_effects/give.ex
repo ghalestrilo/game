@@ -51,7 +51,7 @@ defmodule Game.Combat.CardEffects.Give do
         base_card
         |> Map.from_struct()
         |> Map.drop([:__meta__, :inserted_at, :updated_at, :ap, :headline])
-        |> Map.merge(%{cost: base_card.ap, id: -(base_card.id)})
+        |> Map.merge(%{cost: base_card.ap, id: -base_card.id})
 
       struct!(Game.Card, card_map)
     end

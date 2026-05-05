@@ -15,7 +15,11 @@ defmodule Game.Combat.CardEffects.Slow do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Slow
 
-    def process(%Slow{value: reduction, duration: duration}, target, %CombatState{} = combat_state) do
+    def process(
+          %Slow{value: reduction, duration: duration},
+          target,
+          %CombatState{} = combat_state
+        ) do
       updated_target =
         Character.add_status_effect(target, %{type: :slow, value: reduction, duration: duration})
 
