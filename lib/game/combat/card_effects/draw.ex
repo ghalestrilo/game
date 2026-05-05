@@ -36,6 +36,8 @@ defmodule Game.Combat.CardEffects.Draw do
     def get_value_label(%Draw{value: count}),
       do: "#{count} card#{if count != 1, do: "s", else: ""}"
 
+    def params(_), do: ["value"]
+
     def animate(_), do: nil
   end
 end

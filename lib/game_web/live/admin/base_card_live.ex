@@ -65,17 +65,8 @@ defmodule GameWeb.Admin.BaseCardLive do
               Game.Card.effect_types() |> Map.keys() |> Enum.map(&{String.capitalize(&1), &1})
           },
           value: %{
-            module: GameWeb.Admin.Fields.FormulaField,
-            label: "Value",
-            render: fn assigns ->
-              id = :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
-
-              ~H"""
-              <div>
-                <.live_component id={id} module={GameWeb.Components.FormulaTreeComponent} value={@item.value} />
-              </div>
-              """
-            end
+            module: GameWeb.Admin.Fields.EffectField,
+            label: "Parameters"
           }
         ]
       }
@@ -105,18 +96,28 @@ defmodule GameWeb.Admin.BaseCardLive do
   defp parse_targeting(attrs), do: attrs
 
   defp parse_effect_values(%{"effects" => effects} = attrs) when is_map(effects) do
-    parsed =
-      Map.new(effects, fn {k, effect} ->
-        {k, parse_effect_value(effect)}
-      end)
-
+    parsed = Map.new(effects, fn {k, effect} -> {k, parse_effect_value(effect)} end)
     %{attrs | "effects" => parsed}
   end
 
   defp parse_effect_values(attrs), do: attrs
 
+  # The value submitted for an effect is a map keyed by param name (e.g. %{"value" => ..., "damage" => ...}).
+  # Each param value is a formula params map (from FormulaEditorComponent) and must be parsed.
   defp parse_effect_value(%{"value" => value} = effect) when is_map(value) do
-    %{effect | "value" => Game.Formula.parse_params(value)}
+    parsed_params =
+      Map.new(value, fn {param_key, param_value} ->
+        {param_key, Game.Formula.parse_params(param_value)}
+      end)
+
+    # Flatten: if the only param is "value", store scalar directly for backwards compat
+    flattened =
+      case parsed_params do
+        %{"value" => scalar} when map_size(parsed_params) == 1 -> scalar
+        _ -> parsed_params
+      end
+
+    %{effect | "value" => flattened}
   end
 
   defp parse_effect_value(effect), do: effect

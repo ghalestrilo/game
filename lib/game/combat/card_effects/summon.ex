@@ -70,6 +70,8 @@ defmodule Game.Combat.CardEffects.Summon do
     def get_value_label(%Summon{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Summon{value: class_name}), do: class_name
 
+    def params(_), do: ["value"]
+
     def animate(_), do: nil
 
     # Generate a unique ID for the summoned character

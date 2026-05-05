@@ -28,6 +28,8 @@ defmodule Game.Combat.CardEffects.Ethereal do
     def get_value_label(%Ethereal{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Ethereal{value: v}), do: "#{v}"
 
+    def params(_), do: ["value"]
+
     def animate(%Ethereal{}), do: %{label: "ETHEREAL", color: :blue}
   end
 end

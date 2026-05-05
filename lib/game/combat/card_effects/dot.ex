@@ -31,5 +31,7 @@ defmodule Game.Combat.CardEffects.Dot do
     def get_value_label(%Dot{damage: dmg}), do: "#{dmg}/turn"
 
     def animate(%Dot{damage: dmg}), do: %{label: "-#{dmg}/turn", color: :red}
+
+    def params(_), do: ["value", "damage"]
   end
 end

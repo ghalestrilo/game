@@ -35,6 +35,8 @@ defmodule Game.Combat.CardEffects.Damage do
     def get_value_label(%Damage{value: v}) when is_map(v), do: inspect(v)
     def get_value_label(%Damage{value: v}), do: "#{v}"
 
+    def params(_), do: ["value"]
+
     def animate(%Damage{value: v}), do: %{label: "-#{v}", color: :red}
   end
 end

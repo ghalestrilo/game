@@ -212,13 +212,17 @@ defmodule Game.Card do
         v ->
           v
       end)
+      |> unpack_params_map()
 
     build_effect_struct(type, effect_data)
   end
 
   # Raw string-keyed map (e.g. from seeds or test fixtures)
   def get_structured_effect(%{"type" => type} = effect) do
-    effect_data = Map.new(effect, fn {k, v} -> {String.to_atom(k), v} end)
+    effect_data =
+      Map.new(effect, fn {k, v} -> {String.to_atom(k), v} end)
+      |> unpack_params_map()
+
     build_effect_struct(type, effect_data)
   end
 
@@ -235,6 +239,32 @@ defmodule Game.Card do
       :error ->
         Logger.warning("Effect not implemented, ignoring: #{inspect(effect_data)}")
         :skip
+    end
+  end
+
+  # When value is a plain params map (not a JsonLogic formula), unpack its keys as top-level
+  # struct fields so e.g. %{"damage" => 5, "value" => 3} becomes damage: 5, value: 3.
+  # A formula map has exactly one key which is a known JsonLogic operator.
+  @formula_operators MapSet.new(~w(var == === != !== ! !! if or and > >= < <= max min + - * / % map filter reduce all none some in cat log alias))
+
+  defp unpack_params_map(%{value: value} = effect_data) when is_map(value) do
+    keys = Map.keys(value)
+
+    if length(keys) == 1 and hd(keys) in @formula_operators do
+      effect_data
+    else
+      atomized = Map.new(value, fn {k, v} -> {String.to_atom(k), v} end)
+      Map.merge(effect_data, atomized)
+    end
+  end
+
+  defp unpack_params_map(effect_data), do: effect_data
+
+  @doc "Returns the param keys required by the effect of the given type string, or [\"value\"] if unknown."
+  def effect_params(type) when is_binary(type) do
+    case Map.fetch(@effect_types, type) do
+      {:ok, module} -> CardEffect.params(struct(module))
+      :error -> ["value"]
     end
   end
 

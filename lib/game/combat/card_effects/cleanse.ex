@@ -31,5 +31,7 @@ defmodule Game.Combat.CardEffects.Cleanse do
     def get_value_label(%Cleanse{}), do: ""
 
     def animate(%Cleanse{}), do: %{label: "CLEANSE", color: :green}
+
+    def params(_), do: []
   end
 end

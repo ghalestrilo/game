@@ -40,6 +40,8 @@ defmodule Game.Combat.CardEffects.Stealth do
     def get_value_label(%Stealth{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Stealth{value: v}), do: "#{v}"
 
+    def params(_), do: ["value"]
+
     def animate(%Stealth{}), do: %{label: "HIDDEN", color: :yellow}
   end
 end

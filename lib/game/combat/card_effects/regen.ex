@@ -31,5 +31,7 @@ defmodule Game.Combat.CardEffects.Regen do
     def get_value_label(%Regen{heal: h}), do: "#{h}/turn"
 
     def animate(%Regen{heal: h}), do: %{label: "+#{h}/turn", color: :green}
+
+    def params(_), do: ["value", "heal"]
   end
 end

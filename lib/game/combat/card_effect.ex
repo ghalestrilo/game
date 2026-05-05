@@ -20,4 +20,12 @@ defprotocol Game.Combat.CardEffect do
 
   @spec animate(t()) :: %{label: String.t(), color: :red | :green | :blue | :yellow} | nil
   def animate(card_effect)
+
+  @doc """
+  Returns the list of parameter keys this effect requires.
+  Each key corresponds to an entry in the stored value map and gets its own formula input in the admin.
+  Defaults to [\"value\"] for simple single-value effects.
+  """
+  @spec params(t()) :: [String.t()]
+  def params(card_effect)
 end

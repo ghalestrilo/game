@@ -34,5 +34,7 @@ defmodule Game.Combat.CardEffects.Slow do
     def get_value_label(%Slow{value: v}), do: "#{v}"
 
     def animate(%Slow{}), do: %{label: "SLOW", color: :yellow}
+
+    def params(_), do: ["value", "duration"]
   end
 end
