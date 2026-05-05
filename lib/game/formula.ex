@@ -173,7 +173,10 @@ defmodule Game.Formula do
         description: "Target discard pile (character targets only)"
       },
       %{name: "state.current_turn.player.team", description: "Current turn player team"},
-      %{name: "state.queue", description: "Turn queue"}
+      %{name: "state.queue", description: "Turn queue"},
+      %{name: "type", description: "Type field of the current item (use inside 'some'/'filter'/'map')"},
+      %{name: "current", description: "Current item in list (use inside 'reduce')"},
+      %{name: "accumulator", description: "Current accumulator value (use inside 'reduce')"}
     ]
   end
 
