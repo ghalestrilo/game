@@ -2,6 +2,7 @@ defmodule Game.Card do
   alias Game.CombatState
   alias Game.Combat.CardEffect
   alias Game.Combat.CardEffects
+  alias Game.Grid
   require Logger
 
   @effect_types %{
@@ -182,8 +183,28 @@ defmodule Game.Card do
     {:ok, state_map} = Jason.decode(state_json)
     {:ok, caster_json} = Jason.encode(caster)
     {:ok, caster_map} = Jason.decode(caster_json)
-    %{"caster" => caster_map, "target" => encode_target(target), "state" => state_map}
+
+    %{
+      "caster" => caster_map,
+      "target" => encode_target(target),
+      "state" => state_map,
+      "pull_delta" => compute_pull_delta(caster, target, combat_state),
+      "distance_from_caster" => compute_distance_from_caster(caster, target, combat_state)
+    }
   end
+
+  defp compute_pull_delta(caster, target, combat_state) when is_struct(target) do
+    {dq, dr, ds} = Grid.direction_toward(combat_state.grid, target.position, caster.position)
+    %{"q" => dq, "r" => dr, "s" => ds}
+  end
+
+  defp compute_pull_delta(_caster, _target, _combat_state), do: nil
+
+  defp compute_distance_from_caster(caster, target, combat_state) when is_struct(target) do
+    Grid.distance(combat_state.grid, target.position, caster.position)
+  end
+
+  defp compute_distance_from_caster(_caster, _target, _combat_state), do: nil
 
   defp encode_target(target) when is_tuple(target),
     do: %{"position" => Tuple.to_list(target)}

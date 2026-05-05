@@ -50,7 +50,8 @@ defmodule Game.Combat.CardEffects.Move do
 
     def animate(%Move{}), do: %{label: "PUSH", color: :blue}
 
-    def params(_), do: ["q", "r", "s"]
+    def params(_), do: ["value"]
+    # def params(_), do: ["q", "r", "s"]
 
     defp to_delta({dq, dr, ds}), do: {dq, dr, ds}
     defp to_delta(%{q: dq, r: dr, s: ds}), do: {dq, dr, ds}

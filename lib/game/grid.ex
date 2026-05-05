@@ -77,6 +77,16 @@ defmodule Game.Grid do
     |> Enum.max()
   end
 
+  @hex_directions [{1, 0, -1}, {-1, 0, 1}, {0, 1, -1}, {0, -1, 1}, {1, -1, 0}, {-1, 1, 0}]
+
+  @doc "Returns the unit hex direction stepping from `from_pos` toward `to_pos`."
+  def direction_toward(%Grid{} = grid, from_pos, to_pos) do
+    {fq, fr, fs} = from_pos
+
+    @hex_directions
+    |> Enum.min_by(fn {dq, dr, ds} -> distance(grid, {fq + dq, fr + dr, fs + ds}, to_pos) end)
+  end
+
   @doc """
   Returns all tile coordinates within `radius` steps of `origin`.
   """

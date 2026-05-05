@@ -272,21 +272,19 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       assert html =~ ~s(name="change[effects][0][value][value][value]")
       assert html =~ ~s(name="change[effects][0][value][damage][value]")
 
-      # A "move" effect has params ["q", "r", "s"]
+      # A "move" effect has params ["value"] — one formula editor for the delta
       {:ok, move_card} =
         BaseCards.create_base_card(%{
           name: "Move Render Test",
           ap: 1,
           headline: "test",
           rarity: :common,
-          effects: [%{type: "move", value: %{"q" => 1, "r" => 0, "s" => -1}}]
+          effects: [%{type: "move", value: %{"var" => "pull_delta"}}]
         })
 
       {:ok, _view, html} = live(conn, ~p"/admin/base_cards/#{move_card.id}/edit")
 
-      assert html =~ ~s(name="change[effects][0][value][q][value]")
-      assert html =~ ~s(name="change[effects][0][value][r][value]")
-      assert html =~ ~s(name="change[effects][0][value][s][value]")
+      assert html =~ ~s(name="change[effects][0][value][value][operator]")
 
       # A "damage" effect has params ["value"] only — no extra inputs
       {:ok, dmg_card} =
@@ -727,38 +725,81 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       assert ethereal.value == 3
     end
 
-    test "saves move effect with q/r/s delta and can apply it in combat", %{conn: conn} do
+    test "pull card with var formula is stored and applies pull-toward-caster in combat", %{
+      conn: conn
+    } do
+      {:ok, card_db} =
+        BaseCards.create_base_card(%{
+          name: "Pull Test",
+          ap: 1,
+          headline: "test",
+          rarity: :common,
+          effects: [%{type: "move", value: %{"var" => "pull_delta"}}]
+        })
+
+      # Admin edit page loads without crashing (smoke test)
+      {:ok, _view, _html} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
+
+      # Value is stored as a JsonLogic var formula (json_logic normalises string to list form)
+      [effect] = card_db.effects
+      assert effect.type == "move"
+      assert effect.value == %{"var" => "pull_delta"}
+
+      card = %Game.Card{
+        id: 9,
+        name: "Pull",
+        cost: 1,
+        range: 2,
+        effects: card_db.effects,
+        targeting: %{"type" => "character"}
+      }
+
+      fighter = Fixtures.fighter()
+      # mage at {2,0,-2}; fighter (caster) at {0,0,0}
+      # direction from mage toward fighter is {-1,0,1}, so mage moves to {1,0,-1}
+      mage = %{Fixtures.mage() | position: {2, 0, -2}}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: nil},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: mage}
+        }
+      }
+
+      combat = %CombatState{
+        state: :running,
+        __constants__: %{players: [fighter, mage]},
+        queue: [mage],
+        grid: grid,
+        current_turn: %{starting_position: fighter.position, player: fighter, card: nil}
+      }
+
+      {updated, _anims} = Card.process_card(combat, mage, card)
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      assert updated_mage.position == {1, 0, -1}
+    end
+
+    test "move effect with static delta applies it in combat", %{conn: conn} do
+      # Move params are ["value"]; a static delta is stored as a q/r/s map directly.
+      # The admin page loads without crashing (smoke test).
       {:ok, card_db} =
         BaseCards.create_base_card(%{
           name: "Move Test",
           ap: 1,
           headline: "test",
           rarity: :common,
-          effects: [%{type: "move", value: %{"q" => 0, "r" => 0, "s" => 0}}]
+          effects: [%{type: "move", value: %{"q" => 1, "r" => 0, "s" => -1}}]
         })
 
-      {:ok, view, _} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
-
-      view
-      |> form(
-        "#resource-form",
-        card_form_params("Move Test", [
-          %{"type" => "move", "q" => "1", "r" => "0", "s" => "-1"}
-        ])
-      )
-      |> render_submit(%{"save-type" => "save"})
-
-      reloaded = BaseCards.get_base_card!(card_db.id)
-      [effect] = reloaded.effects
-      assert effect.type == "move"
-      assert effect.value == %{"q" => 1, "r" => 0, "s" => -1}
+      {:ok, _view, _html} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
 
       card = %Game.Card{
         id: 8,
         name: "Move",
         cost: 0,
         range: 2,
-        effects: reloaded.effects,
+        effects: card_db.effects,
         targeting: %{"type" => "character"}
       }
 

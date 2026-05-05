@@ -174,6 +174,8 @@ defmodule Game.Formula do
       },
       %{name: "state.current_turn.player.team", description: "Current turn player team"},
       %{name: "state.queue", description: "Turn queue"},
+      %{name: "pull_delta", description: "Hex direction from target toward caster (q/r/s map)"},
+      %{name: "distance_from_caster", description: "Scalar hex distance between target and caster"},
       %{
         name: "type",
         description: "Type field of the current item (use inside 'some'/'filter'/'map')"
@@ -317,7 +319,7 @@ defmodule Game.Formula do
     %{"operator" => "and", "0" => %{"operator" => "var", "0" => %{"value" => "target.occupied"}}}
 
   Output shape (JsonLogic):
-    %{"and" => [%{"var" => ["target.occupied"]}]}
+    %{"and" => [%{"var" => "target.occupied"}]}
   """
   @spec parse_params(map() | nil) :: map() | String.t() | number()
   def parse_params(nil), do: %{}
@@ -329,7 +331,7 @@ defmodule Game.Formula do
 
       %{"operator" => op} when is_binary(op) ->
         args = collect_args(params, 0, [])
-        if args == [], do: %{}, else: %{op => args}
+        if args == [], do: %{}, else: emit_node(op, args)
 
       %{"value" => value} ->
         parse_value(value)
@@ -338,6 +340,9 @@ defmodule Game.Formula do
         %{}
     end
   end
+
+  defp emit_node("var", [arg]) when is_binary(arg), do: %{"var" => arg}
+  defp emit_node(op, args), do: %{op => args}
 
   defp collect_args(params, index, acc) do
     case params[to_string(index)] do

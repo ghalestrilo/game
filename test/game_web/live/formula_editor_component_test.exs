@@ -112,7 +112,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
 
       # Set up a nested formula
-      send(view.pid, {:formula_updated, "formula-editor", [], %{">" => [%{"var" => ["hp"]}, 10]}})
+      send(view.pid, {:formula_updated, "formula-editor", [], %{">" => [%{"var" => "hp"}, 10]}})
 
       html = render(view)
       # Should show the "123" button to convert back to simple value
@@ -275,7 +275,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       assert has_element?(view, "#result-json")
       formula = get_result_json(view)
       # var operator takes a single string argument (not a list)
-      assert formula == %{"var" => ["hp"]}
+      assert formula == %{"var" => "hp"}
     end
 
     test "creates simple comparison formula", %{conn: conn} do
@@ -347,7 +347,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
 
       # Send a formula_updated message to set up nested structure
-      send(view.pid, {:formula_updated, "formula-editor", [], %{">" => [%{"var" => ["hp"]}, 5]}})
+      send(view.pid, {:formula_updated, "formula-editor", [], %{">" => [%{"var" => "hp"}, 5]}})
 
       # Submit the form
       view
@@ -357,7 +357,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       # Should preserve the nested structure
       assert has_element?(view, "#result-json")
       formula = get_result_json(view)
-      assert formula == %{">" => [%{"var" => ["hp"]}, 5]}
+      assert formula == %{">" => [%{"var" => "hp"}, 5]}
     end
 
     test "creates complex nested formula with AND and comparisons", %{conn: conn} do
@@ -366,8 +366,8 @@ defmodule GameWeb.FormulaEditorComponentTest do
       # Send pre-built nested formula via message
       nested_formula = %{
         "and" => [
-          %{">" => [%{"var" => ["hp"]}, 0]},
-          %{"==" => [%{"var" => ["team"]}, "ally"]}
+          %{">" => [%{"var" => "hp"}, 0]},
+          %{"==" => [%{"var" => "team"}, "ally"]}
         ]
       }
 
@@ -407,7 +407,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       # Get the result from the page
       assert has_element?(view, "#result-json")
       formula = get_result_json(view)
-      assert formula == %{"var" => ["occupied"]}
+      assert formula == %{"var" => "occupied"}
 
       # Verify it's a valid formula by resolving it
       result = Game.Formula.resolve(formula, %{"occupied" => true})
@@ -447,7 +447,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
 
       # Send pre-built nested formula
-      nested_formula = %{"<" => [%{"var" => ["hp"]}, %{"var" => ["max_hp"]}]}
+      nested_formula = %{"<" => [%{"var" => "hp"}, %{"var" => "max_hp"}]}
       send(view.pid, {:formula_updated, "formula-editor", [], nested_formula})
 
       view
@@ -457,7 +457,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       # Get the result from the page
       assert has_element?(view, "#result-json")
       formula = get_result_json(view)
-      assert formula == %{"<" => [%{"var" => ["hp"]}, %{"var" => ["max_hp"]}]}
+      assert formula == %{"<" => [%{"var" => "hp"}, %{"var" => "max_hp"}]}
 
       # Verify it's valid
       result = Game.Formula.resolve(formula, %{"hp" => 5, "max_hp" => 10})
@@ -470,8 +470,8 @@ defmodule GameWeb.FormulaEditorComponentTest do
       # Send pre-built nested formula
       nested_formula = %{
         "and" => [
-          %{"var" => ["occupied"]},
-          %{"==" => [%{"var" => ["team"]}, "ally"]}
+          %{"var" => "occupied"},
+          %{"==" => [%{"var" => "team"}, "ally"]}
         ]
       }
 
@@ -563,7 +563,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
 
       # Send pre-built nested formula
-      nested_formula = %{"==" => [%{"var" => ["name"]}, "Hero"]}
+      nested_formula = %{"==" => [%{"var" => "name"}, "Hero"]}
       send(view.pid, {:formula_updated, "formula-editor", [], nested_formula})
 
       view
@@ -573,7 +573,7 @@ defmodule GameWeb.FormulaEditorComponentTest do
       # Get the result from the page
       assert has_element?(view, "#result-json")
       formula = get_result_json(view)
-      assert formula == %{"==" => [%{"var" => ["name"]}, "Hero"]}
+      assert formula == %{"==" => [%{"var" => "name"}, "Hero"]}
 
       result = Game.Formula.resolve(formula, %{"name" => "Hero"})
       assert result == true

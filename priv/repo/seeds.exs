@@ -143,6 +143,13 @@ cards = [
     rarity: :uncommon
   },
   %{
+    name: "Pull",
+    headline: "Drag the target one tile toward you",
+    ap: 1,
+    effects: [%{type: "move", value: %{"var" => "pull_delta"}}],
+    rarity: :uncommon
+  },
+  %{
     name: "Shadowstrike",
     headline: "A quick strike from the shadows",
     ap: 2,

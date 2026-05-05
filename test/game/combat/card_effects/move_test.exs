@@ -78,6 +78,148 @@ defmodule Game.Combat.CardEffects.MoveTest do
     end
   end
 
+  describe "distance_from_caster context variable" do
+    test "resolves to the correct scalar hex distance", %{combat: combat, mage: mage} do
+      # fighter at {0,0,0}, mage at {2,0,-2} — cube distance = 2
+      card = %Game.Card{
+        id: 50,
+        name: "Distance Test",
+        cost: 0,
+        range: 5,
+        effects: [
+          %Game.BaseCards.BaseCard.Effect{
+            type: "damage",
+            value: %{"var" => "distance_from_caster"}
+          }
+        ],
+        targeting: %{"type" => "character"}
+      }
+
+      {updated, _anims} = Game.Card.process_card(combat, mage, card)
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      assert mage.hp - updated_mage.hp == 2
+    end
+
+    test "distance is 1 when target is adjacent to caster", %{combat: combat, fighter: fighter} do
+      adjacent_mage = %{Fixtures.mage() | position: {1, 0, -1}}
+
+      combat = %{
+        combat
+        | grid: %{
+            combat.grid
+            | tiles: Map.put(combat.grid.tiles, {1, 0, -1}, %{
+                terrain: :plain,
+                occupied_by: adjacent_mage
+              })
+          },
+          queue: [adjacent_mage],
+          __constants__: %{players: [fighter, adjacent_mage]}
+      }
+
+      card = %Game.Card{
+        id: 51,
+        name: "Distance Test",
+        cost: 0,
+        range: 5,
+        effects: [
+          %Game.BaseCards.BaseCard.Effect{
+            type: "damage",
+            value: %{"var" => "distance_from_caster"}
+          }
+        ],
+        targeting: %{"type" => "character"}
+      }
+
+      {updated, _anims} = Game.Card.process_card(combat, adjacent_mage, card)
+      updated_mage = Enum.find(updated.queue, &(&1.id == adjacent_mage.id))
+      assert adjacent_mage.hp - updated_mage.hp == 1
+    end
+  end
+
+  describe "Pull Towards Me card (value: %{\"var\" => \"pull_delta\"})" do
+    # This card uses a formula that resolves to the hex direction from target toward caster.
+    # It exercises the full pipeline: formula context injection → JsonLogic resolution →
+    # Move.process applying the resulting delta.
+
+    defp pull_card do
+      %Game.Card{
+        id: 99,
+        name: "Pull Towards Me",
+        cost: 1,
+        range: 3,
+        effects: [
+          %Game.BaseCards.BaseCard.Effect{
+            type: "move",
+            value: %{"var" => "pull_delta"}
+          }
+        ],
+        targeting: %{"type" => "character"}
+      }
+    end
+
+    test "pulls target one tile toward the caster", %{combat: combat, mage: mage} do
+      # caster (fighter) at {0,0,0}, target (mage) at {2,0,-2}
+      # direction from mage toward fighter: {-1,0,1}
+      # expected new position: {2,0,-2} + {-1,0,1} = {1,0,-1}
+      {updated, _anims} = Game.Card.process_card(combat, mage, pull_card())
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      assert updated_mage.position == {1, 0, -1}
+    end
+
+    test "is a no-op when the tile between target and caster is blocked", %{
+      combat: combat,
+      mage: mage,
+      fighter: fighter
+    } do
+      # Place another character at {1,0,-1} (directly between mage and fighter)
+      blocker = %{Fixtures.fighter() | id: 999, position: {1, 0, -1}}
+
+      blocked_combat = %{
+        combat
+        | grid: %{
+            combat.grid
+            | tiles: Map.put(combat.grid.tiles, {1, 0, -1}, %{
+                terrain: :plain,
+                occupied_by: blocker
+              })
+          },
+          __constants__: %{players: [fighter, mage, blocker]},
+          queue: [mage, blocker]
+      }
+
+      {updated, _anims} = Game.Card.process_card(blocked_combat, mage, pull_card())
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      assert updated_mage.position == mage.position
+    end
+
+    test "pulls target toward caster from a different axis", %{fighter: fighter} do
+      # Rearrange: mage at {0,2,-2}, fighter at {0,0,0}
+      # direction from mage toward fighter: {0,-1,1}
+      # expected new position: {0,2,-2} + {0,-1,1} = {0,1,-1}
+      mage = %{Fixtures.mage() | position: {0, 2, -2}}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {0, 1, -1} => %{terrain: :plain, occupied_by: nil},
+          {0, 2, -2} => %{terrain: :plain, occupied_by: mage}
+        }
+      }
+
+      combat = %CombatState{
+        state: :running,
+        __constants__: %{players: [fighter, mage]},
+        queue: [mage],
+        grid: grid,
+        current_turn: %{starting_position: fighter.position, player: fighter, card: nil}
+      }
+
+      {updated, _anims} = Game.Card.process_card(combat, mage, pull_card())
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      assert updated_mage.position == {0, 1, -1}
+    end
+  end
+
   describe "protocol contracts" do
     test "get_description/1" do
       assert is_binary(CardEffect.get_description(%Move{value: {1, 0, -1}}))

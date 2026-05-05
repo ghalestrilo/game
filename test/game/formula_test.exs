@@ -183,4 +183,24 @@ defmodule Game.FormulaTest do
       end)
     end
   end
+
+  describe "parse_params/1" do
+    test "var with single string arg emits string form, not list" do
+      params = %{"operator" => "var", "0" => %{"value" => "hp"}}
+      assert Formula.parse_params(params) == %{"var" => "hp"}
+    end
+
+    test "var with two args (path + default) emits list form" do
+      params = %{"operator" => "var", "0" => %{"value" => "hp"}, "1" => %{"value" => "0"}}
+      assert Formula.parse_params(params) == %{"var" => ["hp", 0]}
+    end
+
+    test "nested var inside and emits string form" do
+      params = %{
+        "operator" => "and",
+        "0" => %{"operator" => "var", "0" => %{"value" => "target.occupied"}}
+      }
+      assert Formula.parse_params(params) == %{"and" => [%{"var" => "target.occupied"}]}
+    end
+  end
 end
