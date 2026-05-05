@@ -452,6 +452,27 @@ formula_aliases = [
     expression: %{
       "some" => [%{"var" => "caster.status_effects"}, %{"===" => [%{"var" => "type"}, "stealth"]}]
     }
+  },
+  %{
+    name: "target_is_stealthed",
+    description: "True if the target currently has the stealth status effect",
+    expression: %{
+      "some" => [%{"var" => "target.status_effects"}, %{"===" => [%{"var" => "type"}, "stealth"]}]
+    }
+  },
+  %{
+    name: "target_is_stuck",
+    description: "True if the target currently has the stuck status effect",
+    expression: %{
+      "some" => [%{"var" => "target.status_effects"}, %{"===" => [%{"var" => "type"}, "stuck"]}]
+    }
+  },
+  %{
+    name: "target_is_stunned",
+    description: "True if the target currently has the stun status effect",
+    expression: %{
+      "some" => [%{"var" => "target.status_effects"}, %{"===" => [%{"var" => "type"}, "stun"]}]
+    }
   }
 ]
 
