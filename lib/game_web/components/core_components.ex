@@ -660,7 +660,7 @@ defmodule GameWeb.CoreComponents do
         <span class="font-bold text-sm text-base-content">{@card.name}</span>
         <div class="flex gap-2 items-center">
           <span class="text-xs bg-base-200 rounded px-2 py-0.5 text-base-content/70" title="Range">
-            <.icon name="hero-arrow-up-right-mini" class="inline-block w-3 h-3 mr-1" /> {@card.range}
+            <.icon name="hero-wifi-mini" class="inline-block w-3 h-3 mr-1" /> {@card.range}
           </span>
           <span class="text-xs bg-zinc-900 text-white rounded px-2 py-0.5" title="Cost">
             <.icon name="hero-bolt-mini" class="inline-block w-3 h-3 mr-1" /> {@card.cost}
