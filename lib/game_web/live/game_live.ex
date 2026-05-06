@@ -116,6 +116,10 @@ defmodule GameWeb.GameLive do
       |> push_animations(animations)
       |> checkpoint_if_single_player(game_state)
 
+    if socket.assigns.mode == :pvp and game_state.combat.state == :game_over do
+      Lobby.reset(socket.assigns.lobby_id)
+    end
+
     {:noreply, socket}
   end
 

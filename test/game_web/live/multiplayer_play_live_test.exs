@@ -146,5 +146,41 @@ defmodule GameWeb.MultiplayerPlayLiveTest do
       # Ready indicators are gone
       refute html =~ ">ready<"
     end
+
+    test "game over redirects both players to lobby without any button click", %{
+      conn1: conn1,
+      conn2: conn2,
+      play_path: play_path,
+      lobby_path: lobby_path
+    } do
+      {:ok, view1, _} = live(conn1, play_path)
+      {:ok, view2, _} = live(conn2, play_path)
+
+      render_click(view1, "win_match", %{})
+
+      {redirect1, _} = assert_redirect(view1)
+      {redirect2, _} = assert_redirect(view2)
+      assert redirect1 == lobby_path
+      assert redirect2 == lobby_path
+    end
+
+    test "old game process is stopped after lobby reset", %{
+      conn1: conn1,
+      conn2: conn2,
+      play_path: play_path,
+      lobby_path: lobby_path
+    } do
+      {:ok, view1, _} = live(conn1, play_path)
+      {:ok, _view2, _} = live(conn2, play_path)
+
+      lobby_id = lobby_path |> String.split("/") |> List.last()
+      {:ok, lobby} = Game.Lobby.get(lobby_id)
+      game_pid = lobby.game_pid
+
+      render_click(view1, "win_match", %{})
+      assert_redirect(view1)
+
+      refute Process.alive?(game_pid)
+    end
   end
 end

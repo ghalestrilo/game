@@ -121,6 +121,7 @@ defmodule Game.LobbyServer do
 
   @impl true
   def handle_cast(:reset, state) do
+    if state.game_pid, do: GenServer.stop(state.game_pid, :normal)
     new_players = Enum.map(state.players, &%{&1 | ready: false})
     new_state = %{state | players: new_players, game_pid: nil}
     broadcast(new_state)
