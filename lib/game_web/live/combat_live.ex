@@ -8,9 +8,10 @@ defmodule GameWeb.CombatLive do
   @impl true
   def update(assigns, socket) do
     card = get_in(assigns, [:game_state, :combat, :current_turn, :card])
+    selecting_target = get_in(assigns, [:game_state, :combat, :state]) === :card_selected
 
     overlay =
-      if card && assigns[:game_state] do
+      if card && assigns[:game_state] && selecting_target do
         Game.Card.build_tile_overlay(card, assigns.game_state.combat)
       else
         %{}
@@ -233,8 +234,7 @@ defmodule GameWeb.CombatLive do
       Game.Character.get_status_effect(character, :ethereal) != nil ->
         "grayscale opacity-40"
 
-      stealthy?(character) and current_player != nil and
-          character.team == current_player.team ->
+      stealthy?(character) and current_player != nil ->
         "grayscale opacity-60"
 
       true ->
