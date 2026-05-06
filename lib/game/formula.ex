@@ -185,6 +185,7 @@ defmodule Game.Formula do
         description: "Type field of the current item (use inside 'some'/'filter'/'map')"
       },
       %{name: "current", description: "Current item in list (use inside 'reduce')"},
+      %{name: "current.value", description: "Current item's \"value\" in list (use inside 'reduce')"},
       %{name: "accumulator", description: "Current accumulator value (use inside 'reduce')"}
     ]
   end
