@@ -32,14 +32,14 @@ defmodule GameWeb.CombatLive do
         current_player={@current_player}
         game_mode={Map.get(assigns, :game_mode)}
       />
-      
+
     <!-- Game area -->
       <div class="flex-1 flex flex-col overflow-hidden">
         <%= if @game_state do %>
           <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
           <% rows = Game.Grid.to_rows(@game_state.combat.grid) %>
           <% pos = build_position_index(rows) %>
-          
+
     <!-- Board -->
           <div class="flex-1 flex items-center justify-center overflow-hidden">
             <div class="game-board">
@@ -69,7 +69,7 @@ defmodule GameWeb.CombatLive do
                   <% end %>
                 </div>
               <% end %>
-              
+
     <!-- Entity layer -->
               <div class="absolute inset-0 pointer-events-none">
                 <%= for character <- queue, character != nil, visible_to?(character, @current_player) do %>
@@ -96,7 +96,7 @@ defmodule GameWeb.CombatLive do
           </div>
         <% end %>
       </div>
-      
+
     <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}
@@ -154,7 +154,7 @@ defmodule GameWeb.CombatLive do
     {:noreply, socket}
   end
 
-  defp tile_overlay_class(:valid), do: "ring-2 ring-inset ring-green-400 bg-green-400/10"
+  defp tile_overlay_class(:valid), do: "ring-2 ring-inset ring-red-400 bg-red-400/10"
   defp tile_overlay_class(:invalid), do: "opacity-40"
   defp tile_overlay_class(:blast), do: "bg-orange-400/20"
   defp tile_overlay_class(nil), do: nil

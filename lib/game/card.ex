@@ -164,6 +164,7 @@ defmodule Game.Card do
             resolve_effect_value(resolved, current_target, combat_state, cast_distance)
 
           new_combat = CardEffect.process(resolved, effective_target, combat_state)
+          :timer.sleep(300)
           new_anim = CardEffect.animate(resolved)
           {new_combat, if(new_anim, do: [new_anim | anims], else: anims)}
       end
