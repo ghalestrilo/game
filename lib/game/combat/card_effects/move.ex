@@ -16,11 +16,13 @@ defmodule Game.Combat.CardEffects.Move do
     alias Game.Combat.CardEffects.Move
 
     def process(%Move{angle: angle, distance: distance}, target, %CombatState{} = combat_state) do
+
       {dq, dr, ds} = Grid.direction_from_angle(angle)
       new_pos = {target.position |> elem(0) |> Kernel.+(dq * distance),
                  target.position |> elem(1) |> Kernel.+(dr * distance),
                  target.position |> elem(2) |> Kernel.+(ds * distance)}
 
+      #  FIXME: use first_unblocked_tile
       if Map.has_key?(combat_state.grid.tiles, new_pos) and
            not Grid.tile_blocked?(combat_state.grid, new_pos) do
         updated_target = Character.move(target, new_pos)
@@ -34,6 +36,11 @@ defmodule Game.Combat.CardEffects.Move do
       else
         combat_state
       end
+    end
+
+    # TODO: we need to implement this to avoid issues with "cast_distance" not moving the target.
+    def first_unblocked_tile() do
+      nil
     end
 
     def get_description(%Move{angle: angle, distance: distance}) do

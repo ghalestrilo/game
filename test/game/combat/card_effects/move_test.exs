@@ -244,7 +244,7 @@ defmodule Game.Combat.CardEffects.MoveTest do
             type: "move",
             value: %{
               "angle" => %{"var" => "angle_toward_target"},
-              "distance" => 1
+              "distance" => %{"-" => [%{"var" => "cast_distance"}, 1]}
             },
             target_formula: %{"var" => "caster.id"}
           },
@@ -281,9 +281,9 @@ defmodule Game.Combat.CardEffects.MoveTest do
       {:ok, combat: combat, fighter: fighter, enemy: enemy}
     end
 
-    test "caster moves one step toward enemy", %{combat: combat, fighter: fighter, enemy: enemy} do
+    test "caster moves up to the enemy (one tile away from it)", %{combat: combat, fighter: fighter, enemy: enemy} do
       {updated, _anims} = Game.Card.process_card(combat, enemy, charge_strike_card(fighter.id))
-      assert updated.current_turn.player.position == {1, 0, -1}
+      assert updated.current_turn.player.position == {2, 0, -2}
     end
 
     test "enemy takes damage equal to cast_distance (3), not post-move distance (2)", %{
@@ -305,7 +305,7 @@ defmodule Game.Combat.CardEffects.MoveTest do
         | grid: %{
             combat.grid
             | tiles:
-                Map.put(combat.grid.tiles, {1, 0, -1}, %{terrain: :plain, occupied_by: blocker})
+                Map.put(combat.grid.tiles, {2, 0, -2}, %{terrain: :plain, occupied_by: blocker})
           },
           __constants__: %{players: [fighter, enemy, blocker]},
           queue: [enemy, blocker]

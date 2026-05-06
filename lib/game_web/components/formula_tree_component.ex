@@ -10,6 +10,15 @@ defmodule GameWeb.Components.FormulaTreeComponent do
     """
   end
 
+  # Called as a live_component with "distance" (for "move")
+  def render(%{distance: _distance} = assigns) do
+    ~H"""
+    <div class="jl-node">
+      <.jl_node value={@distance} />
+    </div>
+    """
+  end
+
   # Called directly as render(effect_struct) from core_components — render via protocol label
   def render(assigns) do
     label =
