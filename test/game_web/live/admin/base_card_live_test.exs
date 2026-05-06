@@ -724,7 +724,7 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       {updated, _anims} = Card.process_card(combat, fighter, card)
       ethereal = Character.get_status_effect(updated.current_turn.player, :ethereal)
       assert ethereal != nil
-      assert ethereal.value == 3
+      assert ethereal.value == 2
     end
 
     test "pull card with var formula is stored and applies pull-toward-caster in combat", %{

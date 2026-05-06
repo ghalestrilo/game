@@ -41,12 +41,12 @@ defmodule Game.Combat.CardEffects.EtherealTest do
   end
 
   describe "process/3" do
-    test "adds ethereal status with value + 1 (like stealth)", %{combat: combat, mage: mage} do
+    test "adds ethereal status with value (like stealth)", %{combat: combat, mage: mage} do
       updated = CardEffect.process(%Ethereal{value: 2}, mage, combat)
       updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
       ethereal = Character.get_status_effect(updated_mage, :ethereal)
       assert ethereal != nil
-      assert ethereal.value == 3
+      assert ethereal.value == 2
     end
   end
 

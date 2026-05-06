@@ -542,4 +542,16 @@ defmodule Game.Card do
         }
     end
   end
+
+
+  def is_one_time_use?(%{effects: effects}) when is_list(effects) do
+    Enum.any?(effects, fn effect ->
+      Map.get(effect, :type) == "self_destruct"
+    end)
+  end
+
+  def is_one_time_use?(card) do
+    false
+  end
+
 end

@@ -600,7 +600,6 @@ defmodule GameWeb.CoreComponents do
     <span class={[@name, @class]} />
     """
   end
-
   # TODO: Move all below to GameWeb.AdminComponents
   attr :card, Game.BaseCards.BaseCard
 
@@ -659,6 +658,13 @@ defmodule GameWeb.CoreComponents do
       <div class="flex items-center justify-between mb-2">
         <span class="font-bold text-sm text-base-content">{@card.name}</span>
         <div class="flex gap-2 items-center">
+          <span
+            :if={Game.Card.is_one_time_use?(@card)}
+            class="text-xs bg-red-900/60 text-red-300 rounded px-2 py-0.5"
+            title="One-time use — this card is removed from your deck when played"
+          >
+            1×
+          </span>
           <span class="text-xs bg-base-200 rounded px-2 py-0.5 text-base-content/70" title="Range">
             <.icon name="hero-wifi-mini" class="inline-block w-3 h-3 mr-1" /> {@card.range}
           </span>

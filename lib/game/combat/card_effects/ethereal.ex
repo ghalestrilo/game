@@ -14,10 +14,9 @@ defmodule Game.Combat.CardEffects.Ethereal do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Ethereal
 
-    # Store value + 1 to account for the current turn, matching stealth behavior
     def process(%Ethereal{value: duration}, target, %CombatState{} = combat_state) do
       updated_target =
-        Character.add_status_effect(target, %{type: :ethereal, value: duration + 1})
+        Character.add_status_effect(target, %{type: :ethereal, value: duration})
 
       CombatState.update_target(combat_state, target, updated_target)
     end

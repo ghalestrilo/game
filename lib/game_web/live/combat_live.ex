@@ -80,7 +80,8 @@ defmodule GameWeb.CombatLive do
                     phx-click="interact"
                     phx-value-target_character_id={character.id}
                     class={[
-                      "character absolute top-0 left-0 pointer-events-auto cursor-pointer !bg-cover !bg-no-repeat"
+                      "character absolute top-0 left-0 pointer-events-auto cursor-pointer !bg-cover !bg-no-repeat",
+                      character_filter_class(character, @current_player)
                     ]}
                     data-character-id={character.id}
                     style={character_style(pos, character)}
@@ -223,6 +224,23 @@ defmodule GameWeb.CombatLive do
   # do: "!bg-[url('#{url}')]"
 
   defp character_bg(_), do: ""
+
+  # Ethereal: fully desaturated for everyone — untargetable by design, clearly distinct.
+  # Stealth (own team): gray + slightly dimmed so the player knows they're hidden.
+  # Stealth visibility filtering (hiding from enemies) is handled separately by visible_to?/2.
+  defp character_filter_class(character, current_player) do
+    cond do
+      Game.Character.get_status_effect(character, :ethereal) != nil ->
+        "grayscale opacity-40"
+
+      stealthy?(character) and current_player != nil and
+          character.team == current_player.team ->
+        "grayscale opacity-60"
+
+      true ->
+        nil
+    end
+  end
 
   defp stealthy?(character) do
     Game.Character.get_status_effect(character, :stealth) != nil
