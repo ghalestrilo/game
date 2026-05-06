@@ -129,8 +129,9 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       # The literal `3` arg has a convert_to_formula button
       assert has_element?(view, "button[phx-click='convert_to_formula']")
 
+      # Target the ƒx button inside the value formula editor specifically
       view
-      |> element("button[phx-click='convert_to_formula']")
+      |> element("button[phx-click='convert_to_formula'][phx-value-path='[1]']")
       |> render_click()
 
       html = render(view)
@@ -272,19 +273,20 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
       assert html =~ ~s(name="change[effects][0][value][value][value]")
       assert html =~ ~s(name="change[effects][0][value][damage][value]")
 
-      # A "move" effect has params ["value"] — one formula editor for the delta
+      # A "move" effect has params ["angle", "distance"] — two formula editors
       {:ok, move_card} =
         BaseCards.create_base_card(%{
           name: "Move Render Test",
           ap: 1,
           headline: "test",
           rarity: :common,
-          effects: [%{type: "move", value: %{"var" => "pull_delta"}}]
+          effects: [%{type: "move", value: %{"angle" => 0, "distance" => 1}}]
         })
 
       {:ok, _view, html} = live(conn, ~p"/admin/base_cards/#{move_card.id}/edit")
 
-      assert html =~ ~s(name="change[effects][0][value][value][operator]")
+      assert html =~ ~s(name="change[effects][0][value][angle][value]")
+      assert html =~ ~s(name="change[effects][0][value][distance][value]")
 
       # A "damage" effect has params ["value"] only — no extra inputs
       {:ok, dmg_card} =
@@ -734,16 +736,17 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
           ap: 1,
           headline: "test",
           rarity: :common,
-          effects: [%{type: "move", value: %{"var" => "pull_delta"}}]
+          effects: [
+            %{type: "move", value: %{"angle" => %{"var" => "angle_toward_caster"}, "distance" => 1}}
+          ]
         })
 
       # Admin edit page loads without crashing (smoke test)
       {:ok, _view, _html} = live(conn, ~p"/admin/base_cards/#{card_db.id}/edit")
 
-      # Value is stored as a JsonLogic var formula (json_logic normalises string to list form)
       [effect] = card_db.effects
       assert effect.type == "move"
-      assert effect.value == %{"var" => "pull_delta"}
+      assert effect.value == %{"angle" => %{"var" => "angle_toward_caster"}, "distance" => 1}
 
       card = %Game.Card{
         id: 9,

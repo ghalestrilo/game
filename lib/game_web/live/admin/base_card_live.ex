@@ -67,6 +67,10 @@ defmodule GameWeb.Admin.BaseCardLive do
           value: %{
             module: GameWeb.Admin.Fields.EffectField,
             label: "Parameters"
+          },
+          target_formula: %{
+            module: GameWeb.Admin.Fields.FormulaField,
+            label: "Target Formula"
           }
         ]
       }
@@ -117,8 +121,16 @@ defmodule GameWeb.Admin.BaseCardLive do
         _ -> parsed_params
       end
 
-    %{effect | "value" => flattened}
+    effect
+    |> Map.put("value", flattened)
+    |> parse_target_formula()
   end
 
-  defp parse_effect_value(effect), do: effect
+  defp parse_effect_value(effect), do: parse_target_formula(effect)
+
+  defp parse_target_formula(%{"target_formula" => params} = effect) when is_map(params) do
+    %{effect | "target_formula" => Game.Formula.parse_params(params)}
+  end
+
+  defp parse_target_formula(effect), do: effect
 end

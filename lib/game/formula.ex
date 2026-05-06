@@ -176,6 +176,8 @@ defmodule Game.Formula do
       %{name: "state.queue", description: "Turn queue"},
       %{name: "pull_delta", description: "Hex direction from target toward caster (q/r/s map)"},
       %{name: "push_delta", description: "Hex direction from caster toward target (q/r/s map)"},
+      %{name: "angle_toward_target", description: "Hex angle (0–5) pointing from caster toward target"},
+      %{name: "angle_toward_caster", description: "Hex angle (0–5) pointing from target toward caster"},
       %{name: "distance_from_caster", description: "Scalar hex distance between target and caster"},
       %{name: "cast_distance", description: "Distance between caster and target at time of cast (frozen, unaffected by movement effects)"},
       %{

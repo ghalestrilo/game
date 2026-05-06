@@ -1,12 +1,28 @@
 defmodule GameWeb.Components.FormulaTreeComponent do
   use Phoenix.LiveComponent
 
-  # Called as a live_component with value= assign, or directly as render(effect_struct)
+  # Called as a live_component with value= assign
   def render(%{value: _value} = assigns) do
     ~H"""
     <div class="jl-node">
       <.jl_node value={@value} />
     </div>
+    """
+  end
+
+  # Called directly as render(effect_struct) from core_components — render via protocol label
+  def render(assigns) do
+    label =
+      try do
+        Game.Combat.CardEffect.get_value_label(assigns)
+      rescue
+        _ -> inspect(Map.drop(assigns, [:type, :value_label]))
+      end
+
+    assigns = Map.put(assigns, :label, label)
+
+    ~H"""
+    <span class="jl-value badge badge-ghost text-xs">{@label}</span>
     """
   end
 

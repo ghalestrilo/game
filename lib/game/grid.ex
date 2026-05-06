@@ -79,6 +79,12 @@ defmodule Game.Grid do
 
   @hex_directions [{1, 0, -1}, {-1, 0, 1}, {0, 1, -1}, {0, -1, 1}, {1, -1, 0}, {-1, 1, 0}]
 
+  @doc "Returns the list of all 6 unit hex directions in angle-index order (0–5)."
+  def hex_directions, do: @hex_directions
+
+  @doc "Returns the unit hex direction for the given angle index (0–5)."
+  def direction_from_angle(index) when index in 0..5, do: Enum.at(@hex_directions, index)
+
   @doc "Returns the unit hex direction stepping from `from_pos` toward `to_pos`."
   def direction_toward(%Grid{} = grid, from_pos, to_pos) do
     {fq, fr, fs} = from_pos

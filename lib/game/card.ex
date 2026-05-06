@@ -193,13 +193,26 @@ defmodule Game.Card do
 
   defp resolve_effect_target(_effect, target, _combat_state), do: target
 
-  defp resolve_effect_value(%{value: value} = effect, target, combat_state, cast_distance)
-       when is_map(value) do
-    context = build_effect_context(target, combat_state, cast_distance)
-    %{effect | value: Game.Formula.resolve(value, context)}
-  end
+  defp resolve_effect_value(effect, target, combat_state, cast_distance) do
+    params = CardEffect.params(effect)
 
-  defp resolve_effect_value(effect, _target, _combat_state, _cast_distance), do: effect
+    if Enum.any?(params, fn p ->
+         Map.get(effect, String.to_existing_atom(p)) |> is_map()
+       end) do
+      context = build_effect_context(target, combat_state, cast_distance)
+
+      Enum.reduce(params, effect, fn param, acc ->
+        key = String.to_existing_atom(param)
+
+        case Map.get(acc, key) do
+          v when is_map(v) -> Map.put(acc, key, Game.Formula.resolve(v, context))
+          _ -> acc
+        end
+      end)
+    else
+      effect
+    end
+  end
 
   # Backwards-compatible arity-3 clause used by existing callers
   defp resolve_effect_value(effect, target, combat_state),
@@ -218,6 +231,8 @@ defmodule Game.Card do
       "state" => state_map,
       "pull_delta" => compute_pull_delta(caster, target, combat_state),
       "push_delta" => compute_push_delta(caster, target, combat_state),
+      "angle_toward_target" => compute_angle_toward(caster, target, combat_state),
+      "angle_toward_caster" => compute_angle_toward(target, caster, combat_state),
       "distance_from_caster" => compute_distance_from_caster(caster, target, combat_state),
       "cast_distance" => cast_distance
     }
@@ -236,6 +251,14 @@ defmodule Game.Card do
   end
 
   defp compute_push_delta(_caster, _target, _combat_state), do: nil
+
+  defp compute_angle_toward(from, to, combat_state)
+       when is_struct(from) and is_struct(to) do
+    dir = Grid.direction_toward(combat_state.grid, from.position, to.position)
+    Enum.find_index(Grid.hex_directions(), &(&1 == dir))
+  end
+
+  defp compute_angle_toward(_from, _to, _combat_state), do: nil
 
   defp compute_distance_from_caster(caster, target, combat_state) when is_struct(target) do
     Grid.distance(combat_state.grid, target.position, caster.position)

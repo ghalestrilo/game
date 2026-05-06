@@ -3,21 +3,23 @@ defmodule Game.Combat.CardEffects.Move do
   alias Game.{Character, Grid}
 
   @derive Jason.Encoder
-  defstruct type: :move, value: {0, 0, 0}, value_label: nil
+  defstruct type: :move, angle: 0, distance: 1, value_label: nil
 
   @type t() :: %__MODULE__{
           type: atom(),
-          value: {integer(), integer(), integer()} | map(),
+          angle: integer() | map(),
+          distance: integer() | map(),
           value_label: String.t() | nil
         }
 
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Move
 
-    def process(%Move{value: delta}, target, %CombatState{} = combat_state) do
-      {dq, dr, ds} = to_delta(delta)
-      {tq, tr, ts} = target.position
-      new_pos = {tq + dq, tr + dr, ts + ds}
+    def process(%Move{angle: angle, distance: distance}, target, %CombatState{} = combat_state) do
+      {dq, dr, ds} = Grid.direction_from_angle(angle)
+      new_pos = {target.position |> elem(0) |> Kernel.+(dq * distance),
+                 target.position |> elem(1) |> Kernel.+(dr * distance),
+                 target.position |> elem(2) |> Kernel.+(ds * distance)}
 
       if Map.has_key?(combat_state.grid.tiles, new_pos) and
            not Grid.tile_blocked?(combat_state.grid, new_pos) do
@@ -34,27 +36,17 @@ defmodule Game.Combat.CardEffects.Move do
       end
     end
 
-    def get_description(%Move{value: delta}) do
-      {dq, dr, ds} = to_delta(delta)
-      "Push target by (#{dq}, #{dr}, #{ds})"
+    def get_description(%Move{angle: angle, distance: distance}) do
+      "Move target #{distance} tile(s) in direction #{angle}"
     end
 
     def get_icon(%Move{}), do: "hero-arrows-pointing-out-mini"
 
     def get_value_label(%Move{value_label: label}) when is_binary(label), do: label
+    def get_value_label(%Move{distance: d}), do: "#{d}"
 
-    def get_value_label(%Move{value: delta}) do
-      {dq, dr, ds} = to_delta(delta)
-      "(#{dq},#{dr},#{ds})"
-    end
+    def animate(%Move{}), do: %{label: "MOVE", color: :blue}
 
-    def animate(%Move{}), do: %{label: "PUSH", color: :blue}
-
-    def params(_), do: ["value"]
-    # def params(_), do: ["q", "r", "s"]
-
-    defp to_delta({dq, dr, ds}), do: {dq, dr, ds}
-    defp to_delta(%{q: dq, r: dr, s: ds}), do: {dq, dr, ds}
-    defp to_delta(%{"q" => dq, "r" => dr, "s" => ds}), do: {dq, dr, ds}
+    def params(_), do: ["angle", "distance"]
   end
 end

@@ -5,6 +5,8 @@ defmodule Game.Combat.CardEffects.MoveTest do
   alias Game.Combat.CardEffects.Move
   alias Game.{CombatState, Grid, Fixtures}
 
+  # angle 0 = {1,0,-1} (east), angle 1 = {-1,0,1} (west) per Grid.hex_directions()
+
   setup do
     fighter = Fixtures.fighter()
     mage = %{Fixtures.mage() | position: {2, 0, -2}}
@@ -33,46 +35,43 @@ defmodule Game.Combat.CardEffects.MoveTest do
     {:ok, combat: combat, fighter: fighter, mage: mage}
   end
 
-  describe "process/3 with tuple delta" do
-    test "moves target to new position (current + delta)", %{combat: combat, mage: mage} do
-      # mage at {2,0,-2}, push by {1,0,-1} → {3,0,-3}
-      updated = CardEffect.process(%Move{value: {1, 0, -1}}, mage, combat)
+  describe "process/3" do
+    test "moves target one step in the given direction", %{combat: combat, mage: mage} do
+      # angle 0 = {1,0,-1}; mage at {2,0,-2} + {1,0,-1} = {3,0,-3}
+      updated = CardEffect.process(%Move{angle: 0, distance: 1}, mage, combat)
       updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
       assert updated_mage.position == {3, 0, -3}
     end
 
+    test "moves target multiple steps in the given direction", %{combat: combat, mage: mage} do
+      # angle 1 = {-1,0,1}; mage at {2,0,-2}, distance 2 → {0,0,0} — blocked by fighter
+      # so use distance 1 toward west: {2,0,-2} + {-1,0,1} = {1,0,-1}
+      updated = CardEffect.process(%Move{angle: 1, distance: 1}, mage, combat)
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      assert updated_mage.position == {1, 0, -1}
+    end
+
     test "clears old tile and occupies new tile on the grid", %{combat: combat, mage: mage} do
-      updated = CardEffect.process(%Move{value: {1, 0, -1}}, mage, combat)
+      updated = CardEffect.process(%Move{angle: 0, distance: 1}, mage, combat)
       assert updated.grid.tiles[{2, 0, -2}].occupied_by == nil
       assert updated.grid.tiles[{3, 0, -3}].occupied_by.id == mage.id
     end
 
     test "can move the current player", %{combat: combat, fighter: fighter} do
-      # fighter at {0,0,0}, push by {1,0,-1} → {1,0,-1}
-      updated = CardEffect.process(%Move{value: {1, 0, -1}}, fighter, combat)
+      # fighter at {0,0,0}, angle 0 = east → {1,0,-1}
+      updated = CardEffect.process(%Move{angle: 0, distance: 1}, fighter, combat)
       assert updated.current_turn.player.position == {1, 0, -1}
     end
-  end
 
-  describe "process/3 with map delta" do
-    test "moves target when delta is an atomized map", %{combat: combat, mage: mage} do
-      updated = CardEffect.process(%Move{value: %{q: 1, r: 0, s: -1}}, mage, combat)
-      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
-      assert updated_mage.position == {3, 0, -3}
-    end
-  end
-
-  describe "process/3 no-op cases" do
     test "is a no-op when destination tile is out of bounds", %{combat: combat, mage: mage} do
-      # push mage off the grid
-      updated = CardEffect.process(%Move{value: {10, 0, -10}}, mage, combat)
+      updated = CardEffect.process(%Move{angle: 0, distance: 10}, mage, combat)
       updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
       assert updated_mage.position == mage.position
     end
 
     test "is a no-op when destination tile is blocked", %{combat: combat, mage: mage} do
-      # push mage toward fighter (at {0,0,0}) — {2,0,-2} + {-2,0,2} = {0,0,0}
-      updated = CardEffect.process(%Move{value: {-2, 0, 2}}, mage, combat)
+      # angle 1 = {-1,0,1}; distance 2 from {2,0,-2} → {0,0,0} which is occupied
+      updated = CardEffect.process(%Move{angle: 1, distance: 2}, mage, combat)
       updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
       assert updated_mage.position == mage.position
     end
@@ -136,11 +135,7 @@ defmodule Game.Combat.CardEffects.MoveTest do
     end
   end
 
-  describe "Pull Towards Me card (value: %{\"var\" => \"pull_delta\"})" do
-    # This card uses a formula that resolves to the hex direction from target toward caster.
-    # It exercises the full pipeline: formula context injection → JsonLogic resolution →
-    # Move.process applying the resulting delta.
-
+  describe "Pull Towards Me card (angle_toward_caster, distance 1)" do
     defp pull_card do
       %Game.Card{
         id: 99,
@@ -150,7 +145,10 @@ defmodule Game.Combat.CardEffects.MoveTest do
         effects: [
           %Game.BaseCards.BaseCard.Effect{
             type: "move",
-            value: %{"var" => "pull_delta"}
+            value: %{
+              "angle" => %{"var" => "angle_toward_caster"},
+              "distance" => 1
+            }
           }
         ],
         targeting: %{"type" => "character"}
@@ -159,7 +157,7 @@ defmodule Game.Combat.CardEffects.MoveTest do
 
     test "pulls target one tile toward the caster", %{combat: combat, mage: mage} do
       # caster (fighter) at {0,0,0}, target (mage) at {2,0,-2}
-      # direction from mage toward fighter: {-1,0,1}
+      # angle_toward_caster = direction from mage toward fighter = {-1,0,1} = index 1
       # expected new position: {2,0,-2} + {-1,0,1} = {1,0,-1}
       {updated, _anims} = Game.Card.process_card(combat, mage, pull_card())
       updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
@@ -171,7 +169,6 @@ defmodule Game.Combat.CardEffects.MoveTest do
       mage: mage,
       fighter: fighter
     } do
-      # Place another character at {1,0,-1} (directly between mage and fighter)
       blocker = %{Fixtures.fighter() | id: 999, position: {1, 0, -1}}
 
       blocked_combat = %{
@@ -193,9 +190,6 @@ defmodule Game.Combat.CardEffects.MoveTest do
     end
 
     test "pulls target toward caster from a different axis", %{fighter: fighter} do
-      # Rearrange: mage at {0,2,-2}, fighter at {0,0,0}
-      # direction from mage toward fighter: {0,-1,1}
-      # expected new position: {0,2,-2} + {0,-1,1} = {0,1,-1}
       mage = %{Fixtures.mage() | position: {0, 2, -2}}
 
       grid = %Grid{
@@ -222,7 +216,7 @@ defmodule Game.Combat.CardEffects.MoveTest do
 
   describe "protocol contracts" do
     test "get_description/1" do
-      assert is_binary(CardEffect.get_description(%Move{value: {1, 0, -1}}))
+      assert is_binary(CardEffect.get_description(%Move{}))
     end
 
     test "get_icon/1 returns a string" do
@@ -230,7 +224,7 @@ defmodule Game.Combat.CardEffects.MoveTest do
     end
 
     test "get_value_label/1 returns a string" do
-      assert is_binary(CardEffect.get_value_label(%Move{value: {1, 0, -1}}))
+      assert is_binary(CardEffect.get_value_label(%Move{}))
     end
 
     test "animate/1 returns label and color" do
@@ -239,18 +233,7 @@ defmodule Game.Combat.CardEffects.MoveTest do
   end
 
   describe "Charge Strike card (move caster toward enemy, deal damage = cast distance)" do
-    # Layout:
-    #   {0,0,0}  fighter (caster)
-    #   {1,0,-1} empty
-    #   {2,0,-2} empty
-    #   {3,0,-3} mage (target/enemy)
-    #
-    # Effect 1: move caster one step toward enemy using push_delta, target_formula = caster.id
-    # Effect 2: deal damage to enemy equal to cast_distance (frozen before the move)
-    #
-    # cast_distance = 3; after move caster lands at {1,0,-1}; enemy takes 3 damage
-
-    defp charge_strike_card(caster_id) do
+    defp charge_strike_card(_caster_id) do
       %Game.Card{
         id: 99,
         name: "Charge Strike",
@@ -259,7 +242,10 @@ defmodule Game.Combat.CardEffects.MoveTest do
         effects: [
           %Game.BaseCards.BaseCard.Effect{
             type: "move",
-            value: %{"var" => "push_delta"},
+            value: %{
+              "angle" => %{"var" => "angle_toward_target"},
+              "distance" => 1
+            },
             target_formula: %{"var" => "caster.id"}
           },
           %Game.BaseCards.BaseCard.Effect{
@@ -312,7 +298,6 @@ defmodule Game.Combat.CardEffects.MoveTest do
 
     test "caster does not move when the next tile is occupied, but damage still uses cast_distance",
          %{combat: combat, fighter: fighter, enemy: enemy} do
-      # Block the tile at {1,0,-1}
       blocker = %{Fixtures.fighter() | id: 99, position: {1, 0, -1}}
 
       blocked_combat = %{
@@ -329,9 +314,7 @@ defmodule Game.Combat.CardEffects.MoveTest do
       {updated, _anims} =
         Game.Card.process_card(blocked_combat, enemy, charge_strike_card(fighter.id))
 
-      # Caster stays put
       assert updated.current_turn.player.position == fighter.position
-      # Enemy still takes 3 damage (cast_distance frozen before the (failed) move)
       updated_enemy = Enum.find(updated.queue, &(&1.id == enemy.id))
       assert enemy.hp - updated_enemy.hp == 3
     end
