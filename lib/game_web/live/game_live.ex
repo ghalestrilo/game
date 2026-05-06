@@ -154,8 +154,12 @@ defmodule GameWeb.GameLive do
 
   # In your LiveView module
   def handle_event("handle_keys", %{"key" => number}, socket) when number in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] do
-    IO.inspect(number <> " pressed")
     handle_event("pick_card", %{"card_index" => to_string(String.to_integer(number) - 1)}, socket)
+    {:noreply, socket}
+  end
+
+  def handle_event("handle_keys", %{"key" => "Enter"}, socket) do
+    handle_event("skip_turn", %{}, socket)
     {:noreply, socket}
   end
 
