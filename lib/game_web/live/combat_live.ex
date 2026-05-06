@@ -254,6 +254,7 @@ defmodule GameWeb.CombatLive do
     not stealthy?(character) or character.team == current_player.team
   end
 
+
   if Mix.env() == :test do
     def visible_to_for_test?(character, current_player),
       do: visible_to?(character, current_player)

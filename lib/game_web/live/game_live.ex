@@ -152,6 +152,19 @@ defmodule GameWeb.GameLive do
     end
   end
 
+  # In your LiveView module
+  def handle_event("handle_keys", %{"key" => number}, socket) when number in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] do
+    IO.inspect(number <> " pressed")
+    handle_event("pick_card", %{"card_index" => to_string(String.to_integer(number) - 1)}, socket)
+    {:noreply, socket}
+  end
+
+  def handle_event("handle_keys", %{"key" => key}, socket) do
+    # IO.inspect(key <> " pressed")
+    # Ignore other keys
+    {:noreply, socket}
+  end
+
   @impl true
   def handle_event(
         "interact",
@@ -310,7 +323,7 @@ defmodule GameWeb.GameLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="campaign-play">
+    <div class="campaign-play"  phx-window-keydown="handle_keys">
       <%= if @game_state && Map.get(@game_state, :current_view) == :combat do %>
         <.live_component
           module={GameWeb.CombatLive}
