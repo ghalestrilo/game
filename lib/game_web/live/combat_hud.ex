@@ -25,7 +25,7 @@ defmodule GameWeb.CombatHUD do
             Win Match
           </button>
         </div>
-        
+
     <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
@@ -37,7 +37,7 @@ defmodule GameWeb.CombatHUD do
           current_player={@current_player}
         />
       </div>
-      
+
     <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
@@ -47,7 +47,7 @@ defmodule GameWeb.CombatHUD do
           </ul>
         </div>
       </div>
-      
+
     <!-- Card piles -->
       <%= if Map.get(assigns, :game_mode, nil) == :sandbox || (@game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id)) do %>
@@ -156,6 +156,7 @@ defmodule GameWeb.CombatHUD do
         <div class={["flex gap-1 mb-1 items-center", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span>{@character.name}</span>
           <span :if={@current} class="badge badge-success badge-xs ml-1">current</span>
+          <span :if={Game.Character.get_status_effect(@character, :stealth)} class="badge badge-base badge-xs ml-1">hidden ({Game.Character.get_status_effect(@character, :stealth).value})</span>
         </div>
         <div class={["flex gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span

@@ -113,6 +113,7 @@ defmodule Game.Character do
   Returns nil if not found
   """
   def get_status_effect(character, type) do
+    dbg(character.status_effects)
     Enum.find(character.status_effects, fn effect -> effect.type == type end)
   end
 
