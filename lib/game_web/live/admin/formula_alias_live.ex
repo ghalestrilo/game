@@ -24,11 +24,13 @@ defmodule GameWeb.Admin.FormulaAliasLive do
       name: %{
         module: Backpex.Fields.Text,
         label: "Name",
-        searchable: true
+        searchable: true,
+        default: fn assigns -> Map.get(assigns.params, "name") end
       },
       description: %{
         module: Backpex.Fields.Text,
-        label: "Description"
+        label: "Description",
+        default: fn assigns -> Map.get(assigns.params, "description") end
       },
       expression: %{
         module: GameWeb.Admin.Fields.FormulaField,
@@ -45,9 +47,46 @@ defmodule GameWeb.Admin.FormulaAliasLive do
             />
           </div>
           """
+        end,
+        default: fn assigns ->
+          case Map.get(assigns.params, "clone_expression") do
+            s when s in [nil, ""] -> nil
+            json -> with {:ok, v} <- Jason.decode(json), do: v
+          end
         end
       }
     ]
+  end
+
+  @impl Backpex.LiveResource
+  def item_actions(default_actions) do
+    Enum.concat(default_actions, clone: %{module: __MODULE__.Clone, only: [:row]})
+  end
+
+  defmodule Clone do
+    use BackpexWeb, :item_action
+
+    @impl Backpex.ItemAction
+    def icon(assigns, _item) do
+      ~H"""
+      <Backpex.HTML.CoreComponents.icon
+        name="hero-document-duplicate"
+        class="h-5 w-5 cursor-pointer transition duration-75 hover:scale-110"
+      />
+      """
+    end
+
+    @impl Backpex.ItemAction
+    def label(_assigns, _item), do: "Clone"
+
+    @impl Backpex.ItemAction
+    def link(assigns, item) do
+      Backpex.Router.get_path(assigns.socket, assigns.live_resource, assigns.params, :new, %{
+        "name" => "Copy of #{item.name}",
+        "description" => item.description || "",
+        "clone_expression" => Jason.encode!(item.expression || %{})
+      })
+    end
   end
 
   def changeset(item, attrs, _metadata) do

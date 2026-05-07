@@ -24,19 +24,33 @@ defmodule GameWeb.Admin.BaseCardLive do
       name: %{
         module: Backpex.Fields.Text,
         label: "Name",
-        searchable: true
+        searchable: true,
+        default: fn assigns -> Map.get(assigns.params, "name") end
       },
       headline: %{
         module: Backpex.Fields.Text,
-        label: "Headline"
+        label: "Headline",
+        default: fn assigns -> Map.get(assigns.params, "headline") end
       },
       ap: %{
         module: Backpex.Fields.Number,
-        label: "AP"
+        label: "AP",
+        default: fn assigns ->
+          case Integer.parse(Map.get(assigns.params, "ap", "")) do
+            {v, ""} -> v
+            _ -> nil
+          end
+        end
       },
       range: %{
         module: Backpex.Fields.Number,
-        label: "Range"
+        label: "Range",
+        default: fn assigns ->
+          case Integer.parse(Map.get(assigns.params, "range", "")) do
+            {v, ""} -> v
+            _ -> nil
+          end
+        end
       },
       rarity: %{
         module: Backpex.Fields.Select,
@@ -46,11 +60,23 @@ defmodule GameWeb.Admin.BaseCardLive do
           {"Uncommon", :uncommon},
           {"Rare", :rare},
           {"Legendary", :legendary}
-        ]
+        ],
+        default: fn assigns ->
+          case Map.get(assigns.params, "rarity") do
+            s when s in [nil, ""] -> nil
+            s -> String.to_existing_atom(s)
+          end
+        end
       },
       targeting: %{
         module: GameWeb.Admin.Fields.TargetingField,
-        label: "Targeting"
+        label: "Targeting",
+        default: fn assigns ->
+          case Map.get(assigns.params, "clone_targeting") do
+            s when s in [nil, ""] -> nil
+            json -> with {:ok, v} <- Jason.decode(json), do: v
+          end
+        end
       },
       effects: %{
         module: Backpex.Fields.InlineCRUD,
@@ -76,7 +102,17 @@ defmodule GameWeb.Admin.BaseCardLive do
             module: GameWeb.Admin.Fields.EffectField,
             label: "Parameters"
           }
-        ]
+        ],
+        default: fn assigns ->
+          case Map.get(assigns.params, "clone_effects") do
+            s when s in [nil, ""] -> []
+            json ->
+              case Jason.decode(json) do
+                {:ok, list} when is_list(list) -> list
+                _ -> []
+              end
+          end
+        end
       }
     ]
   end
@@ -88,6 +124,41 @@ defmodule GameWeb.Admin.BaseCardLive do
         module: GameWeb.Admin.Filters.DeckFilter
       }
     ]
+  end
+
+  @impl Backpex.LiveResource
+  def item_actions(default_actions) do
+    Enum.concat(default_actions, clone: %{module: __MODULE__.Clone, only: [:row]})
+  end
+
+  defmodule Clone do
+    use BackpexWeb, :item_action
+
+    @impl Backpex.ItemAction
+    def icon(assigns, _item) do
+      ~H"""
+      <Backpex.HTML.CoreComponents.icon
+        name="hero-document-duplicate"
+        class="h-5 w-5 cursor-pointer transition duration-75 hover:scale-110"
+      />
+      """
+    end
+
+    @impl Backpex.ItemAction
+    def label(_assigns, _item), do: "Clone"
+
+    @impl Backpex.ItemAction
+    def link(assigns, item) do
+      Backpex.Router.get_path(assigns.socket, assigns.live_resource, assigns.params, :new, %{
+        "name" => "Copy of #{item.name}",
+        "headline" => item.headline || "",
+        "ap" => to_string(item.ap || ""),
+        "range" => to_string(item.range || ""),
+        "rarity" => to_string(item.rarity || ""),
+        "clone_targeting" => Jason.encode!(item.targeting || %{}),
+        "clone_effects" => Jason.encode!(item.effects || [])
+      })
+    end
   end
 
   def changeset(item, attrs, _metadata) do
