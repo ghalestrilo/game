@@ -113,12 +113,8 @@
   cursor: pointer;
 }
 
-
-/* Card Effects editor style overrides */
+/* 
 .mb-3.flex.items-start.gap-x-4{
-  /* display: grid; */
-  /* gap: 1rem; */
-  /* grid-template-areas: "type aoe blast" "formula formula formula" "value value value";  */
   flex-direction: column;
 }
 
@@ -138,4 +134,4 @@
  {
   grid-area: value;
   column-span: all;
-}
+} */
