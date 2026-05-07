@@ -532,7 +532,7 @@ defmodule Game.Card do
 
     targeting_rule = get_in(card.targeting, ["rule"])
 
-    base_overlay =
+    overlay =
       Map.new(in_range, fn coord ->
         position_result = Game.Grid.get_object(combat.grid, coord)
 
@@ -547,22 +547,26 @@ defmodule Game.Card do
 
     aoe = aoe_radius(card)
 
-    if aoe > 0 do
-      blast_coords =
-        base_overlay
+    blast_map =
+      if aoe > 0 do
+        overlay
         |> Enum.flat_map(fn
-          {coord, :valid} -> Game.Grid.tiles_in_range(combat.grid, coord, aoe)
-          _ -> []
-        end)
-        |> Enum.reject(&Map.has_key?(base_overlay, &1))
+          {coord, :valid} ->
+            blast = Game.Grid.tiles_in_range(combat.grid, coord, aoe)
+            [{coord, blast}]
 
-      Map.merge(base_overlay, Map.new(blast_coords, &{&1, :blast}))
-    else
-      base_overlay
-    end
+          _ ->
+            []
+        end)
+        |> Map.new()
+      else
+        %{}
+      end
+
+    {overlay, blast_map}
   end
 
-  def build_tile_overlay(_card, _combat), do: %{}
+  def build_tile_overlay(_card, _combat), do: {%{}, %{}}
 
   defp aoe_radius(%__MODULE__{effects: effects}) when is_list(effects) do
     effects

@@ -57,6 +57,10 @@
     @apply rounded-full cursor-pointer hover:bg-base-200;
   }
 
+  .blast-preview {
+    background-color: oklch(from var(--color-error) l c h / 20%) !important;
+  }
+
   .card-row {
     @apply fixed left-0 right-0 bottom-8 flex justify-center gap-4
            z-10 px-5 backdrop-blur-sm;

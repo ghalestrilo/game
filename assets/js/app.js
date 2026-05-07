@@ -23,6 +23,49 @@ import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import {Hooks as BackpexHooks} from "backpex"
 
+// Individual class tokens the server controls via data-tile-classes.
+// Keep in sync with @overlay_classes, @movement_class, @player_pos_class in combat_live.ex.
+const SERVER_CLASSES = [
+  "ring-2", "ring-inset", "ring-error/70", "bg-error/5",
+  "opacity-40",
+  "bg-warning/10",
+  "!bg-success/30",
+  "blast-preview"
+]
+
+const BoardTileClasses = {
+  mounted()  { this._applyAll(); this._bindHover() },
+  updated()  { this._applyAll() },
+
+  _tiles() {
+    const map = {}
+    this.el.querySelectorAll("[data-coord]").forEach(el => { map[el.dataset.coord] = el })
+    return map
+  },
+
+  _applyAll() {
+    const classes = JSON.parse(this.el.dataset.tileClasses || "{}")
+    const tiles = this._tiles()
+    Object.values(tiles).forEach(el => el.classList.remove(...SERVER_CLASSES))
+    Object.entries(classes).forEach(([coord, cls]) => tiles[coord]?.classList.add(...cls))
+  },
+
+  _bindHover() {
+    this.el.addEventListener("mouseover", e => {
+      const tile = e.target.closest("[data-coord]")
+      if (!tile) return
+      const blastMap = JSON.parse(this.el.dataset.blastMap || "{}")
+      const tiles = this._tiles()
+      this.el.querySelectorAll(".blast-preview").forEach(el => el.classList.remove("blast-preview"))
+      ;(blastMap[tile.dataset.coord] || []).forEach(c => tiles[c]?.classList.add("blast-preview"))
+    })
+
+    this.el.addEventListener("mouseleave", () => {
+      this.el.querySelectorAll(".blast-preview").forEach(el => el.classList.remove("blast-preview"))
+    })
+  }
+}
+
 const CharacterEffects = {
   mounted() {
     window.addEventListener("phx:hit", (e) => {
@@ -52,7 +95,7 @@ let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...BackpexHooks, CharacterEffects}
+  hooks: {...BackpexHooks, CharacterEffects, BoardTileClasses}
 })
 
 // Show progress bar on live navigation and form submits

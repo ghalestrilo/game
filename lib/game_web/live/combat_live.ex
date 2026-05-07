@@ -9,15 +9,23 @@ defmodule GameWeb.CombatLive do
   def update(assigns, socket) do
     card = get_in(assigns, [:game_state, :combat, :current_turn, :card])
     selecting_target = get_in(assigns, [:game_state, :combat, :state]) === :card_selected
+    combat = get_in(assigns, [:game_state, :combat])
 
-    overlay =
-      if card && assigns[:game_state] && selecting_target do
-        Game.Card.build_tile_overlay(card, assigns.game_state.combat)
+    {overlay, blast_map} =
+      if card && combat && selecting_target do
+        Game.Card.build_tile_overlay(card, combat)
       else
-        %{}
+        {%{}, %{}}
       end
 
-    {:ok, socket |> assign(assigns) |> assign(:tile_overlay, overlay)}
+    tile_classes_json = build_tile_classes_json(overlay, combat, assigns[:current_player])
+    blast_map_json = encode_blast_map(blast_map)
+
+    {:ok,
+     socket
+     |> assign(assigns)
+     |> assign(:tile_classes_json, tile_classes_json)
+     |> assign(:blast_map_json, blast_map_json)}
   end
 
   @impl true
@@ -43,7 +51,13 @@ defmodule GameWeb.CombatLive do
 
     <!-- Board -->
           <div class="flex-1 flex items-center justify-center overflow-hidden">
-            <div class="game-board">
+            <div
+              id="game-board"
+              class="game-board"
+              phx-hook="BoardTileClasses"
+              data-tile-classes={@tile_classes_json}
+              data-blast-map={@blast_map_json}
+            >
               <!-- Map layer -->
               <%= for row <- rows do %>
                 <div class="flex flex-row justify-center gap-2">
@@ -51,20 +65,8 @@ defmodule GameWeb.CombatLive do
                     <div
                       phx-click="interact"
                       phx-value-target_position={"#{q}_#{r}_#{s}"}
-                      class={[
-                        "hex-cell border border-base-content/20 w-20 h-20 flex items-center justify-center bg-base-100",
-                        if(
-                          current_turn_visible?(@game_state.combat, queue, @current_player) &&
-                            within_movement_range?(@game_state.combat, {q, r, s}),
-                          do: "bg-warning/10"
-                        ),
-                        if(
-                          current_turn_visible?(@game_state.combat, queue, @current_player) &&
-                            current_player_at?(@game_state.combat, queue, {q, r, s}),
-                          do: "!bg-success/30"
-                        ),
-                        tile_overlay_class(Map.get(@tile_overlay, {q, r, s}))
-                      ]}
+                      data-coord={"#{q}_#{r}_#{s}"}
+                      class="hex-cell border border-base-content/20 w-20 h-20 flex items-center justify-center bg-base-100"
                     >
                     </div>
                   <% end %>
@@ -155,10 +157,57 @@ defmodule GameWeb.CombatLive do
     {:noreply, socket}
   end
 
-  defp tile_overlay_class(:valid), do: "ring-2 ring-inset ring-red-400 bg-red-400/10"
-  defp tile_overlay_class(:invalid), do: "opacity-40"
-  defp tile_overlay_class(:blast), do: "bg-orange-400/20"
-  defp tile_overlay_class(nil), do: nil
+  # Server-managed tile CSS classes. Each value is a list of individual class tokens
+  # (no spaces) so classList.add(...tokens) works correctly in JS.
+  # Keep in sync with SERVER_CLASSES in app.js.
+  @overlay_classes %{
+    valid: ~w(ring-2 ring-inset ring-error/70 bg-error/5),
+    invalid: ~w(opacity-40)
+  }
+  @movement_class ~w(bg-warning/10)
+  @player_pos_class ~w(!bg-success/30)
+
+  defp build_tile_classes_json(overlay, combat, current_player) when not is_nil(combat) do
+    queue = Game.CombatState.get_current_queue(combat)
+    current_turn_visible = current_turn_visible?(combat, queue, current_player)
+
+    all_coords = Map.keys(combat.grid.tiles)
+
+    all_coords
+    |> Enum.reduce(%{}, fn coord, acc ->
+      classes =
+        [
+          Map.get(@overlay_classes, Map.get(overlay, coord)),
+          if(current_turn_visible && within_movement_range?(combat, coord),
+            do: @movement_class
+          ),
+          if(current_turn_visible && current_player_at?(combat, queue, coord),
+            do: @player_pos_class
+          )
+        ]
+        |> Enum.reject(&is_nil/1)
+        |> List.flatten()
+
+      if classes == [] do
+        acc
+      else
+        Map.put(acc, encode_coord(coord), classes)
+      end
+    end)
+    |> Jason.encode!()
+  end
+
+  defp build_tile_classes_json(_overlay, _combat, _current_player), do: "{}"
+
+  defp encode_coord({q, r, s}), do: "#{q}_#{r}_#{s}"
+
+  defp encode_blast_map(blast_map) do
+    blast_map
+    |> Map.new(fn {coord, blast_coords} ->
+      {encode_coord(coord), Enum.map(blast_coords, &encode_coord/1)}
+    end)
+    |> Jason.encode!()
+  end
 
   defp within_movement_range?(combat, coord) do
     combat.current_turn.player &&
