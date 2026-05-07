@@ -11,7 +11,7 @@ defmodule Game.Combat do
   alias Game.CombatState
   alias Game.{Character, Grid}
 
-  @default_grid_padding 3
+  @default_grid_padding 4
 
   def new, do: %CombatState{}
 

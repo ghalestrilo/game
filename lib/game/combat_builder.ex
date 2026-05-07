@@ -1,6 +1,8 @@
 defmodule Game.CombatBuilder do
   alias Game.{Character, Content, CombatState, Grid}
 
+  @default_grid_padding 4
+
   @doc """
   Builds a CombatState from a list of player descriptors.
 
@@ -26,7 +28,7 @@ defmodule Game.CombatBuilder do
       |> Enum.max()
 
     grid =
-      Grid.new({max_radius + 1, max_radius + 1, max_radius + 1})
+      Grid.new({max_radius + @default_grid_padding, max_radius + @default_grid_padding, max_radius + @default_grid_padding})
       |> then(fn g -> Enum.reduce(characters, g, &Grid.update_character(&2, &1)) end)
 
     %CombatState{
