@@ -197,6 +197,9 @@ defmodule GameWeb.CombatHUD do
         <span class="badge badge-soft">
           {"Deck: #{Enum.count(@character.cards.draw)} / #{Enum.count(@character.cards.hand)} / #{Enum.count(@character.cards.discard)}"}
         </span>
+        <div class="status_effects">
+          <span :if={Game.Character.get_status_effect(@character, :stealth)} class="badge badge-base badge-xs ml-1">hidden ({Game.Character.get_status_effect(@character, :stealth).value})</span>
+        </div>
       </div>
     </li>
     """
