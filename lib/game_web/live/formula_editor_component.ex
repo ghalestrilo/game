@@ -135,6 +135,7 @@ defmodule GameWeb.FormulaEditorComponent do
                 <% end %>
 
                 <button
+                  :if={can_add_arg?(@operator, @args)}
                   type="button"
                   phx-click="add_arg"
                   phx-target={@myself}
@@ -353,6 +354,15 @@ defmodule GameWeb.FormulaEditorComponent do
   end
 
   # Private helper functions
+
+  defp can_add_arg?(operator, args) do
+    %{arity: arity} = metadata = Formula.operator_metadata(operator)
+
+    case arity do
+      n when is_integer(n) -> length(args) < n
+      :variable -> length(args) < Map.get(metadata, :max_args, :infinity)
+    end
+  end
 
   defp extract_operator_value(%{"value" => operator}, _field, _path) when is_binary(operator),
     do: operator

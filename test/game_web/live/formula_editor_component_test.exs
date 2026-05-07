@@ -251,6 +251,38 @@ defmodule GameWeb.FormulaEditorComponentTest do
     end
   end
 
+  describe "add argument button visibility" do
+    test "hidden for fixed-arity-1 operator (!) once it has 1 arg", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+      send(view.pid, {:formula_updated, "formula-editor", [], %{"!" => [""]}})
+      refute has_element?(view, "button", "+ Add argument")
+    end
+
+    test "hidden for fixed-arity-2 operator (==) once it has 2 args", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+      send(view.pid, {:formula_updated, "formula-editor", [], %{"==" => ["", ""]}})
+      refute has_element?(view, "button", "+ Add argument")
+    end
+
+    test "hidden for alias operator (max 1 arg) once it has 1 arg", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+      send(view.pid, {:formula_updated, "formula-editor", [], %{"alias" => [""]}})
+      refute has_element?(view, "button", "+ Add argument")
+    end
+
+    test "visible for variable-arity operator (+) with 1 arg", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+      send(view.pid, {:formula_updated, "formula-editor", [], %{"+" => [""]}})
+      assert has_element?(view, "button", "+ Add argument")
+    end
+
+    test "hidden for var operator (max_args: 2) once it has 2 args", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+      send(view.pid, {:formula_updated, "formula-editor", [], %{"var" => ["hp", 0]}})
+      refute has_element?(view, "button", "+ Add argument")
+    end
+  end
+
   describe "simple formula editing" do
     test "creates var formula", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
