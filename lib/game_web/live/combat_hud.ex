@@ -156,7 +156,6 @@ defmodule GameWeb.CombatHUD do
         <div class={["flex gap-1 mb-1 items-center", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span>{@character.name}</span>
           <span :if={@current} class="badge badge-success badge-xs ml-1">current</span>
-          <span :if={Game.Character.get_status_effect(@character, :stealth)} class="badge badge-base badge-xs ml-1">hidden ({Game.Character.get_status_effect(@character, :stealth).value})</span>
         </div>
         <div class={["flex gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span
@@ -197,8 +196,13 @@ defmodule GameWeb.CombatHUD do
         <span class="badge badge-soft">
           {"Deck: #{Enum.count(@character.cards.draw)} / #{Enum.count(@character.cards.hand)} / #{Enum.count(@character.cards.discard)}"}
         </span>
-        <div class="status_effects">
-          <span :if={Game.Character.get_status_effect(@character, :stealth)} class="badge badge-base badge-xs ml-1">hidden ({Game.Character.get_status_effect(@character, :stealth).value})</span>
+        <div class={["flex flex-wrap gap-1 mt-1", if(@same_team, do: "justify-start", else: "justify-end")]}>
+          <span
+            :for={effect <- Enum.reject(@character.status_effects, &(&1.type == :shield))}
+            class="badge badge-base badge-xs"
+          >
+            {String.capitalize(Atom.to_string(effect.type))}{if effect.value > 0, do: " (#{effect.value})", else: ""}
+          </span>
         </div>
       </div>
     </li>
