@@ -52,7 +52,6 @@ defmodule Mix.Tasks.Game.PullContentSync do
                     :type,
                     :value,
                     :value_label,
-                    :aoe,
                     :range,
                     :multi,
                     :scaling,

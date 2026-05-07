@@ -30,7 +30,6 @@ defmodule Game.BaseCards.BaseCard do
                :type,
                :value,
                :value_label,
-               :aoe,
                :range,
                :multi,
                :scaling,
@@ -42,7 +41,6 @@ defmodule Game.BaseCards.BaseCard do
       field :type, :string
       field :value, Game.BaseCards.BaseCard.StringOrNumber
       field :value_label, :string
-      field :aoe, :boolean, default: false
       field :range, :integer
       field :multi, :integer
       field :scaling, :string
@@ -56,7 +54,6 @@ defmodule Game.BaseCards.BaseCard do
         :type,
         :value,
         :value_label,
-        :aoe,
         :range,
         :multi,
         :scaling,

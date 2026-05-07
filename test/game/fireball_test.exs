@@ -13,12 +13,11 @@ defmodule Game.FireballTest do
     range: 4,
     targeting: %{"type" => "tile"},
     effects: [
-      %{"type" => "damage", "value" => 5, "aoe" => true, "range" => @blast_radius},
+      %{"type" => "damage", "value" => 5, "range" => @blast_radius},
       %{
         "type" => "move",
         "angle" => %{"var" => "angle_push_from_blast"},
         "distance" => 1,
-        "aoe" => true,
         "range" => @blast_radius
       }
     ]

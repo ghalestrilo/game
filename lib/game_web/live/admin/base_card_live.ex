@@ -64,10 +64,6 @@ defmodule GameWeb.Admin.BaseCardLive do
             options:
               Game.Card.effect_types() |> Map.keys() |> Enum.map(&{String.capitalize(&1), &1})
           },
-          aoe: %{
-            module: Backpex.Fields.Boolean,
-            label: "AoE"
-          },
           range: %{
             module: Backpex.Fields.Number,
             label: "Blast Radius"

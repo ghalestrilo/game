@@ -158,10 +158,9 @@ defmodule Game.Card do
           # resolve_effect_target runs on the raw effect (before get_structured_effect strips
           # target_formula), so we use the original `effect` from the outer closure.
           effective_target = resolve_effect_target(effect, current_target, combat_state)
-          aoe? = Map.get(effect, :aoe) || Map.get(effect, "aoe")
-          aoe_range = Map.get(effect, :range) || Map.get(effect, "range") || 1
+          aoe_range = Map.get(effect, :range) || Map.get(effect, "range") || 0
 
-          if aoe? do
+          if aoe_range > 0 do
             # Skip pre-resolution: AoE effects resolve formulas per-target inside apply_aoe_effect,
             # using blast-relative context (e.g. angle_push_from_blast).
             {new_combat, new_anims} =
@@ -568,14 +567,13 @@ defmodule Game.Card do
 
   def build_tile_overlay(_card, _combat), do: {%{}, %{}}
 
-  defp aoe_radius(%__MODULE__{effects: effects}) when is_list(effects) do
+  def aoe_radius(%__MODULE__{effects: effects}) when is_list(effects) do
     effects
-    |> Enum.filter(&(Map.get(&1, :aoe) || Map.get(&1, "aoe")))
-    |> Enum.map(&(Map.get(&1, :range) || Map.get(&1, "range") || 1))
+    |> Enum.map(&(Map.get(&1, :range) || Map.get(&1, "range") || 0))
     |> Enum.max(fn -> 0 end)
   end
 
-  defp aoe_radius(_), do: 0
+  def aoe_radius(_), do: 0
 
   # Build target-specific data for JsonLogic evaluation
   defp build_target_data(position_result) do

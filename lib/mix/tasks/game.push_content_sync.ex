@@ -83,7 +83,6 @@ defmodule Mix.Tasks.Game.PushContentSync do
                   :type,
                   :value,
                   :value_label,
-                  :aoe,
                   :range,
                   :multi,
                   :scaling,
