@@ -117,20 +117,33 @@ defmodule GameWeb.FormulaEditorComponent do
             <%= if @operator do %>
               <div class="ml-4 mt-2 space-y-2">
                 <%= for {arg, idx} <- Enum.with_index(@args) do %>
-                  <div class="formula-arg border-l-2 border-blue-300 pl-3">
-                    <.arg_editor
-                      arg={arg}
-                      operator={@operator}
-                      arg_index={idx}
-                      path={@path ++ [idx]}
-                      field={@field || "formula"}
-                      id={"#{@id}-arg-#{idx}"}
-                      myself={@myself}
-                      root_id={@root_id}
-                      root_value={@root_value}
-                      aliases={@aliases}
-                      variables={@variables}
-                    />
+                  <div class="formula-arg border-l-2 border-blue-300 pl-3 flex items-start gap-2">
+                    <div class="flex-1">
+                      <.arg_editor
+                        arg={arg}
+                        operator={@operator}
+                        arg_index={idx}
+                        path={@path ++ [idx]}
+                        field={@field || "formula"}
+                        id={"#{@id}-arg-#{idx}"}
+                        myself={@myself}
+                        root_id={@root_id}
+                        root_value={@root_value}
+                        aliases={@aliases}
+                        variables={@variables}
+                      />
+                    </div>
+                    <button
+                      :if={can_remove_arg?(@operator, @args)}
+                      type="button"
+                      phx-click="remove_arg"
+                      phx-value-path={Jason.encode!(@path ++ [idx])}
+                      phx-target={@myself}
+                      class="text-base-content/40 hover:text-red-500 px-1 py-2"
+                      title="Remove argument"
+                    >
+                      <.icon name="hero-x-mark" class="w-4 h-4" />
+                    </button>
                   </div>
                 <% end %>
 
@@ -332,6 +345,13 @@ defmodule GameWeb.FormulaEditorComponent do
     {:noreply, socket}
   end
 
+  def handle_event("remove_arg", %{"path" => path_json}, socket) do
+    path = Jason.decode!(path_json)
+    new_root = Formula.remove_at_path(socket.assigns.root_value, path)
+    Phoenix.LiveView.send_update(__MODULE__, id: socket.assigns.root_id, value: new_root)
+    {:noreply, socket}
+  end
+
   def handle_event("convert_to_value", _params, socket) do
     push_root_update(socket, socket.assigns.path, "")
     {:noreply, socket}
@@ -354,6 +374,16 @@ defmodule GameWeb.FormulaEditorComponent do
   end
 
   # Private helper functions
+
+  defp can_remove_arg?(operator, args) do
+    %{arity: arity} = metadata = Formula.operator_metadata(operator)
+    min = Map.get(metadata, :min_args, arity)
+
+    case min do
+      n when is_integer(n) -> length(args) > n
+      _ -> false
+    end
+  end
 
   defp can_add_arg?(operator, args) do
     %{arity: arity} = metadata = Formula.operator_metadata(operator)

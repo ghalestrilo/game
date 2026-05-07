@@ -251,6 +251,34 @@ defmodule GameWeb.FormulaEditorComponentTest do
     end
   end
 
+  describe "remove argument button" do
+    test "shown for variable-arity operator (+) with 2 args", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+      send(view.pid, {:formula_updated, "formula-editor", [], %{"+" => [1, 2]}})
+      assert has_element?(view, "button[title='Remove argument']")
+    end
+
+    test "hidden when already at min_args (+ with 1 arg)", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+      send(view.pid, {:formula_updated, "formula-editor", [], %{"+" => [1]}})
+      refute has_element?(view, "button[title='Remove argument']")
+    end
+
+    test "clicking it removes the argument", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+      send(view.pid, {:formula_updated, "formula-editor", [], %{"+" => [1, 2, 3]}})
+      view |> element("button[phx-value-path='[0]'][title='Remove argument']") |> render_click()
+      view |> form("form") |> render_submit()
+      assert get_result_json(view) == %{"+" => [2, 3]}
+    end
+
+    test "hidden for fixed-arity operators", %{conn: conn} do
+      {:ok, view, _html} = live(conn, "/formula-editor-test")
+      send(view.pid, {:formula_updated, "formula-editor", [], %{"==" => ["", ""]}})
+      refute has_element?(view, "button[title='Remove argument']")
+    end
+  end
+
   describe "add argument button visibility" do
     test "hidden for fixed-arity-1 operator (!) once it has 1 arg", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/formula-editor-test")
