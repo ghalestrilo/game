@@ -21,6 +21,10 @@ defmodule Game.Character do
             status_effects: [],
             # Movement range in tiles
             movement_range: nil,
+            # Cards drawn at the start of each turn
+            hand_size: 5,
+            # Multiplier applied to incoming damage (>1.0 = takes more; <1.0 = takes less)
+            damage_multiplier: 1.0,
             # Team identifier
             team: nil,
             dead: false,
@@ -73,19 +77,20 @@ defmodule Game.Character do
   end
 
   def apply_damage(character, amount) do
+    multiplied = round(amount * effective_attribute(character, "damage_multiplier"))
     shield = get_status_effect(character, :shield)
 
     {char_after_shield, hp_damage} =
       case shield do
         %{value: shield_value} when shield_value > 0 ->
-          if shield_value >= amount do
-            {update_status_effect(character, %{shield | value: shield_value - amount}), 0}
+          if shield_value >= multiplied do
+            {update_status_effect(character, %{shield | value: shield_value - multiplied}), 0}
           else
-            {remove_status_effect(character, :shield), amount - shield_value}
+            {remove_status_effect(character, :shield), multiplied - shield_value}
           end
 
         _ ->
-          {character, amount}
+          {character, multiplied}
       end
 
     # Hex flips the post-shield damage: positive damage becomes healing (negative)
@@ -253,6 +258,14 @@ defmodule Game.Character do
 
   def get_max_ap(%__MODULE__{max_ap: max_ap} = _character) do
     max_ap
+  end
+
+  def effective_attribute(%__MODULE__{} = character, attr) when is_binary(attr) do
+    base = Map.get(character, String.to_existing_atom(attr))
+    Enum.reduce(character.status_effects, base, fn
+      %{type: :modify_attribute, attribute: ^attr, value: v}, acc -> acc + v
+      _, acc -> acc
+    end)
   end
 
   def from_character_data(%Game.Content.BaseClass{} = base_class) do

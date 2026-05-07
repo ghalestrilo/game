@@ -358,15 +358,17 @@ defmodule Game.Combat do
   end
 
   defp effective_movement_range(player) do
-    cond do
-      Character.get_status_effect(player, :stuck) != nil ->
-        0
+    if Character.get_status_effect(player, :stuck) != nil do
+      0
+    else
+      slow_reduction =
+        case Character.get_status_effect(player, :slow) do
+          %{value: v} -> v
+          nil -> 0
+        end
 
-      (slow = Character.get_status_effect(player, :slow)) != nil ->
-        max(0, player.movement_range - slow.value)
-
-      true ->
-        player.movement_range
+      base = Character.effective_attribute(player, "movement_range")
+      max(0, base - slow_reduction)
     end
   end
 end

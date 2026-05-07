@@ -23,7 +23,8 @@ defmodule Game.Card do
     "ethereal" => CardEffects.Ethereal,
     "hex" => CardEffects.Hex,
     "self_destruct" => CardEffects.SelfDestruct,
-    "give" => CardEffects.Give
+    "give" => CardEffects.Give,
+    "modify_attribute" => CardEffects.ModifyAttribute
   }
 
   def effect_types, do: @effect_types

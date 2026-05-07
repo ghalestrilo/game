@@ -58,7 +58,7 @@ defmodule Game.CombatState do
   def initialize_turn(%CombatState{current_turn: %{player: player}} = combat)
       when not is_nil(player) do
     combat
-    |> draw_cards_for_player(player, 5)
+    |> draw_cards_for_player(player)
   end
 
   # def initialize_turn(combat), do: combat
@@ -119,7 +119,7 @@ defmodule Game.CombatState do
       ticked |> rotate_queue() |> setup_player_turn()
     else
       ticked
-      |> draw_cards_for_player(ticked.current_turn.player, 5)
+      |> draw_cards_for_player(ticked.current_turn.player)
       |> restore_max_ap()
     end
   end
@@ -225,7 +225,9 @@ defmodule Game.CombatState do
   Draws cards for a player at the start of their turn up to the default hand size of 5
   If draw pile doesn't have enough cards, reshuffles discard pile into draw pile first
   """
-  def draw_cards_for_player(combat, player_character, count \\ 5) do
+  def draw_cards_for_player(combat, player_character, count \\ nil) do
+    count = count || Character.effective_attribute(player_character, "hand_size")
+
     updated_character =
       player_character
       |> Character.discard_hand()
@@ -277,7 +279,7 @@ defmodule Game.CombatState do
   Restores a player's max AP from the original player data in __constants__
   """
   def restore_max_ap(%CombatState{current_turn: %{player: character}} = combat) do
-    updated_character = %{character | ap: Game.Character.get_max_ap(character)}
+    updated_character = %{character | ap: Game.Character.effective_attribute(character, "max_ap")}
 
     %{combat | current_turn: %{combat.current_turn | player: updated_character}}
   end
@@ -306,7 +308,7 @@ defmodule Game.CombatState do
             Character.apply_damage(acc, dmg)
 
           %{type: :regen, heal: h, value: v} when v > 0 ->
-            %{acc | hp: min(acc.hp + h, Character.get_max_hp(acc))}
+            %{acc | hp: min(acc.hp + h, Character.effective_attribute(acc, "max_hp"))}
 
           _ ->
             acc
@@ -325,10 +327,12 @@ defmodule Game.CombatState do
         %{type: :dot, value: v} = e -> %{e | value: v - 1}
         %{type: :regen, value: v} = e -> %{e | value: v - 1}
         %{type: :slow, duration: d} = e when is_integer(d) -> %{e | duration: d - 1}
+        %{type: :modify_attribute, duration: d} = e when is_integer(d) -> %{e | duration: d - 1}
         effect -> effect
       end)
       |> Enum.reject(fn
         %{type: :slow, duration: d} when is_integer(d) -> d <= 0
+        %{type: :modify_attribute, duration: d} when is_integer(d) -> d <= 0
         %{value: v} -> v <= 0
         _ -> false
       end)

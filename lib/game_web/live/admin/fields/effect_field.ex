@@ -86,6 +86,17 @@ defmodule GameWeb.Admin.Fields.EffectField do
                   </option>
                 <% end %>
               </select>
+            <% param == "attribute" -> %>
+              <select name={"#{@field_base}[attribute][value]"} class="select select-sm w-full">
+                <%= for attr <- ~w(max_hp max_ap movement_range hand_size damage_multiplier) do %>
+                  <option
+                    value={attr}
+                    selected={attr == to_string(Map.get(@value_map, "attribute", "max_hp"))}
+                  >
+                    {attr}
+                  </option>
+                <% end %>
+              </select>
             <% true -> %>
               <.live_component
                 module={GameWeb.FormulaEditorComponent}
