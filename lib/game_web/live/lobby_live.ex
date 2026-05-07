@@ -53,6 +53,16 @@ defmodule GameWeb.LobbyLive do
   end
 
   @impl true
+  def handle_event("select_team", %{"team" => team}, socket) do
+    user = socket.assigns.current_scope.user
+
+    case Lobby.select_team(socket.assigns.lobby_id, user.id, team) do
+      {:ok, lobby_state} -> {:noreply, assign(socket, lobby: lobby_state)}
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_event("toggle_ready", _params, socket) do
     user = socket.assigns.current_scope.user
 
@@ -85,6 +95,7 @@ defmodule GameWeb.LobbyLive do
           <%= for player <- @lobby.players do %>
             <li class="px-4 py-2 bg-secondary rounded flex gap-2 items-center">
               {player.email}
+              <span>Team {player.team}</span>
               <%= if player.class do %>
                 <span>{player.class}</span>
               <% end %>
@@ -94,8 +105,9 @@ defmodule GameWeb.LobbyLive do
             </li>
           <% end %>
         </ul>
-        <% my_class =
-          @lobby.players |> Enum.find(&(&1.id == @current_user_id)) |> then(&(&1 && &1.class)) %>
+        <% my_player = @lobby.players |> Enum.find(&(&1.id == @current_user_id)) %>
+        <% my_class = my_player && my_player.class %>
+        <% my_team = my_player && my_player.team %>
         <form phx-change="select_class">
           <select name="class">
             <option value="" selected={is_nil(my_class)}>Pick a class</option>
@@ -103,6 +115,13 @@ defmodule GameWeb.LobbyLive do
               <option value={bc.class} selected={my_class == bc.class}>{bc.class}</option>
             <% end %>
           </select>
+        </form>
+        <form phx-change="select_team">
+          <select name="team">
+              <%= for index <- 1..8 do %>
+                <option value={index} selected={my_player.team == index}>Team {index}</option>
+              <% end %>
+            </select>
         </form>
         <button
           phx-click="toggle_ready"

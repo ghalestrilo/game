@@ -34,6 +34,10 @@ defmodule Game.LobbyServer do
     GenServer.call(via(id), {:select_class, user_id, class})
   end
 
+  def select_team(id, user_id, team) do
+    GenServer.call(via(id), {:select_team, user_id, team})
+  end
+
   def reset(id) do
     GenServer.cast(via(id), :reset)
   end
@@ -68,7 +72,8 @@ defmodule Game.LobbyServer do
         {:reply, {:error, :full}, state}
 
       true ->
-        player = %{id: user.id, email: user.email, ready: false, class: nil}
+        team = "#{length(players) + 1}"
+        player = %{id: user.id, email: user.email, ready: false, class: nil, team: team}
         new_players = players ++ [player]
         new_status = if length(new_players) >= @min_players, do: :ready, else: :waiting
         new_state = %{state | players: new_players, status: new_status}
@@ -102,6 +107,19 @@ defmodule Game.LobbyServer do
     new_players =
       Enum.map(state.players, fn
         %{id: ^user_id} = p -> %{p | class: class}
+        p -> p
+      end)
+
+    new_state = %{state | players: new_players}
+    broadcast(new_state)
+    {:reply, {:ok, new_state}, new_state}
+  end
+
+  @impl true
+  def handle_call({:select_team, user_id, team}, _from, state) do
+    new_players =
+      Enum.map(state.players, fn
+        %{id: ^user_id} = p -> %{p | team: team}
         p -> p
       end)
 
@@ -146,14 +164,16 @@ defmodule Game.LobbyServer do
       length(players) >= @min_players and
         Enum.all?(players, &(&1.ready and not is_nil(&1.class)))
 
-    if all_ready do
+    teams_ok = players |> Enum.map(& &1.team) |> Enum.uniq() |> length() >= 2
+
+    if all_ready and teams_ok do
       positions = starting_positions(length(players))
 
       specs =
         players
         |> Enum.zip(positions)
         |> Enum.map(fn {p, pos} ->
-          %{class: p.class, team: p.id, position: pos, id: p.id}
+          %{class: p.class, team: p.team, position: pos, id: p.id}
         end)
 
       combat = Game.CombatBuilder.build(specs)

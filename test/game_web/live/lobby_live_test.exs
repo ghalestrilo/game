@@ -217,6 +217,63 @@ defmodule GameWeb.LobbyLiveTest do
     end
   end
 
+  describe "LobbyLive - team selection" do
+    setup :two_players_in_lobby
+
+    defp select_team(view, team) do
+      view |> element("form[phx-change='select_team']") |> render_change(%{"team" => team})
+    end
+
+    test "players default to different teams", %{lobby_view1: lobby_view1, lobby_view2: lobby_view2} do
+      html1 = render(lobby_view1)
+      html2 = render(lobby_view2)
+      assert html1 =~ "Team 1"
+      assert html2 =~ "Team 2"
+    end
+
+    test "select_team updates team visible to all", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2,
+      user1: user1
+    } do
+      select_team(lobby_view1, "Alpha")
+
+      html2 = render(lobby_view2)
+      assert html2 =~ user1.email
+      assert html2 =~ "Alpha"
+    end
+
+    test "game does not start when all players on same team", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      select_team(lobby_view2, "1")
+
+      select_class(lobby_view1, "fighter")
+      select_class(lobby_view2, "fighter")
+
+      lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()
+      lobby_view2 |> element("button[phx-click='toggle_ready']") |> render_click()
+
+      refute_redirected(lobby_view1)
+      refute_redirected(lobby_view2)
+    end
+
+    test "game starts when players are on different teams", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      select_class(lobby_view1, "fighter")
+      select_class(lobby_view2, "fighter")
+
+      lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()
+      lobby_view2 |> element("button[phx-click='toggle_ready']") |> render_click()
+
+      {path, _} = assert_redirect(lobby_view1)
+      assert path =~ ~r|/multiplayer/.+/play|
+    end
+  end
+
   defp two_players_in_lobby(context) do
     user1 = Game.AccountsFixtures.user_fixture()
     user2 = Game.AccountsFixtures.user_fixture()
