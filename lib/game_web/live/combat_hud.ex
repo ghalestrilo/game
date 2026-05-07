@@ -151,7 +151,7 @@ defmodule GameWeb.CombatHUD do
     <li class={[
       "p-3 border-2 rounded-lg flex items-start gap-2 transition-all duration-300",
       team_ring_class(@character.team),
-      if(@is_self, do: "bg-base-200", else: "bg-base-100"),
+      if(@is_self, do: "bg-yellow-400/15", else: "bg-base-200"),
       if(@same_team, do: "flex-row", else: "flex-row-reverse"),
       if(@current, do: "shadow-md animate-pulse", else: "scale-90")
     ]}>
