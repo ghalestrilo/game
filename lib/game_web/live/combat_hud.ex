@@ -157,21 +157,31 @@ defmodule GameWeb.CombatHUD do
           <span>{@character.name}</span>
           <span :if={@current} class="badge badge-success badge-xs ml-1">current</span>
         </div>
+        <% eff_max_hp = Game.Character.effective_attribute(@character, "max_hp") %>
         <div class={["flex gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span
-            :for={hp <- 1..Game.Character.get_max_hp(@character)}
+            :for={hp <- 1..eff_max_hp}
             class={[
               "max-w-[20px] flex-1 h-2 rounded-[2px]",
-              if(hp > @character.hp, do: "bg-base-300", else: "bg-error")
+              cond do
+                hp > @character.hp -> "bg-base-300"
+                hp > @character.max_hp -> "bg-success"
+                true -> "bg-error"
+              end
             ]}
           />
         </div>
+        <% eff_max_ap = Game.Character.effective_attribute(@character, "max_ap") %>
         <div class={["flex gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span
-            :for={ap <- 1..Game.Character.get_max_ap(@character)}
+            :for={ap <- 1..eff_max_ap}
             class={[
               "max-w-[20px] flex-1 h-2 rounded-[2px]",
-              if(ap > @character.ap, do: "bg-base-300", else: "bg-warning")
+              cond do
+                ap > @character.ap -> "bg-base-300"
+                ap > @character.max_ap -> "bg-success"
+                true -> "bg-warning"
+              end
             ]}
           />
         </div>

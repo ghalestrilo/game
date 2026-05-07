@@ -212,12 +212,13 @@ defmodule GameWeb.CombatLive do
   end
 
   defp within_movement_range?(combat, coord) do
-    combat.current_turn.player &&
+    player = Game.CombatState.get_current_player(combat)
+    player &&
       Grid.distance(
         combat.grid,
         coord,
         Game.CombatState.get_current_turn(combat).starting_position
-      ) <= Game.CombatState.get_current_player(combat).movement_range
+      ) <= Game.Character.effective_attribute(player, "movement_range")
   end
 
   defp current_turn_visible?(combat, queue, current_player) do
