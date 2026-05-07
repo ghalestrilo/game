@@ -59,19 +59,21 @@ defmodule GameWeb.CombatLive do
               data-blast-map={@blast_map_json}
             >
               <!-- Map layer -->
-              <%= for row <- rows do %>
-                <div class="flex flex-row justify-center gap-2">
-                  <%= for {q, r, s, _tile} <- row do %>
-                    <div
-                      phx-click="interact"
-                      phx-value-target_position={"#{q}_#{r}_#{s}"}
-                      data-coord={"#{q}_#{r}_#{s}"}
-                      class="hex-cell border border-base-content/20 w-20 h-20 flex items-center justify-center bg-base-100"
-                    >
-                    </div>
-                  <% end %>
-                </div>
-              <% end %>
+              <div id="map-layer" phx-update="ignore">
+                <%= for row <- rows do %>
+                  <div class="flex flex-row justify-center gap-2">
+                    <%= for {q, r, s, _tile} <- row do %>
+                      <div
+                        phx-click="interact"
+                        phx-value-target_position={"#{q}_#{r}_#{s}"}
+                        data-coord={"#{q}_#{r}_#{s}"}
+                        class="hex-cell border border-base-content/20 w-20 h-20 flex items-center justify-center bg-base-100"
+                      >
+                      </div>
+                    <% end %>
+                  </div>
+                <% end %>
+              </div>
 
     <!-- Entity layer -->
               <div class="absolute inset-0 pointer-events-none">
