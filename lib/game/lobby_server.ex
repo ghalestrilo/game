@@ -23,7 +23,7 @@ defmodule Game.LobbyServer do
   end
 
   def leave(id, user_id) do
-    GenServer.cast(via(id), {:leave, user_id})
+    GenServer.call(via(id), {:leave, user_id})
   end
 
   def toggle_ready(id, user_id) do
@@ -111,12 +111,12 @@ defmodule Game.LobbyServer do
   end
 
   @impl true
-  def handle_cast({:leave, user_id}, state) do
+  def handle_call({:leave, user_id}, _from, state) do
     new_players = Enum.reject(state.players, &(&1.id == user_id))
     new_status = if length(new_players) >= @min_players, do: :ready, else: :waiting
     new_state = %{state | players: new_players, status: new_status}
     broadcast(new_state)
-    {:noreply, new_state}
+    {:reply, :ok, new_state}
   end
 
   @impl true
