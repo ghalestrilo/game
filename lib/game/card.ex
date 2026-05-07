@@ -284,6 +284,11 @@ defmodule Game.Card do
     {:ok, caster_json} = Jason.encode(caster)
     {:ok, caster_map} = Jason.decode(caster_json)
 
+    caster_map =
+      caster_map
+      |> Map.put("max_hp", Game.Character.effective_attribute(caster, "max_hp"))
+      |> Map.put("max_ap", Game.Character.effective_attribute(caster, "max_ap"))
+
     %{
       "caster" => caster_map,
       "target" => encode_target(target),

@@ -259,4 +259,87 @@ defmodule Game.Combat.CardEffects.DamageTest do
       assert shield == nil
     end
   end
+
+  describe "False Life + Exsanguinate combo" do
+    # False Life: ModifyAttribute{max_hp, +4, permanent} cast on self while at full HP.
+    # Exsanguinate: damage = caster.max_hp - caster.hp  (missing HP formula).
+    #
+    # After False Life the caster's effective max_hp is 24 but current hp remains 20,
+    # so effective missing HP = 4. Exsanguinate should deal 4 damage on the first turn.
+
+    setup do
+      # Fighter at full HP (20/20). False Life grants +4 effective max_hp → 24 effective / 20 actual.
+      fighter =
+        %{Fixtures.fighter() | hp: 20, max_hp: 20}
+        |> Character.add_status_effect(%{
+          type: :modify_attribute,
+          attribute: "max_hp",
+          value: 4,
+          duration: nil
+        })
+
+      mage = %{Fixtures.mage() | hp: 15, max_hp: 15, position: {1, 0, -1}}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
+        }
+      }
+
+      combat_state = %CombatState{
+        state: :running,
+        __constants__: %{players: [fighter, mage]},
+        queue: [mage],
+        grid: grid,
+        current_turn: %{
+          starting_position: fighter.position,
+          player: fighter,
+          card: nil
+        }
+      }
+
+      {:ok, combat_state: combat_state, fighter: fighter, mage: mage}
+    end
+
+    test "deals damage equal to effective missing HP (4)", %{
+      combat_state: combat_state,
+      mage: mage
+    } do
+      # Exsanguinate: damage = effective_max_hp - current_hp = 24 - 20 = 4
+      exsanguinate = %Card{
+        id: 99,
+        name: "Exsanguinate",
+        cost: 0,
+        effects: [%{"type" => "damage", "value" => %{"-" => [%{"var" => "caster.max_hp"}, %{"var" => "caster.hp"}]}}],
+        targeting: %{"type" => "character"}
+      }
+
+      {updated_state, _} = Card.process_card(combat_state, mage, exsanguinate)
+      updated_mage = Enum.find(updated_state.queue, &(&1.id == mage.id))
+      assert updated_mage.hp == mage.hp - 4
+    end
+
+    test "deals 0 damage when caster has no False Life and is at full HP", %{
+      combat_state: combat_state,
+      mage: mage,
+      fighter: fighter
+    } do
+      # Remove the False Life effect so caster is genuinely full HP with no modifier
+      plain_fighter = %{fighter | status_effects: []}
+      combat_state = put_in(combat_state, [:current_turn, :player], plain_fighter)
+
+      exsanguinate = %Card{
+        id: 99,
+        name: "Exsanguinate",
+        cost: 0,
+        effects: [%{"type" => "damage", "value" => %{"-" => [%{"var" => "caster.max_hp"}, %{"var" => "caster.hp"}]}}],
+        targeting: %{"type" => "character"}
+      }
+
+      {updated_state, _} = Card.process_card(combat_state, mage, exsanguinate)
+      updated_mage = Enum.find(updated_state.queue, &(&1.id == mage.id))
+      assert updated_mage.hp == mage.hp
+    end
+  end
 end
