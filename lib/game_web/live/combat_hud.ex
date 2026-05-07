@@ -128,7 +128,7 @@ defmodule GameWeb.CombatHUD do
         <.character_queue_card
           :for={character <- Enum.filter(queue, &(&1 != nil))}
           character={character}
-          same_team={same_team?(character, @current_player)}
+          current_player={@current_player}
           current={character == @combat.current_turn.player}
         />
       </ul>
@@ -137,15 +137,23 @@ defmodule GameWeb.CombatHUD do
   end
 
   attr :character, :map, required: true
-  attr :same_team, :boolean, required: true
+  attr :current_player, :map, default: nil
   attr :current, :boolean, required: true
 
   defp character_queue_card(assigns) do
+    assigns =
+      assign(assigns,
+        same_team: same_team?(assigns.character, assigns.current_player),
+        is_self: is_self?(assigns.character, assigns.current_player)
+      )
+
     ~H"""
     <li class={[
-      "p-3 border-2 border-base-content/10 rounded-lg flex items-start gap-2 bg-base-100",
+      "p-3 border-2 rounded-lg flex items-start gap-2 transition-all duration-300",
+      team_ring_class(@character.team),
+      if(@is_self, do: "bg-base-200", else: "bg-base-100"),
       if(@same_team, do: "flex-row", else: "flex-row-reverse"),
-      if(@current, do: "border-success shadow-md shadow-success animate-pulse")
+      if(@current, do: "shadow-md animate-pulse", else: "scale-90")
     ]}>
       <%= if @character.avatar_url && @character.avatar_url != "" do %>
         <img src={@character.avatar_url} class="w-10 h-10 rounded-full object-cover flex-shrink-0" />
@@ -219,6 +227,29 @@ defmodule GameWeb.CombatHUD do
     """
   end
 
+  @team_colors ~w(
+    border-sky-500
+    border-rose-500
+    border-emerald-500
+    border-amber-500
+    border-violet-500
+    border-orange-500
+    border-teal-500
+    border-pink-500
+  )
+
+  defp team_ring_class(team) when is_integer(team) do
+    Enum.at(@team_colors, rem(team, length(@team_colors)))
+  end
+
+  defp team_ring_class(team) do
+    index = team |> String.to_charlist() |> Enum.sum() |> rem(length(@team_colors))
+    Enum.at(@team_colors, index)
+  end
+
   defp same_team?(_character, nil), do: true
-  defp same_team?(character, current_player), do: character.team == current_player.team
+  defp same_team?(character, current_player), do: to_string(character.team) == to_string(current_player.team)
+
+  defp is_self?(_character, nil), do: false
+  defp is_self?(character, current_player), do: character.id == current_player.id
 end
