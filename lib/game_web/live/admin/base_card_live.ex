@@ -64,13 +64,21 @@ defmodule GameWeb.Admin.BaseCardLive do
             options:
               Game.Card.effect_types() |> Map.keys() |> Enum.map(&{String.capitalize(&1), &1})
           },
-          value: %{
-            module: GameWeb.Admin.Fields.EffectField,
-            label: "Parameters"
+          aoe: %{
+            module: Backpex.Fields.Boolean,
+            label: "AoE"
+          },
+          range: %{
+            module: Backpex.Fields.Number,
+            label: "Blast Radius"
           },
           target_formula: %{
             module: GameWeb.Admin.Fields.FormulaField,
             label: "Target Formula"
+          },
+          value: %{
+            module: GameWeb.Admin.Fields.EffectField,
+            label: "Parameters"
           }
         ]
       }

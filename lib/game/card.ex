@@ -158,18 +158,75 @@ defmodule Game.Card do
           # resolve_effect_target runs on the raw effect (before get_structured_effect strips
           # target_formula), so we use the original `effect` from the outer closure.
           effective_target = resolve_effect_target(effect, current_target, combat_state)
-          # Formula context always uses the card's selected target for directional variables
-          # (push_delta, pull_delta, etc.), even when the effect itself targets someone else.
-          resolved =
-            resolve_effect_value(resolved, current_target, combat_state, cast_distance)
+          aoe? = Map.get(effect, :aoe) || Map.get(effect, "aoe")
+          aoe_range = Map.get(effect, :range) || Map.get(effect, "range") || 1
 
-          new_combat = CardEffect.process(resolved, effective_target, combat_state)
-          new_anim = CardEffect.animate(resolved)
-          {new_combat, if(new_anim, do: [new_anim | anims], else: anims)}
+          if aoe? do
+            # Skip pre-resolution: AoE effects resolve formulas per-target inside apply_aoe_effect,
+            # using blast-relative context (e.g. angle_push_from_blast).
+            {new_combat, new_anims} =
+              apply_aoe_effect(resolved, aoe_range, effective_target, combat_state, cast_distance)
+
+            {new_combat, Enum.reverse(new_anims) ++ anims}
+          else
+            # Formula context always uses the card's selected target for directional variables
+            # (push_delta, pull_delta, etc.), even when the effect itself targets someone else.
+            resolved = resolve_effect_value(resolved, current_target, combat_state, cast_distance)
+            new_combat = CardEffect.process(resolved, effective_target, combat_state)
+            new_anim = CardEffect.animate(resolved)
+            {new_combat, if(new_anim, do: [new_anim | anims], else: anims)}
+          end
       end
     end)
     |> then(fn {combat, anims} -> {combat, Enum.reverse(anims)} end)
   end
+
+  defp apply_aoe_effect(effect, radius, blast_origin, combat_state, cast_distance) do
+    origin_pos = if is_struct(blast_origin), do: blast_origin.position, else: blast_origin
+
+    targets =
+      Grid.tiles_in_range(combat_state.grid, origin_pos, radius || 1)
+      |> Enum.flat_map(fn pos ->
+        case Grid.get_object(combat_state.grid, pos) do
+          {:ok, %Game.Character{} = char} -> [char]
+          _ -> []
+        end
+      end)
+
+    Enum.reduce(targets, {combat_state, []}, fn char_target, {cs, anims} ->
+      # Refresh from queue so prior effects in this AoE loop (e.g. damage) aren't undone.
+      fresh_target = refresh_target(char_target, cs)
+      # Expose blast-relative direction vectors so formulas can push away from the blast origin
+      # rather than away from the caster.
+      blast_context = build_blast_context(origin_pos, fresh_target, cs)
+      resolved_for_target = resolve_effect_value(effect, fresh_target, cs, cast_distance, blast_context)
+      new_cs = CardEffect.process(resolved_for_target, fresh_target, cs)
+      anim = CardEffect.animate(resolved_for_target)
+      {new_cs, if(anim, do: [anim | anims], else: anims)}
+    end)
+    |> then(fn {cs, anims} -> {cs, Enum.reverse(anims)} end)
+  end
+
+  defp build_blast_context(blast_pos, target, combat_state) when is_struct(target) do
+    {dq, dr, ds} = Grid.direction_toward(combat_state.grid, blast_pos, target.position)
+    push = %{"q" => dq, "r" => dr, "s" => ds}
+    pull = %{"q" => -dq, "r" => -dr, "s" => -ds}
+
+    angle_push =
+      Enum.find_index(Grid.hex_directions(), &(&1 == {dq, dr, ds}))
+
+    angle_pull =
+      Enum.find_index(Grid.hex_directions(), &(&1 == {-dq, -dr, -ds}))
+
+    %{
+      "push_delta_from_blast" => push,
+      "pull_delta_from_blast" => pull,
+      "angle_push_from_blast" => angle_push,
+      "angle_pull_from_blast" => angle_pull
+    }
+  end
+
+  defp build_blast_context(_blast_pos, _target, _combat_state), do: %{}
 
   defp refresh_target(target, _combat_state) when is_tuple(target), do: target
 
@@ -193,13 +250,15 @@ defmodule Game.Card do
 
   defp resolve_effect_target(_effect, target, _combat_state), do: target
 
-  defp resolve_effect_value(effect, target, combat_state, cast_distance) do
+  defp resolve_effect_value(effect, target, combat_state, cast_distance, extra_context \\ %{}) do
     params = CardEffect.params(effect)
 
     if Enum.any?(params, fn p ->
          Map.get(effect, String.to_existing_atom(p)) |> is_map()
        end) do
-      context = build_effect_context(target, combat_state, cast_distance)
+      context =
+        build_effect_context(target, combat_state, cast_distance)
+        |> Map.merge(extra_context)
 
       Enum.reduce(params, effect, fn param, acc ->
         key = String.to_existing_atom(param)

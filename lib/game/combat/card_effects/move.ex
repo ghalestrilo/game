@@ -15,8 +15,8 @@ defmodule Game.Combat.CardEffects.Move do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Move
 
-    def process(%Move{angle: angle, distance: distance}, target, %CombatState{} = combat_state) do
-
+    def process(%Move{angle: angle, distance: distance}, target, %CombatState{} = combat_state)
+        when not is_nil(angle) and is_integer(angle) do
       {dq, dr, ds} = Grid.direction_from_angle(angle)
       new_pos = {target.position |> elem(0) |> Kernel.+(dq * distance),
                  target.position |> elem(1) |> Kernel.+(dr * distance),
@@ -37,6 +37,8 @@ defmodule Game.Combat.CardEffects.Move do
         combat_state
       end
     end
+
+    def process(%Move{}, _target, %CombatState{} = combat_state), do: combat_state
 
     # TODO: we need to implement this to avoid issues with "cast_distance" not moving the target.
     def first_unblocked_tile() do
