@@ -22,74 +22,8 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import {Hooks as BackpexHooks} from "backpex"
-
-// Individual class tokens the server controls via data-tile-classes.
-// Keep in sync with @overlay_classes, @movement_class, @player_pos_class in combat_live.ex.
-const SERVER_CLASSES = [
-  "ring-2", "ring-inset", "ring-error/70", "bg-error/5",
-  "opacity-40",
-  "bg-warning/10",
-  "!bg-success/30",
-  "blast-preview"
-]
-
-const BoardTileClasses = {
-  mounted()  { this._applyAll(); this._bindHover() },
-  updated()  { this._applyAll() },
-
-  _tiles() {
-    const map = {}
-    this.el.querySelectorAll("[data-coord]").forEach(el => { map[el.dataset.coord] = el })
-    return map
-  },
-
-  _applyAll() {
-    const classes = JSON.parse(this.el.dataset.tileClasses || "{}")
-    const tiles = this._tiles()
-    Object.values(tiles).forEach(el => el.classList.remove(...SERVER_CLASSES))
-    Object.entries(classes).forEach(([coord, cls]) => tiles[coord]?.classList.add(...cls))
-  },
-
-  _bindHover() {
-    this.el.addEventListener("mouseover", e => {
-      const tile = e.target.closest("[data-coord]")
-      if (!tile) return
-      const blastMap = JSON.parse(this.el.dataset.blastMap || "{}")
-      const tiles = this._tiles()
-      this.el.querySelectorAll(".blast-preview").forEach(el => el.classList.remove("blast-preview"))
-      ;(blastMap[tile.dataset.coord] || []).forEach(c => tiles[c]?.classList.add("blast-preview"))
-    })
-
-    this.el.addEventListener("mouseleave", () => {
-      this.el.querySelectorAll(".blast-preview").forEach(el => el.classList.remove("blast-preview"))
-    })
-  }
-}
-
-const CharacterEffects = {
-  mounted() {
-    window.addEventListener("phx:hit", (e) => {
-      if (e.detail.id !== this.el.dataset.characterId) return
-      const color = e.detail.color || "yellow"
-      const colorClass = `character-hit-${color}`
-      this.el.classList.remove("character-hit", "character-hit-red", "character-hit-green", "character-hit-blue", "character-hit-yellow")
-      void this.el.offsetWidth // reflow to restart animation
-      this.el.classList.add("character-hit", colorClass)
-      this.el.addEventListener("animationend", () => {
-        this.el.classList.remove("character-hit", colorClass)
-      }, {once: true})
-    })
-
-    window.addEventListener("phx:float", (e) => {
-      if (e.detail.id !== this.el.dataset.characterId) return
-      const el = document.createElement("span")
-      el.textContent = e.detail.label
-      el.className = `floating-number ${e.detail.color === "red" ? "text-red-800" : "text-green-800"}`
-      this.el.appendChild(el)
-      el.addEventListener("animationend", () => el.remove(), {once: true})
-    })
-  }
-}
+import BoardTileClasses from "./hooks/BoardTileClasses"
+import CharacterEffects from "./hooks/CharacterEffects"
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
