@@ -51,6 +51,10 @@
 
 @theme {
   --color-brand: #FD4F00;
+  --color-common: oklch(55% 0.01 250);
+  --color-uncommon: oklch(60% 0.15 155);
+  --color-rare: oklch(60% 0.18 250);
+  --color-legendary: oklch(78% 0.18 80);
 }
 
 /* Alerts and form errors */

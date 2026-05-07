@@ -644,9 +644,10 @@ defmodule GameWeb.CoreComponents do
     ~H"""
     <div
       class={[
-        "rounded-lg border border-base-300 bg-base-100 shadow-md w-72 flex flex-col p-4 transition-[all] duration-140 ease-in-out
+        "rounded-lg border-2 bg-base-100 shadow-md w-72 flex flex-col p-4 transition-[all] ease-in-out
         hover:-mt-4 hover:mb-4
         ",
+        rarity_border_class(Map.get(@card, :rarity)),
         if(@selected, do: "!bg-yellow-800 -mt-4 mb-4", else: ""),
         if(@disabled, do: "opacity-40 cursor-not-allowed pointer-events-none", else: "")
       ]}
@@ -655,6 +656,7 @@ defmodule GameWeb.CoreComponents do
       phx-value-card_index={@index}
       phx-target={@click_target}
     >
+      <div class={["h-1 rounded-t-sm -mx-4 -mt-4 mb-3", rarity_bar_class(Map.get(@card, :rarity))]}></div>
       <div class="flex items-center justify-between mb-2">
         <span class="font-bold text-sm text-base-content">{@card.name}</span>
         <div class="flex gap-2 items-center">
@@ -680,6 +682,18 @@ defmodule GameWeb.CoreComponents do
     </div>
     """
   end
+
+  defp rarity_border_class(:common), do: "border-common"
+  defp rarity_border_class(:uncommon), do: "border-uncommon"
+  defp rarity_border_class(:rare), do: "border-rare"
+  defp rarity_border_class(:legendary), do: "border-legendary"
+  defp rarity_border_class(_), do: "border-base-300"
+
+  defp rarity_bar_class(:common), do: "bg-common"
+  defp rarity_bar_class(:uncommon), do: "bg-uncommon"
+  defp rarity_bar_class(:rare), do: "bg-rare"
+  defp rarity_bar_class(:legendary), do: "bg-legendary"
+  defp rarity_bar_class(_), do: "bg-base-300"
 
   # ----------------------------------------------------------------------------------------------------------------------------------------
   # ----------------------------------------------------------------------------------------------------------------------------------------
