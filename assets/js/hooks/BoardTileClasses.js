@@ -7,7 +7,11 @@ const SERVER_CLASSES = [
 ]
 
 const BoardTileClasses = {
-  mounted()  { this._applyAll(); this._bindHover() },
+  mounted() {
+    this._applyAll()
+    this._bindHover()
+    this.handleEvent("highlight-tile", ({ coord }) => this._highlightCoord(coord))
+  },
   updated()  { this._applyAll() },
 
   _tiles() {
@@ -23,14 +27,18 @@ const BoardTileClasses = {
     Object.entries(classes).forEach(([coord, cls]) => tiles[coord]?.classList.add(...cls))
   },
 
+  _highlightCoord(coord) {
+    const blastMap = JSON.parse(this.el.dataset.blastMap || "{}")
+    const tiles = this._tiles()
+    this.el.querySelectorAll(".blast-preview").forEach(el => el.classList.remove("blast-preview"))
+    ;(blastMap[coord] || [coord]).forEach(c => tiles[c]?.classList.add("blast-preview"))
+  },
+
   _bindHover() {
     this.el.addEventListener("mouseover", e => {
       const tile = e.target.closest("[data-coord]")
       if (!tile) return
-      const blastMap = JSON.parse(this.el.dataset.blastMap || "{}")
-      const tiles = this._tiles()
-      this.el.querySelectorAll(".blast-preview").forEach(el => el.classList.remove("blast-preview"))
-      ;(blastMap[tile.dataset.coord] || []).forEach(c => tiles[c]?.classList.add("blast-preview"))
+      this._highlightCoord(tile.dataset.coord)
     })
 
     this.el.addEventListener("mouseleave", () => {

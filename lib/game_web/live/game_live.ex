@@ -4,6 +4,16 @@ defmodule GameWeb.GameLive do
 
   alias Game.{Lobby, Character, Content}
 
+  @move_directions %{
+    "d" => {1, 0, -1},
+    "a" => {-1, 0, 1},
+    "z" => {-1, 1, 0},
+    "e" => {1, -1, 0},
+    "q" => {0, -1, 1},
+    "c" => {0, 1, -1}
+  }
+
+
   @impl true
   def mount(params, _session, socket) do
     mode = socket.assigns.live_action
@@ -19,7 +29,8 @@ defmodule GameWeb.GameLive do
          current_player: nil,
          action_log: [],
          modal: nil,
-         mode: mode
+         mode: mode,
+         keyboard_target_index: 0
        )}
     end
   end
@@ -49,7 +60,8 @@ defmodule GameWeb.GameLive do
            current_player: current_player,
            action_log: [],
            modal: nil,
-           mode: :pvp
+           mode: :pvp,
+           keyboard_target_index: 0
          )}
     end
   end
@@ -80,7 +92,8 @@ defmodule GameWeb.GameLive do
          current_player: nil,
          action_log: [],
          modal: nil,
-         mode: :campaign
+         mode: :campaign,
+         keyboard_target_index: 0
        )}
     end
   end
@@ -102,7 +115,8 @@ defmodule GameWeb.GameLive do
        current_player: nil,
        action_log: [],
        modal: nil,
-       mode: :sandbox
+       mode: :sandbox,
+       keyboard_target_index: 0
      )}
   end
 
@@ -148,19 +162,62 @@ defmodule GameWeb.GameLive do
 
       Game.process_action(socket.assigns.game_pid, {:pick_card, player, card})
 
-      {:noreply, update(socket, :action_log, &[action | &1])}
+      {:noreply, socket |> update(:action_log, &[action | &1]) |> assign(keyboard_target_index: 0)}
     end
   end
 
   # In your LiveView module
-  def handle_event("handle_keys", %{"key" => number}, socket) when number in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] do
-    handle_event("pick_card", %{"card_index" => to_string(String.to_integer(number) - 1)}, socket)
-    {:noreply, socket}
+  def handle_event("handle_keys", %{"key" => number}, socket) when number in ~w(1 2 3 4 5 6 7 8 9) do
+    current_player_hand_size = Enum.count(socket.assigns.game_state.combat.current_turn.player.cards.hand)
+    handle_event("pick_card", %{"card_index" => to_string(min(String.to_integer(number), current_player_hand_size) - 1)}, socket)
+    {:noreply, socket |> assign(keyboard_index_target: 0)}
   end
 
   def handle_event("handle_keys", %{"key" => "Enter"}, socket) do
     handle_event("skip_turn", %{}, socket)
     {:noreply, socket}
+  end
+
+  def handle_event("handle_keys", %{"key" => key}, %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket)
+      when key in ["s", "w"] do
+    targets = keyboard_targets(combat)
+    count = length(targets)
+
+    if count == 0 do
+      {:noreply, socket}
+    else
+      delta = if key == "s", do: 1, else: -1
+      new_index = rem(socket.assigns.keyboard_target_index + delta + count, count)
+      {_queue_index, target} = Enum.at(targets, new_index)
+
+      socket =
+        socket
+        |> assign(keyboard_target_index: new_index)
+        |> push_event("highlight-tile", %{coord: encode_coord(target.position)})
+
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("handle_keys", %{"key" => " "}, %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket) do
+    targets = keyboard_targets(combat)
+    dbg(socket.assigns.keyboard_target_index)
+    result = Enum.at(targets, socket.assigns.keyboard_target_index)
+
+    if result do
+      {_queue_index, target} = result
+      handle_event("interact", %{"target_character_id" => to_string(target.id)}, socket)
+    else
+      {:noreply, socket}
+    end
+  end
+
+  def handle_event("handle_keys", %{"key" => key}, %{assigns: %{game_state: %{combat: %{state: :running} = combat}}} = socket)
+      when is_map_key(@move_directions, key) do
+    {dq, dr, ds} = @move_directions[key]
+    {q, r, s} = combat.current_turn.player.position
+    target = "#{q + dq}_#{r + dr}_#{s + ds}"
+    handle_event("interact", %{"target_position" => target}, socket)
   end
 
   def handle_event("handle_keys", %{"key" => key}, socket) do
@@ -418,5 +475,18 @@ defmodule GameWeb.GameLive do
 
   defp parse_position(str) do
     str |> String.split("_") |> Enum.map(&String.to_integer/1) |> List.to_tuple()
+  end
+
+  defp encode_coord({q, r, s}), do: "#{q}_#{r}_#{s}"
+
+  defp keyboard_targets(combat) do
+    card = combat.current_turn.card
+    {overlay, _} = Game.Card.build_tile_overlay(card, combat)
+    valid_coords = overlay |> Enum.filter(&match?({_, :valid}, &1)) |> MapSet.new(fn {coord, _} -> coord end)
+
+    Game.CombatState.get_current_queue(combat)
+    |> Enum.with_index()
+    |> Enum.filter(fn {character, _i} -> MapSet.member?(valid_coords, character.position) end)
+    |> Enum.map(fn {character, i} -> {i, character} end)
   end
 end
