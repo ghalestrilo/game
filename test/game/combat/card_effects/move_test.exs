@@ -106,10 +106,11 @@ defmodule Game.Combat.CardEffects.MoveTest do
         combat
         | grid: %{
             combat.grid
-            | tiles: Map.put(combat.grid.tiles, {1, 0, -1}, %{
-                terrain: :plain,
-                occupied_by: adjacent_mage
-              })
+            | tiles:
+                Map.put(combat.grid.tiles, {1, 0, -1}, %{
+                  terrain: :plain,
+                  occupied_by: adjacent_mage
+                })
           },
           queue: [adjacent_mage],
           __constants__: %{players: [fighter, adjacent_mage]}
@@ -175,10 +176,11 @@ defmodule Game.Combat.CardEffects.MoveTest do
         combat
         | grid: %{
             combat.grid
-            | tiles: Map.put(combat.grid.tiles, {1, 0, -1}, %{
-                terrain: :plain,
-                occupied_by: blocker
-              })
+            | tiles:
+                Map.put(combat.grid.tiles, {1, 0, -1}, %{
+                  terrain: :plain,
+                  occupied_by: blocker
+                })
           },
           __constants__: %{players: [fighter, mage, blocker]},
           queue: [mage, blocker]
@@ -281,7 +283,11 @@ defmodule Game.Combat.CardEffects.MoveTest do
       {:ok, combat: combat, fighter: fighter, enemy: enemy}
     end
 
-    test "caster moves up to the enemy (one tile away from it)", %{combat: combat, fighter: fighter, enemy: enemy} do
+    test "caster moves up to the enemy (one tile away from it)", %{
+      combat: combat,
+      fighter: fighter,
+      enemy: enemy
+    } do
       {updated, _anims} = Game.Card.process_card(combat, enemy, charge_strike_card(fighter.id))
       assert updated.current_turn.player.position == {2, 0, -2}
     end

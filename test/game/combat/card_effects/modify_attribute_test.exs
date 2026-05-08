@@ -60,26 +60,44 @@ defmodule Game.Combat.CardEffects.ModifyAttributeTest do
 
     test "stacks additive modifiers" do
       fighter = %Character{
-        id: 1, max_hp: 20, max_ap: 3, movement_range: 2, hand_size: 5,
-        damage_multiplier: 1.0, hp: 20, ap: 3, position: {0, 0, 0},
-        team: :team1, cards: %{draw: [], hand: [], discard: []},
+        id: 1,
+        max_hp: 20,
+        max_ap: 3,
+        movement_range: 2,
+        hand_size: 5,
+        damage_multiplier: 1.0,
+        hp: 20,
+        ap: 3,
+        position: {0, 0, 0},
+        team: :team1,
+        cards: %{draw: [], hand: [], discard: []},
         status_effects: [
           %{type: :modify_attribute, attribute: "max_hp", value: 5, duration: 2},
           %{type: :modify_attribute, attribute: "max_hp", value: 3, duration: nil}
         ]
       }
+
       assert Character.effective_attribute(fighter, "max_hp") == 28
     end
 
     test "only applies modifiers matching the requested attribute" do
       fighter = %Character{
-        id: 1, max_hp: 20, max_ap: 3, movement_range: 2, hand_size: 5,
-        damage_multiplier: 1.0, hp: 20, ap: 3, position: {0, 0, 0},
-        team: :team1, cards: %{draw: [], hand: [], discard: []},
+        id: 1,
+        max_hp: 20,
+        max_ap: 3,
+        movement_range: 2,
+        hand_size: 5,
+        damage_multiplier: 1.0,
+        hp: 20,
+        ap: 3,
+        position: {0, 0, 0},
+        team: :team1,
+        cards: %{draw: [], hand: [], discard: []},
         status_effects: [
           %{type: :modify_attribute, attribute: "max_ap", value: 2, duration: 1}
         ]
       }
+
       assert Character.effective_attribute(fighter, "max_hp") == 20
       assert Character.effective_attribute(fighter, "max_ap") == 5
     end
@@ -90,12 +108,14 @@ defmodule Game.Combat.CardEffects.ModifyAttributeTest do
       combat: combat,
       fighter: fighter
     } do
-      debuffed = Character.add_status_effect(fighter, %{
-        type: :modify_attribute,
-        attribute: "movement_range",
-        value: -1,
-        duration: 2
-      })
+      debuffed =
+        Character.add_status_effect(fighter, %{
+          type: :modify_attribute,
+          attribute: "movement_range",
+          value: -1,
+          duration: 2
+        })
+
       combat = %{combat | current_turn: %{combat.current_turn | player: debuffed}}
       # fighter movement_range: 2, modifier: -1 → effective 1; tile at distance 2 should fail
       result = Game.Combat.process_action(combat, {:move, debuffed, {2, 0, -2}})
@@ -106,12 +126,13 @@ defmodule Game.Combat.CardEffects.ModifyAttributeTest do
       combat: combat,
       fighter: fighter
     } do
-      buffed = Character.add_status_effect(fighter, %{
-        type: :modify_attribute,
-        attribute: "movement_range",
-        value: 1,
-        duration: 2
-      })
+      buffed =
+        Character.add_status_effect(fighter, %{
+          type: :modify_attribute,
+          attribute: "movement_range",
+          value: 1,
+          duration: 2
+        })
 
       grid = %Grid{
         tiles: %{
@@ -122,7 +143,13 @@ defmodule Game.Combat.CardEffects.ModifyAttributeTest do
         }
       }
 
-      combat = %{combat | grid: grid, queue: [], current_turn: %{combat.current_turn | player: buffed}}
+      combat = %{
+        combat
+        | grid: grid,
+          queue: [],
+          current_turn: %{combat.current_turn | player: buffed}
+      }
+
       # fighter movement_range: 2, modifier: +1 → effective 3; distance-3 tile should succeed
       assert {:ok, _} = Game.Combat.process_action(combat, {:move, buffed, {3, 0, -3}})
     end
@@ -133,14 +160,17 @@ defmodule Game.Combat.CardEffects.ModifyAttributeTest do
       combat: combat,
       fighter: fighter
     } do
-      buffed = Character.add_status_effect(fighter, %{
-        type: :modify_attribute,
-        attribute: "hand_size",
-        value: 2,
-        duration: nil
-      })
+      buffed =
+        Character.add_status_effect(fighter, %{
+          type: :modify_attribute,
+          attribute: "hand_size",
+          value: 2,
+          duration: nil
+        })
+
       # fighter is current player; rotate so mage goes first, then fighter gets setup_player_turn
       combat = %{combat | current_turn: %{combat.current_turn | player: buffed}, queue: [buffed]}
+
       next =
         combat
         |> CombatState.rotate_queue()
@@ -156,12 +186,15 @@ defmodule Game.Combat.CardEffects.ModifyAttributeTest do
   describe "max_hp integration" do
     test "regen is capped at effective max_hp when buffed", %{combat: combat, fighter: fighter} do
       fighter = %{fighter | max_hp: 20}
-      buffed = Character.add_status_effect(fighter, %{
-        type: :modify_attribute,
-        attribute: "max_hp",
-        value: 10,
-        duration: nil
-      })
+
+      buffed =
+        Character.add_status_effect(fighter, %{
+          type: :modify_attribute,
+          attribute: "max_hp",
+          value: 10,
+          duration: nil
+        })
+
       # Also give regen to tick during setup_player_turn
       buffed = Character.add_status_effect(buffed, %{type: :regen, heal: 100, value: 2})
       buffed = %{buffed | hp: 1}
@@ -183,12 +216,14 @@ defmodule Game.Combat.CardEffects.ModifyAttributeTest do
 
   describe "duration countdown via setup_player_turn" do
     test "timed modifier decrements duration each turn", %{combat: combat, fighter: fighter} do
-      modified = Character.add_status_effect(fighter, %{
-        type: :modify_attribute,
-        attribute: "max_hp",
-        value: 5,
-        duration: 2
-      })
+      modified =
+        Character.add_status_effect(fighter, %{
+          type: :modify_attribute,
+          attribute: "max_hp",
+          value: 5,
+          duration: 2
+        })
+
       combat = %{combat | current_turn: %{combat.current_turn | player: modified}}
 
       next =
@@ -203,12 +238,14 @@ defmodule Game.Combat.CardEffects.ModifyAttributeTest do
     end
 
     test "timed modifier is removed when duration reaches 0", %{combat: combat, fighter: fighter} do
-      modified = Character.add_status_effect(fighter, %{
-        type: :modify_attribute,
-        attribute: "max_hp",
-        value: 5,
-        duration: 1
-      })
+      modified =
+        Character.add_status_effect(fighter, %{
+          type: :modify_attribute,
+          attribute: "max_hp",
+          value: 5,
+          duration: 1
+        })
+
       combat = %{combat | current_turn: %{combat.current_turn | player: modified}}
 
       next =
@@ -225,12 +262,14 @@ defmodule Game.Combat.CardEffects.ModifyAttributeTest do
       combat: combat,
       fighter: fighter
     } do
-      modified = Character.add_status_effect(fighter, %{
-        type: :modify_attribute,
-        attribute: "max_hp",
-        value: 5,
-        duration: nil
-      })
+      modified =
+        Character.add_status_effect(fighter, %{
+          type: :modify_attribute,
+          attribute: "max_hp",
+          value: 5,
+          duration: nil
+        })
+
       combat = %{combat | current_turn: %{combat.current_turn | player: modified}}
 
       next =
@@ -249,11 +288,23 @@ defmodule Game.Combat.CardEffects.ModifyAttributeTest do
 
   describe "protocol contracts" do
     test "get_description/1 with duration" do
-      assert is_binary(CardEffect.get_description(%ModifyAttribute{attribute: "max_hp", value: 5, duration: 2}))
+      assert is_binary(
+               CardEffect.get_description(%ModifyAttribute{
+                 attribute: "max_hp",
+                 value: 5,
+                 duration: 2
+               })
+             )
     end
 
     test "get_description/1 permanent" do
-      assert is_binary(CardEffect.get_description(%ModifyAttribute{attribute: "max_ap", value: -1, duration: nil}))
+      assert is_binary(
+               CardEffect.get_description(%ModifyAttribute{
+                 attribute: "max_ap",
+                 value: -1,
+                 duration: nil
+               })
+             )
     end
 
     test "get_icon/1 returns a string" do

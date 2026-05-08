@@ -3,7 +3,11 @@ defmodule Game.Combat.CardEffects.ModifyAttribute do
   alias Game.Character
 
   @derive Jason.Encoder
-  defstruct type: :modify_attribute, attribute: "max_hp", value: 0, duration: nil, value_label: nil
+  defstruct type: :modify_attribute,
+            attribute: "max_hp",
+            value: 0,
+            duration: nil,
+            value_label: nil
 
   @type t() :: %__MODULE__{
           type: atom(),
@@ -16,9 +20,18 @@ defmodule Game.Combat.CardEffects.ModifyAttribute do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.ModifyAttribute
 
-    def process(%ModifyAttribute{attribute: attr, value: v, duration: d}, target, %CombatState{} = combat_state) do
+    def process(
+          %ModifyAttribute{attribute: attr, value: v, duration: d},
+          target,
+          %CombatState{} = combat_state
+        ) do
       updated_target =
-        Character.add_status_effect(target, %{type: :modify_attribute, attribute: attr, value: v, duration: d})
+        Character.add_status_effect(target, %{
+          type: :modify_attribute,
+          attribute: attr,
+          value: v,
+          duration: d
+        })
 
       CombatState.update_target(combat_state, target, updated_target)
     end

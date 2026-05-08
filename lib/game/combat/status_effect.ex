@@ -11,7 +11,12 @@ defmodule Game.StatusEffect do
     :removal_condition
   ]
 
-  def get_display_text(%{type: :modify_attribute, value: value, duration: duration, attribute: attribute}) do
+  def get_display_text(%{
+        type: :modify_attribute,
+        value: value,
+        duration: duration,
+        attribute: attribute
+      }) do
     sign = if value > 0, do: "+", else: "-"
     "#{sign}#{value} #{attribute} (#{duration} turns)"
   end
@@ -22,11 +27,13 @@ defmodule Game.StatusEffect do
   end
 
   def get_display_text(effect) do
-      detail = effect
+    detail =
+      effect
       |> Map.drop([:type, :value_label, :__struct__])
       |> Map.reject(fn {_, v} -> is_nil(v) or v == 0 end)
       |> Enum.map_join(" ", fn {k, v} -> "#{k}:#{v}" end)
 
-      String.capitalize(Atom.to_string(effect.type)) <> if detail != "", do: " (#{detail})", else: ""
+    String.capitalize(Atom.to_string(effect.type)) <>
+      if detail != "", do: " (#{detail})", else: ""
   end
 end

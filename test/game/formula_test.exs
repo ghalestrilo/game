@@ -200,6 +200,7 @@ defmodule Game.FormulaTest do
         "operator" => "and",
         "0" => %{"operator" => "var", "0" => %{"value" => "target.occupied"}}
       }
+
       assert Formula.parse_params(params) == %{"and" => [%{"var" => "target.occupied"}]}
     end
   end

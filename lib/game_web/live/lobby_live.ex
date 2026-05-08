@@ -118,10 +118,10 @@ defmodule GameWeb.LobbyLive do
         </form>
         <form phx-change="select_team">
           <select name="team">
-              <%= for index <- 1..8 do %>
-                <option value={index} selected={my_player.team == index}>Team {index}</option>
-              <% end %>
-            </select>
+            <%= for index <- 1..8 do %>
+              <option value={index} selected={my_player.team == index}>Team {index}</option>
+            <% end %>
+          </select>
         </form>
         <button
           phx-click="toggle_ready"

@@ -311,7 +311,12 @@ defmodule Game.Combat.CardEffects.DamageTest do
         id: 99,
         name: "Exsanguinate",
         cost: 0,
-        effects: [%{"type" => "damage", "value" => %{"-" => [%{"var" => "caster.max_hp"}, %{"var" => "caster.hp"}]}}],
+        effects: [
+          %{
+            "type" => "damage",
+            "value" => %{"-" => [%{"var" => "caster.max_hp"}, %{"var" => "caster.hp"}]}
+          }
+        ],
         targeting: %{"type" => "character"}
       }
 
@@ -333,7 +338,12 @@ defmodule Game.Combat.CardEffects.DamageTest do
         id: 99,
         name: "Exsanguinate",
         cost: 0,
-        effects: [%{"type" => "damage", "value" => %{"-" => [%{"var" => "caster.max_hp"}, %{"var" => "caster.hp"}]}}],
+        effects: [
+          %{
+            "type" => "damage",
+            "value" => %{"-" => [%{"var" => "caster.max_hp"}, %{"var" => "caster.hp"}]}
+          }
+        ],
         targeting: %{"type" => "character"}
       }
 

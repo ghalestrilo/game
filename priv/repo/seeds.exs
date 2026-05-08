@@ -139,14 +139,19 @@ cards = [
     name: "Evade",
     headline: "Quickly move out of harm's way",
     ap: 1,
-    effects: [%{type: "dodge", value: 1}, %{type: "move", value: %{"angle" => %{"var" => "angle_toward_caster"}, "distance" => -1}}],
+    effects: [
+      %{type: "dodge", value: 1},
+      %{type: "move", value: %{"angle" => %{"var" => "angle_toward_caster"}, "distance" => -1}}
+    ],
     rarity: :uncommon
   },
   %{
     name: "Pull",
     headline: "Drag the target one tile toward you",
     ap: 1,
-    effects: [%{type: "move", value: %{"angle" => %{"var" => "angle_toward_caster"}, "distance" => 1}}],
+    effects: [
+      %{type: "move", value: %{"angle" => %{"var" => "angle_toward_caster"}, "distance" => 1}}
+    ],
     rarity: :uncommon
   },
   %{

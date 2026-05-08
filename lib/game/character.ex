@@ -262,6 +262,7 @@ defmodule Game.Character do
 
   def effective_attribute(%__MODULE__{} = character, attr) when is_binary(attr) do
     base = Map.get(character, String.to_existing_atom(attr))
+
     Enum.reduce(character.status_effects, base, fn
       %{type: :modify_attribute, attribute: ^attr, value: v}, acc -> acc + v
       _, acc -> acc

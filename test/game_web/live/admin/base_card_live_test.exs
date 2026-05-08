@@ -737,7 +737,10 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
           headline: "test",
           rarity: :common,
           effects: [
-            %{type: "move", value: %{"angle" => %{"var" => "angle_toward_caster"}, "distance" => 1}}
+            %{
+              type: "move",
+              value: %{"angle" => %{"var" => "angle_toward_caster"}, "distance" => 1}
+            }
           ]
         })
 

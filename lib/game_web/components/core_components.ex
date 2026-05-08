@@ -600,6 +600,7 @@ defmodule GameWeb.CoreComponents do
     <span class={[@name, @class]} />
     """
   end
+
   # TODO: Move all below to GameWeb.AdminComponents
   attr :card, Game.BaseCards.BaseCard
 
@@ -609,15 +610,23 @@ defmodule GameWeb.CoreComponents do
       <li
         :for={
           {effect, index} <-
-            @card.effects |> Enum.filter(&Game.Card.effect_implemented?/1) |> Enum.map(&Game.Card.get_structured_effect/1) |> Enum.with_index()
+            @card.effects
+            |> Enum.filter(&Game.Card.effect_implemented?/1)
+            |> Enum.map(&Game.Card.get_structured_effect/1)
+            |> Enum.with_index()
         }
-        class={["flex gap-1 card bg-amber-500/10 p-2",
-        (if Map.has_key?(effect, :value) and not is_map(effect.value), do: "flex-row items-center justify-between")
+        class={[
+          "flex gap-1 card bg-amber-500/10 p-2",
+          if(Map.has_key?(effect, :value) and not is_map(effect.value),
+            do: "flex-row items-center justify-between"
+          )
         ]}
       >
-        <span >
+        <span>
           <.icon name={Game.Combat.CardEffect.get_icon(effect)} class="w-3 h-3" />
-          <%= if effect.type === :modify_attribute, do: Map.get(effect, :attribute, nil), else: effect.type %>
+          {if effect.type === :modify_attribute,
+            do: Map.get(effect, :attribute, nil),
+            else: effect.type}
         </span>
         {GameWeb.Components.FormulaTreeComponent.render(effect)}
       </li>
@@ -657,31 +666,39 @@ defmodule GameWeb.CoreComponents do
       phx-value-card_index={@index}
       phx-target={@click_target}
     >
-    <div class="bg-base-100 rounded-lg m-0.5 mt-2 p-4 h-[stretch]">
-      <div :if={false} class={["h-1 rounded-t-sm -mx-4 -mt-4 mb-3", rarity_bar_class(Map.get(@card, :rarity))]}></div>
-      <div class="flex items-center justify-between mb-2">
-        <span class="font-bold text-sm text-base-content">{@card.name}</span>
-        <div class="flex flex-col xl:flex-row gap-2 items-center">
-          <span
-            :if={Game.Card.is_one_time_use?(@card)}
-            class="text-xs bg-red-900/60 text-red-300 rounded px-2 py-0.5"
-            title="One-time use — this card is removed from your deck when played"
-          >
-            1×
-          </span>
-          <span :if={@card.range > 0} class="badge badge-xs badge-soft text-xs px-1 py-2 !bg-primary/40" title="Range">
-            <.icon name="hero-wifi-mini" class="inline-block w-3 h-3" /> {@card.range}
-          </span>
-          <span class="badge badge-xs badge-soft text-xs px-1 py-2 !bg-primary/40" title="Cost">
-            <.icon name="hero-bolt-mini" class="inline-block w-3 h-3" /> {@card.cost}
-          </span>
+      <div class="bg-base-100 rounded-lg m-0.5 mt-2 p-4 h-[stretch]">
+        <div
+          :if={false}
+          class={["h-1 rounded-t-sm -mx-4 -mt-4 mb-3", rarity_bar_class(Map.get(@card, :rarity))]}
+        >
+        </div>
+        <div class="flex items-center justify-between mb-2">
+          <span class="font-bold text-sm text-base-content">{@card.name}</span>
+          <div class="flex flex-col xl:flex-row gap-2 items-center">
+            <span
+              :if={Game.Card.is_one_time_use?(@card)}
+              class="text-xs bg-red-900/60 text-red-300 rounded px-2 py-0.5"
+              title="One-time use — this card is removed from your deck when played"
+            >
+              1×
+            </span>
+            <span
+              :if={@card.range > 0}
+              class="badge badge-xs badge-soft text-xs px-1 py-2 !bg-primary/40"
+              title="Range"
+            >
+              <.icon name="hero-wifi-mini" class="inline-block w-3 h-3" /> {@card.range}
+            </span>
+            <span class="badge badge-xs badge-soft text-xs px-1 py-2 !bg-primary/40" title="Cost">
+              <.icon name="hero-bolt-mini" class="inline-block w-3 h-3" /> {@card.cost}
+            </span>
+          </div>
+        </div>
+        <div class="mb-2 text-xs text-base-content/80 min-h-[3rem]">
+          {Map.get(@card, :headline)}
+          <.effect_list card={@card} />
         </div>
       </div>
-      <div class="mb-2 text-xs text-base-content/80 min-h-[3rem]">
-        {Map.get(@card, :headline)}
-        <.effect_list card={@card} />
-      </div>
-    </div>
     </div>
     """
   end

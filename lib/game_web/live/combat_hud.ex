@@ -36,7 +36,7 @@ defmodule GameWeb.CombatHUD do
             Win Match
           </button>
         </div>
-
+        
     <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
@@ -48,7 +48,7 @@ defmodule GameWeb.CombatHUD do
           current_player={@current_player}
         />
       </div>
-
+      
     <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
@@ -58,7 +58,7 @@ defmodule GameWeb.CombatHUD do
           </ul>
         </div>
       </div>
-
+      
     <!-- Card piles -->
       <%= if Map.get(assigns, :game_mode, nil) == :sandbox || (@game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id)) do %>
@@ -181,9 +181,11 @@ defmodule GameWeb.CombatHUD do
         <div class={["flex gap-1 mb-1 items-center", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span>{@character.name}</span>
           <span class="badge badge-soft badge-sm ml-auto">
-          <.icon name="hero-rectangle-stack-mini" class="size-4 px-0"/>
-          {Enum.count(@character.cards.draw)} / {Enum.count(@character.cards.hand)} / {Enum.count(@character.cards.discard)}
-        </span>
+            <.icon name="hero-rectangle-stack-mini" class="size-4 px-0" />
+            {Enum.count(@character.cards.draw)} / {Enum.count(@character.cards.hand)} / {Enum.count(
+              @character.cards.discard
+            )}
+          </span>
         </div>
         <% eff_max_hp = Game.Character.effective_attribute(@character, "max_hp") %>
         <div class={["flex gap-0.5 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
@@ -231,12 +233,15 @@ defmodule GameWeb.CombatHUD do
             class="bg-info max-w-[20px] flex-1 h-2 rounded-[2px]"
           />
         </div>
-        <div class={["flex flex-wrap gap-1 mt-1", if(@same_team, do: "justify-start", else: "justify-end")]}>
+        <div class={[
+          "flex flex-wrap gap-1 mt-1",
+          if(@same_team, do: "justify-start", else: "justify-end")
+        ]}>
           <span
             :for={effect <- Enum.reject(@character.status_effects, &(&1.type == :shield))}
             class="badge badge-base badge-xs height-fit max-h-unset !h-fit"
           >
-            <%= Game.StatusEffect.get_display_text(effect) %>
+            {Game.StatusEffect.get_display_text(effect)}
           </span>
         </div>
       </div>
@@ -254,7 +259,9 @@ defmodule GameWeb.CombatHUD do
   end
 
   defp same_team?(_character, nil), do: true
-  defp same_team?(character, current_player), do: to_string(character.team) == to_string(current_player.team)
+
+  defp same_team?(character, current_player),
+    do: to_string(character.team) == to_string(current_player.team)
 
   defp is_self?(_character, nil), do: false
   defp is_self?(character, current_player), do: character.id == current_player.id

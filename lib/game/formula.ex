@@ -176,20 +176,48 @@ defmodule Game.Formula do
       %{name: "state.queue", description: "Turn queue"},
       %{name: "pull_delta", description: "Hex direction from target toward caster (q/r/s map)"},
       %{name: "push_delta", description: "Hex direction from caster toward target (q/r/s map)"},
-      %{name: "push_delta_from_blast", description: "unit direction map {q,r,s} pointing away from blast toward the target"},
-      %{name: "pull_delta_from_blast", description: "unit direction map pointing from target toward blast"},
-      %{name: "angle_push_from_blast", description: "integer angle index (0–5) for pushing away from blast"},
-      %{name: "angle_pull_from_blast", description: "integer angle index for pulling toward blast"},
-      %{name: "angle_toward_target", description: "Hex angle (0–5) pointing from caster toward target"},
-      %{name: "angle_toward_caster", description: "Hex angle (0–5) pointing from target toward caster"},
-      %{name: "distance_from_caster", description: "Scalar hex distance between target and caster"},
-      %{name: "cast_distance", description: "Distance between caster and target at time of cast (frozen, unaffected by movement effects)"},
+      %{
+        name: "push_delta_from_blast",
+        description: "unit direction map {q,r,s} pointing away from blast toward the target"
+      },
+      %{
+        name: "pull_delta_from_blast",
+        description: "unit direction map pointing from target toward blast"
+      },
+      %{
+        name: "angle_push_from_blast",
+        description: "integer angle index (0–5) for pushing away from blast"
+      },
+      %{
+        name: "angle_pull_from_blast",
+        description: "integer angle index for pulling toward blast"
+      },
+      %{
+        name: "angle_toward_target",
+        description: "Hex angle (0–5) pointing from caster toward target"
+      },
+      %{
+        name: "angle_toward_caster",
+        description: "Hex angle (0–5) pointing from target toward caster"
+      },
+      %{
+        name: "distance_from_caster",
+        description: "Scalar hex distance between target and caster"
+      },
+      %{
+        name: "cast_distance",
+        description:
+          "Distance between caster and target at time of cast (frozen, unaffected by movement effects)"
+      },
       %{
         name: "type",
         description: "Type field of the current item (use inside 'some'/'filter'/'map')"
       },
       %{name: "current", description: "Current item in list (use inside 'reduce')"},
-      %{name: "current.value", description: "Current item's \"value\" in list (use inside 'reduce')"},
+      %{
+        name: "current.value",
+        description: "Current item's \"value\" in list (use inside 'reduce')"
+      },
       %{name: "accumulator", description: "Current accumulator value (use inside 'reduce')"}
     ]
   end

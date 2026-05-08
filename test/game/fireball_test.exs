@@ -52,15 +52,15 @@ defmodule Game.FireballTest do
   end
 
   defp build_combat do
-    caster    = make_char(1, {0, 0, 0}, :team1)
-    ally1     = make_char(2, {1, 0, -1}, :team1)
-    enemy1    = make_char(3, {2, 0, -2}, :team2)
-    enemy2    = make_char(4, {4, 0, -4}, :team2)
+    caster = make_char(1, {0, 0, 0}, :team1)
+    ally1 = make_char(2, {1, 0, -1}, :team1)
+    enemy1 = make_char(3, {2, 0, -2}, :team2)
+    enemy2 = make_char(4, {4, 0, -4}, :team2)
     bystander = make_char(5, {6, 0, -6}, :team2)
 
     grid = %Grid{
       tiles: %{
-        {0, 0, 0}  => %{terrain: :plain, occupied_by: caster},
+        {0, 0, 0} => %{terrain: :plain, occupied_by: caster},
         {1, 0, -1} => %{terrain: :plain, occupied_by: ally1},
         {2, 0, -2} => %{terrain: :plain, occupied_by: enemy1},
         {3, 0, -3} => %{terrain: :plain, occupied_by: nil},
@@ -248,11 +248,13 @@ defmodule Game.FireballTest do
       # enemy2 moved in direction {+1,0,-1} from blast — same direction as away from caster
       # (coincidence for this geometry), but the displacement is blast-determined:
       updated_enemy2 = find_in_queue(combat, enemy2)
+
       displacement = {
         elem(updated_enemy2.position, 0) - elem(enemy2.position, 0),
         elem(updated_enemy2.position, 1) - elem(enemy2.position, 1),
         elem(updated_enemy2.position, 2) - elem(enemy2.position, 2)
       }
+
       assert displacement == {1, 0, -1}
     end
 

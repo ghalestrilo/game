@@ -18,9 +18,11 @@ defmodule Game.Combat.CardEffects.Move do
     def process(%Move{angle: angle, distance: distance}, target, %CombatState{} = combat_state)
         when not is_nil(angle) and is_integer(angle) do
       {dq, dr, ds} = Grid.direction_from_angle(angle)
-      new_pos = {target.position |> elem(0) |> Kernel.+(dq * distance),
-                 target.position |> elem(1) |> Kernel.+(dr * distance),
-                 target.position |> elem(2) |> Kernel.+(ds * distance)}
+
+      new_pos =
+        {target.position |> elem(0) |> Kernel.+(dq * distance),
+         target.position |> elem(1) |> Kernel.+(dr * distance),
+         target.position |> elem(2) |> Kernel.+(ds * distance)}
 
       #  FIXME: use first_unblocked_tile
       if Map.has_key?(combat_state.grid.tiles, new_pos) and

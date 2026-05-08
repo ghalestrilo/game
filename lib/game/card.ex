@@ -199,7 +199,10 @@ defmodule Game.Card do
       # Expose blast-relative direction vectors so formulas can push away from the blast origin
       # rather than away from the caster.
       blast_context = build_blast_context(origin_pos, fresh_target, cs)
-      resolved_for_target = resolve_effect_value(effect, fresh_target, cs, cast_distance, blast_context)
+
+      resolved_for_target =
+        resolve_effect_value(effect, fresh_target, cs, cast_distance, blast_context)
+
       new_cs = CardEffect.process(resolved_for_target, fresh_target, cs)
       anim = CardEffect.animate(resolved_for_target)
       {new_cs, if(anim, do: [anim | anims], else: anims)}
@@ -610,7 +613,6 @@ defmodule Game.Card do
     end
   end
 
-
   def is_one_time_use?(%{effects: effects}) when is_list(effects) do
     Enum.any?(effects, fn effect ->
       Map.get(effect, :type) == "self_destruct"
@@ -620,5 +622,4 @@ defmodule Game.Card do
   def is_one_time_use?(card) do
     false
   end
-
 end

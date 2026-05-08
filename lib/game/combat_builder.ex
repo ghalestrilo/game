@@ -28,7 +28,10 @@ defmodule Game.CombatBuilder do
       |> Enum.max()
 
     grid =
-      Grid.new({max_radius + @default_grid_padding, max_radius + @default_grid_padding, max_radius + @default_grid_padding})
+      Grid.new(
+        {max_radius + @default_grid_padding, max_radius + @default_grid_padding,
+         max_radius + @default_grid_padding}
+      )
       |> then(fn g -> Enum.reduce(characters, g, &Grid.update_character(&2, &1)) end)
 
     %CombatState{

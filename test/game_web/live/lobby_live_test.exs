@@ -224,7 +224,10 @@ defmodule GameWeb.LobbyLiveTest do
       view |> element("form[phx-change='select_team']") |> render_change(%{"team" => team})
     end
 
-    test "players default to different teams", %{lobby_view1: lobby_view1, lobby_view2: lobby_view2} do
+    test "players default to different teams", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
       html1 = render(lobby_view1)
       html2 = render(lobby_view2)
       assert html1 =~ "Team 1"
