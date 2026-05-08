@@ -49,7 +49,7 @@ defmodule GameWeb.GameLive do
         Game.subscribe(lobby.game_pid)
 
         current_player =
-          lobby.players |> Enum.find(&(&1.id == user.id)) |> Map.put(:team, user.id)
+          lobby.players |> Enum.find(&(&1.id == user.id))
 
         {:ok,
          assign(socket,
