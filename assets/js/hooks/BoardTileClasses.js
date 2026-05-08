@@ -1,5 +1,6 @@
 const SERVER_CLASSES = [
-  "ring-2", "ring-inset", "ring-error/70", "bg-error/5",
+  "ring-2", "ring-inset", "ring-error/20", "bg-error/5",
+  "scale-[1.05]",
   "opacity-40",
   "bg-warning/10",
   "!bg-success/30",

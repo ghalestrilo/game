@@ -59,6 +59,7 @@
   }
 
   .blast-preview {
+    @apply scale-[1.05];
     background-color: oklch(from var(--color-error) l c h / 20%) !important;
   }
 

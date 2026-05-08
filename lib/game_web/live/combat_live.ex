@@ -163,7 +163,7 @@ defmodule GameWeb.CombatLive do
   # (no spaces) so classList.add(...tokens) works correctly in JS.
   # Keep in sync with SERVER_CLASSES in app.js.
   @overlay_classes %{
-    valid: ~w(ring-2 ring-inset ring-error/70 bg-error/5),
+    valid: ~w(ring-2 ring-inset ring-error/20 bg-error/5),
     invalid: ~w(opacity-40)
   }
   @movement_class ~w(bg-warning/10)
