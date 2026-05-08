@@ -674,7 +674,7 @@ defmodule GameWeb.CoreComponents do
         </div>
         <div class="flex items-center justify-between mb-2">
           <span class="font-bold text-sm text-base-content">{@card.name}</span>
-          <div class="flex flex-col xl:flex-row gap-2 items-center">
+          <div class="flex flex-col lg:flex-row gap-2 items-center">
             <span
               :if={Game.Card.is_one_time_use?(@card)}
               class="text-xs bg-red-900/60 text-red-300 rounded px-2 py-0.5"
