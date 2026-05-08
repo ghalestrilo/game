@@ -21,7 +21,7 @@ defmodule GameWeb.CombatHUD do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="fixed z-10 grid [grid-template-areas:'queue_._action'_'draw_hand_discard'] [grid-template-columns:280px_1fr_280px] [grid-template-rows:1fr_auto] gap-4 p-4 pointer-events-none origin-top-left  w-[133%] h-[133%] pb-12">
+    <div class="fixed z-10 grid [grid-template-areas:'queue_._action'_'draw_hand_discard'] [grid-template-columns:320px_1fr_280px] [grid-template-rows:1fr_auto] gap-4 p-4 pointer-events-none origin-top-left  w-[133%] h-[133%] pb-12">
       <div
         :if={@game_state}
         class="[grid-area:queue] bg-gray-800 self-start pointer-events-auto p-2 rounded"
@@ -133,8 +133,14 @@ defmodule GameWeb.CombatHUD do
   defp character_turn_queue(assigns) do
     ~H"""
     <div>
-      <% queue = Game.CombatState.get_current_queue(@combat) %>
-      <h3 class="text-base font-bold mb-2">Next up</h3>
+      <% [current | queue] = Game.CombatState.get_current_queue(@combat) %>
+      <h3 class="text-base font-bold mb-2">Current turn</h3>
+      <.character_queue_card
+        character={current}
+        current_player={@current_player}
+        current={true}
+      />
+      <h3 class="text-base font-bold mt-2">Next up</h3>
       <ul class="text-sm flex flex-col gap-3">
         <.character_queue_card
           :for={character <- Enum.filter(queue, &(&1 != nil))}
@@ -174,8 +180,6 @@ defmodule GameWeb.CombatHUD do
       <div class={["flex-1 min-w-0", if(@same_team, do: "items-start", else: "items-end text-end")]}>
         <div class={["flex gap-1 mb-1 items-center", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span>{@character.name}</span>
-          <span :if={@current} class="badge badge-success badge-xs ml-1">current</span>
-
           <span class="badge badge-soft badge-sm ml-auto">
           <.icon name="hero-rectangle-stack-mini" class="size-4 px-0"/>
           {Enum.count(@character.cards.draw)} / {Enum.count(@character.cards.hand)} / {Enum.count(@character.cards.discard)}

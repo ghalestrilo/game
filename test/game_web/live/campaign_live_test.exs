@@ -117,7 +117,6 @@ defmodule GameWeb.CampaignLiveTest do
       assert html =~ "Wolf"
 
       # Verify both characters are in the turn queue (Hero is current, has badge)
-      assert html =~ "badge-success"
       assert html =~ "Hero"
       assert html =~ "Wolf"
     end
