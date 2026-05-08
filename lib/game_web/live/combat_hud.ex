@@ -2,6 +2,17 @@ defmodule GameWeb.CombatHUD do
   use Phoenix.LiveComponent
   import GameWeb.CoreComponents
 
+  @team_colors ~w(
+    border-sky-500
+    border-rose-500
+    border-emerald-500
+    border-amber-500
+    border-violet-500
+    border-orange-500
+    border-teal-500
+    border-pink-500
+  )
+
   @impl true
   def update(assigns, socket) do
     {:ok, assign(socket, assigns)}
@@ -164,17 +175,22 @@ defmodule GameWeb.CombatHUD do
         <div class={["flex gap-1 mb-1 items-center", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span>{@character.name}</span>
           <span :if={@current} class="badge badge-success badge-xs ml-1">current</span>
+
+          <span class="badge badge-soft badge-sm ml-auto">
+          <.icon name="hero-rectangle-stack-mini" class="size-4 px-0"/>
+          {Enum.count(@character.cards.draw)} / {Enum.count(@character.cards.hand)} / {Enum.count(@character.cards.discard)}
+        </span>
         </div>
         <% eff_max_hp = Game.Character.effective_attribute(@character, "max_hp") %>
-        <div class={["flex gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
+        <div class={["flex gap-0.5 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
           <span
             :for={hp <- 1..eff_max_hp}
             class={[
-              "max-w-[20px] flex-1 h-2 rounded-[2px]",
+              "max-w-[20px] flex-1 h-2 rounded-[2px] ring-1 ring-inset ring-success",
               cond do
                 hp > @character.hp -> "bg-base-300"
-                hp > @character.max_hp -> "bg-success"
-                true -> "bg-error"
+                hp > @character.max_hp -> "bg-success/50 ring-none"
+                true -> "bg-success"
               end
             ]}
           />
@@ -211,32 +227,18 @@ defmodule GameWeb.CombatHUD do
             class="bg-info max-w-[20px] flex-1 h-2 rounded-[2px]"
           />
         </div>
-        <span class="badge badge-soft">
-          {"Deck: #{Enum.count(@character.cards.draw)} / #{Enum.count(@character.cards.hand)} / #{Enum.count(@character.cards.discard)}"}
-        </span>
         <div class={["flex flex-wrap gap-1 mt-1", if(@same_team, do: "justify-start", else: "justify-end")]}>
           <span
             :for={effect <- Enum.reject(@character.status_effects, &(&1.type == :shield))}
-            class="badge badge-base badge-xs"
+            class="badge badge-base badge-xs height-fit max-h-unset !h-fit"
           >
-            {String.capitalize(Atom.to_string(effect.type))}{if effect.value > 0, do: " (#{effect.value})", else: ""}
+            <%= Game.StatusEffect.get_display_text(effect) %>
           </span>
         </div>
       </div>
     </li>
     """
   end
-
-  @team_colors ~w(
-    border-sky-500
-    border-rose-500
-    border-emerald-500
-    border-amber-500
-    border-violet-500
-    border-orange-500
-    border-teal-500
-    border-pink-500
-  )
 
   defp team_ring_class(team) when is_integer(team) do
     Enum.at(@team_colors, rem(team, length(@team_colors)))
