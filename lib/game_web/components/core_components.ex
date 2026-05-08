@@ -669,10 +669,10 @@ defmodule GameWeb.CoreComponents do
           >
             1×
           </span>
-          <span class="badge badge-xs badge-soft text-xs px-1 py-[2px] !bg-primary/40" title="Range">
+          <span :if={@card.range > 0} class="badge badge-xs badge-soft text-xs px-1 py-2 !bg-primary/40" title="Range">
             <.icon name="hero-wifi-mini" class="inline-block w-3 h-3" /> {@card.range}
           </span>
-          <span class="badge badge-xs badge-soft text-xs px-1 py-[2px] !bg-primary/40" title="Cost">
+          <span class="badge badge-xs badge-soft text-xs px-1 py-2 !bg-primary/40" title="Cost">
             <.icon name="hero-bolt-mini" class="inline-block w-3 h-3" /> {@card.cost}
           </span>
         </div>
