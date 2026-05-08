@@ -608,15 +608,16 @@ defmodule GameWeb.CoreComponents do
     <ul class="flex flex-col items-stretch gap-2 text-xs text-base-content/70">
       <li
         :for={
-          {raw, index} <-
-            @card.effects |> Enum.filter(&Game.Card.effect_implemented?/1) |> Enum.with_index()
+          {effect, index} <-
+            @card.effects |> Enum.filter(&Game.Card.effect_implemented?/1) |> Enum.map(&Game.Card.get_structured_effect/1) |> Enum.with_index()
         }
-        class="flex items-row gap-1 card bg-amber-500/10 p-2"
+        class={["flex gap-1 card bg-amber-500/10 p-2",
+        (if Map.has_key?(effect, :value) and not is_map(effect.value), do: "flex-row items-center justify-between")
+        ]}
       >
-        <% effect = Game.Card.get_structured_effect(raw) %>
-        <span>
+        <span >
           <.icon name={Game.Combat.CardEffect.get_icon(effect)} class="w-3 h-3" />
-          {effect.type}
+          <%= if effect.type === :modify_attribute, do: Map.get(effect, :attribute, nil), else: effect.type %>
         </span>
         {GameWeb.Components.FormulaTreeComponent.render(effect)}
       </li>
@@ -644,10 +645,10 @@ defmodule GameWeb.CoreComponents do
     ~H"""
     <div
       class={[
-        "rounded-lg border-2 bg-base-100 shadow-md w-72 flex flex-col p-4 transition-[all] ease-in-out
+        "rounded-lg shadow-md w-72 flex flex-col transition-[all] ease-in-out
         hover:-mt-4 hover:mb-4
         ",
-        rarity_border_class(Map.get(@card, :rarity)),
+        rarity_bg_class(Map.get(@card, :rarity)),
         if(@selected, do: "!bg-yellow-800 -mt-4 mb-4", else: ""),
         if(@disabled, do: "opacity-40 cursor-not-allowed pointer-events-none", else: "")
       ]}
@@ -656,10 +657,11 @@ defmodule GameWeb.CoreComponents do
       phx-value-card_index={@index}
       phx-target={@click_target}
     >
-      <div class={["h-1 rounded-t-sm -mx-4 -mt-4 mb-3", rarity_bar_class(Map.get(@card, :rarity))]}></div>
+    <div class="bg-base-100 rounded-lg m-0.5 mt-2 p-4 h-[stretch]">
+      <div :if={false} class={["h-1 rounded-t-sm -mx-4 -mt-4 mb-3", rarity_bar_class(Map.get(@card, :rarity))]}></div>
       <div class="flex items-center justify-between mb-2">
         <span class="font-bold text-sm text-base-content">{@card.name}</span>
-        <div class="flex gap-2 items-center">
+        <div class="flex flex-col xl:flex-row gap-2 items-center">
           <span
             :if={Game.Card.is_one_time_use?(@card)}
             class="text-xs bg-red-900/60 text-red-300 rounded px-2 py-0.5"
@@ -667,11 +669,11 @@ defmodule GameWeb.CoreComponents do
           >
             1×
           </span>
-          <span class="text-xs bg-base-200 rounded px-2 py-0.5 text-base-content/70" title="Range">
-            <.icon name="hero-wifi-mini" class="inline-block w-3 h-3 mr-1" /> {@card.range}
+          <span class="badge badge-xs badge-soft text-xs px-1 py-[2px] !bg-primary/40" title="Range">
+            <.icon name="hero-wifi-mini" class="inline-block w-3 h-3" /> {@card.range}
           </span>
-          <span class="text-xs bg-zinc-900 text-white rounded px-2 py-0.5" title="Cost">
-            <.icon name="hero-bolt-mini" class="inline-block w-3 h-3 mr-1" /> {@card.cost}
+          <span class="badge badge-xs badge-soft text-xs px-1 py-[2px] !bg-primary/40" title="Cost">
+            <.icon name="hero-bolt-mini" class="inline-block w-3 h-3" /> {@card.cost}
           </span>
         </div>
       </div>
@@ -680,14 +682,15 @@ defmodule GameWeb.CoreComponents do
         <.effect_list card={@card} />
       </div>
     </div>
+    </div>
     """
   end
 
-  defp rarity_border_class(:common), do: "border-common"
-  defp rarity_border_class(:uncommon), do: "border-uncommon"
-  defp rarity_border_class(:rare), do: "border-rare"
-  defp rarity_border_class(:legendary), do: "border-legendary"
-  defp rarity_border_class(_), do: "border-base-300"
+  defp rarity_bg_class(:common), do: "bg-common"
+  defp rarity_bg_class(:uncommon), do: "bg-uncommon"
+  defp rarity_bg_class(:rare), do: "bg-rare"
+  defp rarity_bg_class(:legendary), do: "bg-legendary"
+  defp rarity_bg_class(_), do: "bg-base-300"
 
   defp rarity_bar_class(:common), do: "bg-common"
   defp rarity_bar_class(:uncommon), do: "bg-uncommon"

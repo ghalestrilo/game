@@ -38,9 +38,9 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   # ---------- RECURSIVE NODE COMPONENT ----------
 
   # alias
-  defp jl_node(%{value: %{"alias" => name}} = assigns) when is_binary(name) do
+  defp jl_node(%{value: %{"alias" => name}} = assigns) do
     ~H"""
-    <span class="jl-var badge badge-soft badge-ghost">alias: {@value["alias"]}</span>
+    <span class="jl-var badge badge-outline badge-primary">{@value["alias"]}</span>
     """
   end
 
@@ -90,26 +90,23 @@ defmodule GameWeb.Components.FormulaTreeComponent do
 
   # if
   defp jl_node(%{value: %{"if" => args}} = assigns) when is_list(args) do
-    assigns = assign(assigns, :chunks, Enum.chunk_every(args, 2))
+    # assigns = assign(assigns, :chunks, Enum.chunk_every(args, 2))
+    [if_clause, then_clause | rest] = args
 
     ~H"""
     <div class="jl-if flex flex-col gap-1">
-      <%= for chunk <- @chunks do %>
-        <%= case chunk do %>
-          <% [cond_node, result_node] -> %>
-            <div class="jl-if-row flex items-center gap-1">
-              <span class="jl-if-label badge badge-soft badge-warning">IF</span>
-              <.jl_node value={cond_node} />
-              <span class="jl-if-label badge badge-soft badge-info">THEN</span>
-              <.jl_node value={result_node} />
-            </div>
-          <% [else_node] -> %>
-            <div class="jl-if-row flex items-center gap-1">
-              <span class="jl-if-label badge badge-soft badge-neutral">ELSE</span>
-              <.jl_node value={else_node} />
-            </div>
-        <% end %>
-      <% end %>
+      <div class="jl-if-row flex flex-row items-center gap-1">
+        <span class="jl-if-label badge badge-soft badge-warning">IF</span>
+        <.jl_node value={if_clause} />
+      </div>
+      <div class="jl-if-row flex flex-row items-center gap-1">
+        <span class="jl-if-label badge badge-soft badge-info">THEN</span>
+        <.jl_node value={then_clause} />
+      </div>
+      <div :if={Enum.at(rest, 0)} class="jl-if-row flex flex-row items-center gap-1">
+        <span class="jl-if-label badge badge-soft badge-neutral">ELSE</span>
+        <.jl_node value={Enum.at(rest, 0)} />
+      </div>
     </div>
     """
   end
