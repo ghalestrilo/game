@@ -140,12 +140,16 @@ defmodule Game.Card do
         |> Kernel.||(target)
       end
 
-    # Process card effects (heal, damage, etc) with the updated target
-    apply_card_effects(updated_combat, card.effects, updated_target)
+    # Process card effects (heal, damage, etc) with the updated target.
+    # Pass combat_state (pre-dispel) as the formula context so caster status effects
+    # like stealth are visible to conditional formulas evaluated during effect resolution.
+    apply_card_effects(updated_combat, card.effects, updated_target, combat_state)
   end
 
   # Helper function to apply multiple card effects; returns {combat_state, animations}
-  defp apply_card_effects(initial_combat_state, effects, target) when is_list(effects) do
+  defp apply_card_effects(initial_combat_state, effects, target, formula_state \\ nil)
+       when is_list(effects) do
+    formula_state = formula_state || initial_combat_state
     cast_distance = compute_cast_distance(initial_combat_state, target)
 
     Enum.reduce(effects, {initial_combat_state, []}, fn effect, {combat_state, anims} ->
@@ -171,7 +175,10 @@ defmodule Game.Card do
           else
             # Formula context always uses the card's selected target for directional variables
             # (push_delta, pull_delta, etc.), even when the effect itself targets someone else.
-            resolved = resolve_effect_value(resolved, current_target, combat_state, cast_distance)
+            # formula_state preserves caster status effects from before dispel_stealth ran.
+            resolved =
+              resolve_effect_value(resolved, current_target, formula_state, cast_distance)
+
             new_combat = CardEffect.process(resolved, effective_target, combat_state)
             new_anim = CardEffect.animate(resolved)
             {new_combat, if(new_anim, do: [new_anim | anims], else: anims)}
