@@ -36,7 +36,7 @@ defmodule GameWeb.CombatHUD do
             Win Match
           </button>
         </div>
-        
+
     <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
@@ -48,7 +48,7 @@ defmodule GameWeb.CombatHUD do
           current_player={@current_player}
         />
       </div>
-      
+
     <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
@@ -58,7 +58,7 @@ defmodule GameWeb.CombatHUD do
           </ul>
         </div>
       </div>
-      
+
     <!-- Card piles -->
       <%= if Map.get(assigns, :game_mode, nil) == :sandbox || (@game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id)) do %>
@@ -188,7 +188,8 @@ defmodule GameWeb.CombatHUD do
           </span>
         </div>
         <% eff_max_hp = Game.Character.effective_attribute(@character, "max_hp") %>
-        <div class={["flex gap-0.5 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
+        <div class={["flex items-center gap-0.5 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
+          {@character.hp}/{@character.max_hp}
           <span
             :for={hp <- 1..eff_max_hp}
             class={[
@@ -202,7 +203,8 @@ defmodule GameWeb.CombatHUD do
           />
         </div>
         <% eff_max_ap = Game.Character.effective_attribute(@character, "max_ap") %>
-        <div class={["flex gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
+        <div class={["flex items-center gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
+          {@character.ap}/{@character.max_ap}
           <span
             :for={ap <- 1..eff_max_ap}
             class={[
@@ -219,6 +221,7 @@ defmodule GameWeb.CombatHUD do
           "flex gap-1",
           if(@same_team, do: "justify-start", else: "justify-end flex-row-reverse")
         ]}>
+          {Game.Character.get_status_effect(@character, :shield)}
           <span
             :for={
               _shield <-
