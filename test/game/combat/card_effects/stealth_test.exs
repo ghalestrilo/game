@@ -3,7 +3,7 @@ defmodule Game.Combat.CardEffects.StealthTest do
 
   alias Game.Combat.CardEffect
   alias Game.Combat.CardEffects.Stealth
-  alias Game.{Card, Character, CombatState, Grid, Fixtures}
+  alias Game.{Card, Character, Combat, CombatState, Grid, Fixtures}
 
   setup do
     fighter = Fixtures.fighter()
@@ -108,6 +108,93 @@ defmodule Game.Combat.CardEffects.StealthTest do
         |> CombatState.setup_player_turn()
 
       assert Character.get_status_effect(combat_expired.current_turn.player, :stealth) == nil
+    end
+  end
+
+  describe "AoE effects hit stealthy characters" do
+    @aoe_card %Card{
+      id: 8888,
+      name: "Blast",
+      cost: 0,
+      range: 5,
+      targeting: %{"type" => "tile"},
+      effects: [%{"type" => "damage", "value" => 5, "range" => 1}]
+    }
+
+    defp make_char(id, pos, team) do
+      %Character{
+        id: id,
+        name: "char#{id}",
+        class: :fighter,
+        ap: 3,
+        hp: 20,
+        position: pos,
+        movement_range: 2,
+        team: team,
+        cards: %{draw: [], hand: [], discard: []}
+      }
+    end
+
+    defp find_char(combat, id) do
+      all = [combat.current_turn.player | combat.queue]
+      Enum.find(all, &(&1.id == id))
+    end
+
+    # Layout:
+    #   caster  {0,0,0}  — team1
+    #   enemy1  {2,0,-2} — team2, stealthy
+    #   enemy2  {3,0,-3} — team2, no stealth
+    #
+    # Blast at {3,0,-3} with radius 1:
+    #   enemy2 at distance 0 — hit
+    #   enemy1 at distance 1 — hit (at radius edge)
+    setup do
+      caster = make_char(1, {0, 0, 0}, :team1)
+      enemy1 = make_char(2, {2, 0, -2}, :team2)
+      enemy2 = make_char(3, {3, 0, -3}, :team2)
+
+      stealthy_enemy1 = Character.add_status_effect(enemy1, %{type: :stealth, value: 2})
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: caster},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: stealthy_enemy1},
+          {3, 0, -3} => %{terrain: :plain, occupied_by: enemy2}
+        }
+      }
+
+      caster_with_card = %{caster | cards: %{caster.cards | hand: [@aoe_card]}}
+
+      combat = %CombatState{
+        state: :running,
+        __constants__: %{players: [caster, stealthy_enemy1, enemy2]},
+        queue: [stealthy_enemy1, enemy2],
+        grid: grid,
+        current_turn: %{
+          starting_position: caster.position,
+          player: caster_with_card,
+          card: nil
+        }
+      }
+
+      {:ok, selected} = Combat.process_action(combat, {:pick_card, caster_with_card, @aoe_card})
+      {:ok, updated, _anims} = Combat.process_action(selected, {:play_card, {3, 0, -3}})
+
+      %{combat: updated, enemy1: enemy1, enemy2: enemy2}
+    end
+
+    test "stealthy character within blast radius takes damage", %{
+      combat: combat,
+      enemy1: enemy1
+    } do
+      assert find_char(combat, enemy1.id).hp == enemy1.hp - 5
+    end
+
+    test "non-stealthy character within blast radius takes damage", %{
+      combat: combat,
+      enemy2: enemy2
+    } do
+      assert find_char(combat, enemy2.id).hp == enemy2.hp - 5
     end
   end
 
