@@ -161,8 +161,7 @@ defmodule GameWeb.GameLive do
 
       Game.process_action(socket.assigns.game_pid, {:pick_card, player, card})
 
-      {:noreply,
-       socket |> assign(keyboard_target_index: 0)}
+      {:noreply, socket |> assign(keyboard_target_index: 0)}
     end
   end
 
@@ -263,7 +262,7 @@ defmodule GameWeb.GameLive do
         card = combat.current_turn.card
         action = "#{combat.current_turn.player.name} played card: #{card.name}"
         Game.process_action(socket.assigns.game_pid, {:play_card_on_character, character})
-        {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0,20))}
+        {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0, 20))}
       else
         {:noreply, put_flash(socket, :error, "Target not found")}
       end
@@ -283,7 +282,7 @@ defmodule GameWeb.GameLive do
         card = combat.current_turn.card
         action = "#{combat.current_turn.player.name} played card: #{card.name}"
         Game.process_action(socket.assigns.game_pid, {:play_card, position})
-        {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0,20))}
+        {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0, 20))}
       else
         {:error, reason} -> {:noreply, put_flash(socket, :error, reason)}
       end
@@ -303,7 +302,7 @@ defmodule GameWeb.GameLive do
         player = combat.current_turn.player
         action = "#{player.name} moved to position #{inspect(position)}"
         Game.process_action(socket.assigns.game_pid, {:move, player, position})
-        {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0,20))}
+        {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0, 20))}
       else
         {:error, reason} -> {:noreply, put_flash(socket, :error, reason)}
       end
@@ -324,7 +323,7 @@ defmodule GameWeb.GameLive do
     else
       action = "#{player.name} skipped their turn"
       Game.process_action(socket.assigns.game_pid, {:skip_turn, player})
-      {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0,20))}
+      {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0, 20))}
     end
   end
 
@@ -349,7 +348,7 @@ defmodule GameWeb.GameLive do
       {:noreply,
        socket
        |> assign(game_state: new_state)
-       |> update(:action_log, &Enum.slice([action | &1], 0,20))}
+       |> update(:action_log, &Enum.slice([action | &1], 0, 20))}
     end
   end
 

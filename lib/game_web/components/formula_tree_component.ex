@@ -266,7 +266,7 @@ defmodule GameWeb.Components.FormulaTreeComponent do
     <span class="jl-var badge badge-outline">
       {@var_key}
       <%= if @var_default != nil do %>
-        <span class="opacity-50"> ??   {@var_default}</span>
+        <span class="opacity-50"> ??    {@var_default}</span>
       <% end %>
     </span>
     """

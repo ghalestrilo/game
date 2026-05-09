@@ -41,14 +41,14 @@ defmodule GameWeb.CombatLive do
         current_player={@current_player}
         game_mode={Map.get(assigns, :game_mode)}
       />
-
+      
     <!-- Game area -->
       <div class="flex-1 flex flex-col overflow-hidden">
         <%= if @game_state do %>
           <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
           <% rows = Game.Grid.to_rows(@game_state.combat.grid) %>
           <% pos = build_position_index(rows) %>
-
+          
     <!-- Board -->
           <div class="flex-1 flex items-center justify-center overflow-hidden">
             <div
@@ -74,7 +74,7 @@ defmodule GameWeb.CombatLive do
                   </div>
                 <% end %>
               </div>
-
+              
     <!-- Entity layer -->
               <div class="absolute inset-0 pointer-events-none">
                 <%= for character <- queue, character != nil, visible_to?(character, @current_player) do %>
@@ -101,7 +101,7 @@ defmodule GameWeb.CombatLive do
           </div>
         <% end %>
       </div>
-
+      
     <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}

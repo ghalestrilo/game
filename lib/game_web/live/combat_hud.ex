@@ -36,7 +36,7 @@ defmodule GameWeb.CombatHUD do
             Win Match
           </button>
         </div>
-
+        
     <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
@@ -48,19 +48,23 @@ defmodule GameWeb.CombatHUD do
           current_player={@current_player}
         />
       </div>
-
+      
     <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto min-w-[320px] min-h-full">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
         <ul class="timeline timeline-vertical min-h-full">
-          <li :for={{action, index} <- Enum.with_index(@action_log)} class="![grid-template-columns:1fr_16px] mr-8">
-            <hr :if={index > 0}/>
-            <div class="timeline-start timeline-box">{action}</div><div class="timeline-middle min-w-4 min-h-4 rounded-full bg-base-300"></div>
-            <hr :if={index < Enum.count(@action_log) - 1}/>
+          <li
+            :for={{action, index} <- Enum.with_index(@action_log)}
+            class="![grid-template-columns:1fr_16px] mr-8"
+          >
+            <hr :if={index > 0} />
+            <div class="timeline-start timeline-box">{action}</div>
+            <div class="timeline-middle min-w-4 min-h-4 rounded-full bg-base-300"></div>
+            <hr :if={index < Enum.count(@action_log) - 1} />
           </li>
         </ul>
       </div>
-
+      
     <!-- Card piles -->
       <%= if Map.get(assigns, :game_mode, nil) == :sandbox || (@game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id)) do %>
@@ -190,12 +194,18 @@ defmodule GameWeb.CombatHUD do
           </span>
         </div>
         <% eff_max_hp = Game.Character.effective_attribute(@character, "max_hp") %>
-        <div class={["flex items-center gap-0.5 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
-          <span class="badge badge-success badge-soft  px-1 min-w-fit">{@character.hp} / {@character.max_hp}</span>
-          <progress class="progress progress-success" value={@character.hp} max={@character.max_hp}></progress>
+        <div class={[
+          "flex items-center gap-0.5 mb-1",
+          if(@same_team, do: "", else: "flex-row-reverse")
+        ]}>
+          <span class="badge badge-success badge-soft  px-1 min-w-fit">
+            {@character.hp} / {@character.max_hp}
+          </span>
+          <progress class="progress progress-success" value={@character.hp} max={@character.max_hp}>
+          </progress>
           <span
-            :if={false}
             :for={hp <- 1..eff_max_hp}
+            :if={false}
             class={[
               "max-w-[20px] flex-1 h-2 rounded-[2px] ring-1 ring-inset ring-success",
               cond do
@@ -208,7 +218,9 @@ defmodule GameWeb.CombatHUD do
         </div>
         <% eff_max_ap = Game.Character.effective_attribute(@character, "max_ap") %>
         <div class={["flex items-center gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
-          <span class="badge badge-soft badge-warning px-1">{@character.ap} / {@character.max_ap}</span>
+          <span class="badge badge-soft badge-warning px-1">
+            {@character.ap} / {@character.max_ap}
+          </span>
           <span
             :for={ap <- 1..eff_max_ap}
             class={[
