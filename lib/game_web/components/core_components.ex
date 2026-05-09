@@ -690,7 +690,9 @@ defmodule GameWeb.CoreComponents do
           </div>
         </div>
         <div class="mb-2 text-xs text-base-content/80 min-h-[3rem]">
-          {Map.get(@card, :headline)}
+          <div class="p-2 my-2 bg-base-200 rounded-sm">
+            {Map.get(@card, :headline)}
+          </div>
           <.effect_list card={@card} />
         </div>
       </div>

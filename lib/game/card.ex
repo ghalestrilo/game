@@ -32,7 +32,7 @@ defmodule Game.Card do
   defstruct [
     :id,
     :name,
-    :description,
+    :headline,
     # AP cost to play
     :cost,
     # Function reference or data structure representing effect
@@ -61,7 +61,7 @@ defmodule Game.Card do
   @type t() :: %__MODULE__{
           id: integer(),
           name: String.t(),
-          description: String.t(),
+          headline: String.t(),
           cost: integer(),
           effects: list(card_effect()),
           targeting: map() | nil
