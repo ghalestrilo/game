@@ -63,17 +63,21 @@ defmodule Game.Combat.CardEffects.MoveTest do
       assert updated.current_turn.player.position == {1, 0, -1}
     end
 
-    test "is a no-op when destination tile is out of bounds", %{combat: combat, mage: mage} do
+    test "stops at grid edge when distance exceeds available tiles", %{combat: combat, mage: mage} do
+      # mage at {2,0,-2}, angle 0 = east, only {3,0,-3} exists beyond — stops there
       updated = CardEffect.process(%Move{angle: 0, distance: 10}, mage, combat)
       updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
-      assert updated_mage.position == mage.position
+      assert updated_mage.position == {3, 0, -3}
     end
 
-    test "is a no-op when destination tile is blocked", %{combat: combat, mage: mage} do
-      # angle 1 = {-1,0,1}; distance 2 from {2,0,-2} → {0,0,0} which is occupied
+    test "stops at last unblocked tile when path is partially blocked", %{
+      combat: combat,
+      mage: mage
+    } do
+      # angle 1 = {-1,0,1}; step 1: {2,0,-2} → {1,0,-1} (clear); step 2: → {0,0,0} (occupied) → stops
       updated = CardEffect.process(%Move{angle: 1, distance: 2}, mage, combat)
       updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
-      assert updated_mage.position == mage.position
+      assert updated_mage.position == {1, 0, -1}
     end
   end
 
@@ -302,9 +306,9 @@ defmodule Game.Combat.CardEffects.MoveTest do
       assert enemy.hp - updated_enemy.hp == 3
     end
 
-    test "caster does not move when the next tile is occupied, but damage still uses cast_distance",
+    test "caster stops at last clear tile when path is partially blocked, damage still uses cast_distance",
          %{combat: combat, fighter: fighter, enemy: enemy} do
-      blocker = %{Fixtures.fighter() | id: 99, position: {1, 0, -1}}
+      blocker = %{Fixtures.fighter() | id: 99, position: {2, 0, -2}}
 
       blocked_combat = %{
         combat
@@ -320,7 +324,8 @@ defmodule Game.Combat.CardEffects.MoveTest do
       {updated, _anims} =
         Game.Card.process_card(blocked_combat, enemy, charge_strike_card(fighter.id))
 
-      assert updated.current_turn.player.position == fighter.position
+      # step 1: {0,0,0} → {1,0,-1} (clear); step 2: → {2,0,-2} (blocked) → stops at {1,0,-1}
+      assert updated.current_turn.player.position == {1, 0, -1}
       updated_enemy = Enum.find(updated.queue, &(&1.id == enemy.id))
       assert enemy.hp - updated_enemy.hp == 3
     end

@@ -17,34 +17,60 @@ defmodule Game.Combat.CardEffects.Move do
 
     def process(%Move{angle: angle, distance: distance}, target, %CombatState{} = combat_state)
         when not is_nil(angle) and is_integer(angle) do
-      {dq, dr, ds} = Grid.direction_from_angle(angle)
+      caster = combat_state.current_turn.player
+      grid = combat_state.grid
 
-      new_pos =
-        {target.position |> elem(0) |> Kernel.+(dq * distance),
-         target.position |> elem(1) |> Kernel.+(dr * distance),
-         target.position |> elem(2) |> Kernel.+(ds * distance)}
+      {final_target, final_grid} =
+        if target.id == caster.id do
+          do_move_fixed(grid, Grid.direction_from_angle(angle), target, distance)
+        else
+          given_dir = Grid.direction_from_angle(angle)
+          pull_dir = Grid.direction_toward(grid, target.position, caster.position)
+          mode = if given_dir == pull_dir, do: :pull, else: :push
+          do_move_dynamic(grid, caster.position, target, distance, mode)
+        end
 
-      #  FIXME: use first_unblocked_tile
-      if Map.has_key?(combat_state.grid.tiles, new_pos) and
-           not Grid.tile_blocked?(combat_state.grid, new_pos) do
-        updated_target = Character.move(target, new_pos)
-
-        updated_grid =
-          Grid.update_position(combat_state.grid, updated_target, target.position, new_pos)
-
-        combat_state
-        |> CombatState.update_target(target, updated_target)
-        |> Map.put(:grid, updated_grid)
-      else
-        combat_state
-      end
+      combat_state
+      |> CombatState.update_target(target, final_target)
+      |> Map.put(:grid, final_grid)
     end
 
     def process(%Move{}, _target, %CombatState{} = combat_state), do: combat_state
 
-    # TODO: we need to implement this to avoid issues with "cast_distance" not moving the target.
-    def first_unblocked_tile() do
-      nil
+    defp do_move_fixed(grid, _dir, target, 0), do: {target, grid}
+
+    defp do_move_fixed(grid, {dq, dr, ds} = dir, target, steps) do
+      {tq, tr, ts} = target.position
+      next_pos = {tq + dq, tr + dr, ts + ds}
+
+      if not Map.has_key?(grid.tiles, next_pos) or Grid.tile_blocked?(grid, next_pos) do
+        {target, grid}
+      else
+        new_grid = Grid.update_position(grid, target, target.position, next_pos)
+        new_target = Character.move(target, next_pos)
+        do_move_fixed(new_grid, dir, new_target, steps - 1)
+      end
+    end
+
+    defp do_move_dynamic(grid, _caster_pos, target, 0, _mode), do: {target, grid}
+
+    defp do_move_dynamic(grid, caster_pos, target, steps, mode) do
+      {dq, dr, ds} =
+        case mode do
+          :pull -> Grid.direction_toward(grid, target.position, caster_pos)
+          :push -> Grid.direction_toward(grid, caster_pos, target.position)
+        end
+
+      {tq, tr, ts} = target.position
+      next_pos = {tq + dq, tr + dr, ts + ds}
+
+      if not Map.has_key?(grid.tiles, next_pos) or Grid.tile_blocked?(grid, next_pos) do
+        {target, grid}
+      else
+        new_grid = Grid.update_position(grid, target, target.position, next_pos)
+        new_target = Character.move(target, next_pos)
+        do_move_dynamic(new_grid, caster_pos, new_target, steps - 1, mode)
+      end
     end
 
     def get_description(%Move{angle: angle, distance: distance}) do

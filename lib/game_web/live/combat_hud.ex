@@ -189,8 +189,10 @@ defmodule GameWeb.CombatHUD do
         </div>
         <% eff_max_hp = Game.Character.effective_attribute(@character, "max_hp") %>
         <div class={["flex items-center gap-0.5 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
-          {@character.hp}/{@character.max_hp}
+          <span class="badge badge-success badge-soft  px-1 min-w-fit">{@character.hp} / {@character.max_hp}</span>
+          <progress class="progress progress-success" value={@character.hp} max={@character.max_hp}></progress>
           <span
+            :if={false}
             :for={hp <- 1..eff_max_hp}
             class={[
               "max-w-[20px] flex-1 h-2 rounded-[2px] ring-1 ring-inset ring-success",
@@ -204,7 +206,7 @@ defmodule GameWeb.CombatHUD do
         </div>
         <% eff_max_ap = Game.Character.effective_attribute(@character, "max_ap") %>
         <div class={["flex items-center gap-1 mb-1", if(@same_team, do: "", else: "flex-row-reverse")]}>
-          {@character.ap}/{@character.max_ap}
+          <span class="badge badge-soft badge-warning px-1">{@character.ap} / {@character.max_ap}</span>
           <span
             :for={ap <- 1..eff_max_ap}
             class={[
@@ -221,7 +223,6 @@ defmodule GameWeb.CombatHUD do
           "flex gap-1",
           if(@same_team, do: "justify-start", else: "justify-end flex-row-reverse")
         ]}>
-          {Game.Character.get_status_effect(@character, :shield)}
           <span
             :for={
               _shield <-

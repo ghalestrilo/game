@@ -667,11 +667,6 @@ defmodule GameWeb.CoreComponents do
       phx-target={@click_target}
     >
       <div class="bg-base-100 rounded-lg m-0.5 mt-2 p-4 h-[stretch]">
-        <div
-          :if={false}
-          class={["h-1 rounded-t-sm -mx-4 -mt-4 mb-3", rarity_bar_class(Map.get(@card, :rarity))]}
-        >
-        </div>
         <div class="flex items-center justify-between mb-2">
           <span class="font-bold text-sm text-base-content">{@card.name}</span>
           <div class="flex flex-col lg:flex-row gap-2 items-center">
