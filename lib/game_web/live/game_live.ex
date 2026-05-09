@@ -39,7 +39,7 @@ defmodule GameWeb.GameLive do
 
     case Lobby.get(lobby_id) do
       {:error, :not_found} ->
-        {:ok, push_navigate(socket, to: ~p"/multiplayer")}
+        {:ok, push_navigate(socket, to: ~p"/mulztiplayer")}
 
       {:ok, %{game_pid: nil}} ->
         {:ok, push_navigate(socket, to: ~p"/multiplayer/#{lobby_id}")}
@@ -162,7 +162,7 @@ defmodule GameWeb.GameLive do
       Game.process_action(socket.assigns.game_pid, {:pick_card, player, card})
 
       {:noreply,
-       socket |> update(:action_log, &[action | &1]) |> assign(keyboard_target_index: 0)}
+       socket |> assign(keyboard_target_index: 0)}
     end
   end
 
@@ -263,7 +263,7 @@ defmodule GameWeb.GameLive do
         card = combat.current_turn.card
         action = "#{combat.current_turn.player.name} played card: #{card.name}"
         Game.process_action(socket.assigns.game_pid, {:play_card_on_character, character})
-        {:noreply, update(socket, :action_log, &[action | &1])}
+        {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0,20))}
       else
         {:noreply, put_flash(socket, :error, "Target not found")}
       end
@@ -283,7 +283,7 @@ defmodule GameWeb.GameLive do
         card = combat.current_turn.card
         action = "#{combat.current_turn.player.name} played card: #{card.name}"
         Game.process_action(socket.assigns.game_pid, {:play_card, position})
-        {:noreply, update(socket, :action_log, &[action | &1])}
+        {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0,20))}
       else
         {:error, reason} -> {:noreply, put_flash(socket, :error, reason)}
       end
@@ -303,7 +303,7 @@ defmodule GameWeb.GameLive do
         player = combat.current_turn.player
         action = "#{player.name} moved to position #{inspect(position)}"
         Game.process_action(socket.assigns.game_pid, {:move, player, position})
-        {:noreply, update(socket, :action_log, &[action | &1])}
+        {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0,20))}
       else
         {:error, reason} -> {:noreply, put_flash(socket, :error, reason)}
       end
@@ -324,7 +324,7 @@ defmodule GameWeb.GameLive do
     else
       action = "#{player.name} skipped their turn"
       Game.process_action(socket.assigns.game_pid, {:skip_turn, player})
-      {:noreply, update(socket, :action_log, &[action | &1])}
+      {:noreply, update(socket, :action_log, &Enum.slice([action | &1], 0,20))}
     end
   end
 
@@ -349,7 +349,7 @@ defmodule GameWeb.GameLive do
       {:noreply,
        socket
        |> assign(game_state: new_state)
-       |> update(:action_log, &[action | &1])}
+       |> update(:action_log, &Enum.slice([action | &1], 0,20))}
     end
   end
 

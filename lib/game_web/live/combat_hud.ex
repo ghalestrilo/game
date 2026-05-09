@@ -21,7 +21,7 @@ defmodule GameWeb.CombatHUD do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="fixed z-10 grid [grid-template-areas:'queue_._action'_'draw_hand_discard'] [grid-template-columns:320px_1fr_280px] [grid-template-rows:1fr_auto] gap-4 p-4 pointer-events-none origin-top-left  w-[133%] h-[133%] pb-12">
+    <div class="fixed z-10 grid max-w-full [grid-template-areas:'queue_game_action'_'draw_hand_discard'] [grid-template-columns:320px_auto_280px] [grid-template-rows:1fr_auto] gap-4 p-4 pointer-events-none origin-top-left  w-[133%] h-[133%] pb-12">
       <div
         :if={@game_state}
         class="[grid-area:queue] bg-gray-800 self-start pointer-events-auto p-2 rounded"
@@ -50,13 +50,15 @@ defmodule GameWeb.CombatHUD do
       </div>
 
     <!-- Action Log -->
-      <div class="[grid-area:action] pointer-events-auto">
+      <div class="[grid-area:action] pointer-events-auto min-w-[320px] min-h-full">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
-        <div class="bg-base-300 rounded p-2 overflow-y-auto max-h-40 text-xs">
-          <ul class="list-disc pl-4 flex flex-col gap-1">
-            <li :for={action <- @action_log}>{action}</li>
-          </ul>
-        </div>
+        <ul class="timeline timeline-vertical min-h-full">
+          <li :for={{action, index} <- Enum.with_index(@action_log)} class="![grid-template-columns:1fr_16px] mr-8">
+            <hr :if={index > 0}/>
+            <div class="timeline-start timeline-box">{action}</div><div class="timeline-middle min-w-4 min-h-4 rounded-full bg-base-300"></div>
+            <hr :if={index < Enum.count(@action_log) - 1}/>
+          </li>
+        </ul>
       </div>
 
     <!-- Card piles -->
