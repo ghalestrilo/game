@@ -1,6 +1,7 @@
 defmodule GameWeb.CombatHUD do
   use Phoenix.LiveComponent
   import GameWeb.CoreComponents
+  alias Phoenix.LiveView.JS
 
   @team_colors ~w(
     border-sky-500
@@ -36,7 +37,7 @@ defmodule GameWeb.CombatHUD do
             Win Match
           </button>
         </div>
-        
+
     <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
@@ -48,7 +49,7 @@ defmodule GameWeb.CombatHUD do
           current_player={@current_player}
         />
       </div>
-      
+
     <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto min-w-[320px] min-h-full">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
@@ -64,17 +65,26 @@ defmodule GameWeb.CombatHUD do
           </li>
         </ul>
       </div>
-      
+
     <!-- Card piles -->
       <%= if Map.get(assigns, :game_mode, nil) == :sandbox || (@game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id)) do %>
-        <div class="[grid-area:draw] flex flex-col gap-3 text-xs pointer-events-auto">
-          <h4 class="font-semibold text-base-content/70 mb-1">
-            Draw ({length(@game_state.combat.current_turn.player.cards.draw)})
-          </h4>
-          <%= for card <- @game_state.combat.current_turn.player.cards.draw do %>
-            <div class="card-tiny">{card.name}</div>
-          <% end %>
+        <div class="[grid-area:draw] pointer-events-auto">
+          <div class="fixed bottom-4 left-4 z-20">
+            <button
+              phx-click={show_modal("draw-pile-modal")}
+              class="btn btn-sm btn-ghost justify-between gap-2"
+            >
+              <span class="font-semibold text-base-content/70">Draw</span>
+              <span class="badge badge-sm">{length(@game_state.combat.current_turn.player.cards.draw)}</span>
+            </button>
+          </div>
+          <.card_modal
+            id="draw-pile-modal"
+            title="Draw Pile"
+            cards={@game_state.combat.current_turn.player.cards.draw}
+            on_cancel={hide_modal("draw-pile-modal")}
+          />
         </div>
         <div
           :if={
@@ -95,12 +105,21 @@ defmodule GameWeb.CombatHUD do
           />
         </div>
         <div class="[grid-area:discard] pointer-events-auto">
-          <h4 class="font-semibold text-base-content/70 mb-1">
-            Discard ({length(@game_state.combat.current_turn.player.cards.discard)})
-          </h4>
-          <%= for card <- @game_state.combat.current_turn.player.cards.discard do %>
-            <div class="card-tiny">{card.name}</div>
-          <% end %>
+          <div class="fixed bottom-4 right-4 z-20">
+            <button
+              phx-click={show_modal("discard-pile-modal")}
+              class="btn btn-sm btn-ghost justify-between gap-2"
+            >
+              <span class="font-semibold text-base-content/70">Discard</span>
+              <span class="badge badge-sm">{length(@game_state.combat.current_turn.player.cards.discard)}</span>
+            </button>
+          </div>
+          <.card_modal
+            id="discard-pile-modal"
+            title="Discard Pile"
+            cards={@game_state.combat.current_turn.player.cards.discard}
+            on_cancel={hide_modal("discard-pile-modal")}
+          />
         </div>
       <% end %>
     </div>

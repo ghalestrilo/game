@@ -706,6 +706,64 @@ defmodule GameWeb.CoreComponents do
   defp rarity_bg_class(:legendary), do: "bg-legendary"
   defp rarity_bg_class(_), do: "bg-base-300"
 
+  @doc """
+  Renders a modal for browsing and optionally selecting cards from a list.
+
+  ## Examples
+
+      <.card_modal id="deck-modal" show={@show_deck} title="Your Deck" cards={@deck} on_cancel={JS.push("close_deck")} />
+
+      <.card_modal
+        id="pack-modal"
+        show={@show_pack}
+        title="Open Booster Pack"
+        subtitle="Choose one card to add to your deck"
+        cards={@pack_cards}
+        selectable={true}
+        on_select="select_pack_card"
+        on_cancel={JS.push("close_pack")}
+        click_target={@myself}
+      />
+
+  """
+  attr :id, :string, required: true
+  attr :show, :boolean, default: false
+  attr :title, :string, default: "Cards"
+  attr :subtitle, :string, default: nil
+  attr :cards, :list, required: true
+  attr :selectable, :boolean, default: false
+  attr :on_select, :string, default: "select_card"
+  attr :on_cancel, JS, default: %JS{}
+  attr :click_target, :any, default: nil
+  attr :selected_index, :integer, default: nil
+
+  def card_modal(assigns) do
+    ~H"""
+    <.modal id={@id} show={@show} on_cancel={@on_cancel}>
+      <div class="flex flex-col gap-4">
+        <div>
+          <h2 class="text-2xl font-bold">{@title}</h2>
+          <p :if={@subtitle} class="text-base-content/60 text-sm mt-1">{@subtitle}</p>
+          <p class="text-base-content/40 text-xs mt-1">{length(@cards)} cards</p>
+        </div>
+        <div class="overflow-y-auto max-h-[65vh]">
+          <div class="flex flex-wrap gap-4 justify-center py-4">
+            <.card
+              :for={{card, index} <- Enum.with_index(@cards)}
+              card={card}
+              index={index}
+              selected={@selected_index == index}
+              disabled={false}
+              on_click={if @selectable, do: @on_select, else: nil}
+              click_target={@click_target}
+            />
+          </div>
+        </div>
+      </div>
+    </.modal>
+    """
+  end
+
   defp rarity_bar_class(:common), do: "bg-common"
   defp rarity_bar_class(:uncommon), do: "bg-uncommon"
   defp rarity_bar_class(:rare), do: "bg-rare"
