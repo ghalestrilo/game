@@ -58,6 +58,13 @@ defmodule Game.Lobby do
     end
   end
 
+  def set_setting(id, key, value) do
+    case Registry.lookup(Game.LobbyRegistry, id) do
+      [{_pid, _}] -> LobbyServer.set_setting(id, key, value)
+      [] -> {:error, :not_found}
+    end
+  end
+
   def reset(id) do
     case Registry.lookup(Game.LobbyRegistry, id) do
       [{_pid, _}] -> LobbyServer.reset(id)

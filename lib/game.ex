@@ -83,6 +83,18 @@ defmodule Game do
     GenServer.call(game_pid, :enter_shop)
   end
 
+  def pick_booster_card(game_pid, player_id, card) do
+    GenServer.call(game_pid, {:pick_booster_card, player_id, card})
+  end
+
+  def generate_booster_cards(count) do
+    Game.BaseCards.list_basecards()
+    |> Enum.shuffle()
+    |> Enum.take(count)
+    |> Enum.with_index(1000)
+    |> Enum.map(fn {base_card, id} -> base_card_to_game_card(base_card, id) end)
+  end
+
   # Callbacks
 
   def handle_call({:init_combat, characters, grid}, _from, _state) do
@@ -216,6 +228,65 @@ defmodule Game do
 
   defp resolve_animation_target(_combat, _action), do: nil
 
+  def handle_call({:pick_booster_card, player_id, card}, _from, state) do
+    add_card_to_player = fn p ->
+      new_id = length(p.cards.draw) + length(p.cards.hand) + length(p.cards.discard)
+      %{p | cards: %{p.cards | draw: p.cards.draw ++ [%{card | id: new_id}]}}
+    end
+
+    updated_constants_players =
+      Enum.map(state.combat.__constants__.players, fn p ->
+        if to_string(p.id) == to_string(player_id), do: add_card_to_player.(p), else: p
+      end)
+
+    updated_queue =
+      Enum.map(state.combat.queue, fn p ->
+        if to_string(p.id) == to_string(player_id), do: add_card_to_player.(p), else: p
+      end)
+
+    updated_current_turn_player =
+      if state.combat.current_turn.player &&
+           to_string(state.combat.current_turn.player.id) == to_string(player_id) do
+        add_card_to_player.(state.combat.current_turn.player)
+      else
+        state.combat.current_turn.player
+      end
+
+    updated_combat = %{
+      state.combat
+      | __constants__: %{state.combat.__constants__ | players: updated_constants_players},
+        queue: updated_queue,
+        current_turn: %{state.combat.current_turn | player: updated_current_turn_player}
+    }
+
+    # Update this player's per-player booster state.
+    player_booster = Map.get(state.booster_state, player_id, %{remaining: 1, cards: []})
+    remaining = player_booster.remaining - 1
+
+    next_player_booster =
+      if remaining > 0 do
+        %{remaining: remaining, cards: generate_booster_cards(5)}
+      else
+        %{remaining: 0, cards: []}
+      end
+
+    new_booster_state = Map.put(state.booster_state, player_id, next_player_booster)
+
+    # Transition the whole game to :combat once every player has finished their boosters.
+    all_done = Enum.all?(new_booster_state, fn {_, b} -> b.remaining == 0 end)
+    next_view = if all_done, do: :combat, else: :booster
+
+    new_state = %{
+      state
+      | combat: updated_combat,
+        booster_state: new_booster_state,
+        current_view: next_view
+    }
+
+    broadcast(self(), new_state)
+    {:reply, {:ok, new_state}, new_state}
+  end
+
   def handle_call(:enter_shop, _from, state) do
     if state.combat.state == :game_over do
       # Generate 4 shop cards
@@ -231,19 +302,18 @@ defmodule Game do
     end
   end
 
-  # Helper function to generate random shop cards
   defp generate_shop_cards(count) do
-    # For now, we'll create a mix of different card types
-    all_cards = [
-      Game.Fixtures.attack_card(),
-      Game.Fixtures.heal_card(),
-      Game.Fixtures.fireball_card(),
-      Game.Fixtures.expensive_card()
-    ]
-
-    all_cards
+    Game.BaseCards.list_basecards()
+    |> Enum.shuffle()
     |> Enum.take(count)
-    |> Enum.with_index()
-    |> Enum.map(fn {card, idx} -> %{card | id: idx + 1000} end)
+    |> Enum.with_index(1000)
+    |> Enum.map(fn {base_card, id} -> base_card_to_game_card(base_card, id) end)
+  end
+
+  defp base_card_to_game_card(base_card, id) do
+    base_card
+    |> Map.drop([:__meta__, :__struct__, :inserted_at, :updated_at, :ap])
+    |> Map.merge(%{cost: base_card.ap, id: id})
+    |> then(&struct!(Game.Card, &1))
   end
 end

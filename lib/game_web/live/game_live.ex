@@ -353,6 +353,24 @@ defmodule GameWeb.GameLive do
   end
 
   @impl true
+  def handle_event("pick_booster_card", %{"card_index" => idx}, socket) do
+    player_id =
+      if socket.assigns.current_player,
+        do: socket.assigns.current_player.id,
+        else: socket.assigns.game_state.combat.current_turn.player.id
+
+    my_booster = get_in(socket.assigns.game_state, [:booster_state, player_id])
+    card = my_booster && Enum.at(my_booster.cards, String.to_integer(idx))
+
+    if card do
+      {:ok, new_state} = Game.pick_booster_card(socket.assigns.game_pid, player_id, card)
+      {:noreply, assign(socket, game_state: new_state)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_event("enter_shop", _params, socket) do
     if socket.assigns.game_state.combat.state == :game_over do
       case Game.enter_shop(socket.assigns.game_pid) do
@@ -404,6 +422,21 @@ defmodule GameWeb.GameLive do
   def render(assigns) do
     ~H"""
     <div class="campaign-play" phx-window-keydown="handle_keys">
+      <%= if @game_state && Map.get(@game_state, :current_view) == :booster do %>
+        <% my_booster = Map.get(@game_state.booster_state || %{}, @current_player && @current_player.id) %>
+        <div class="flex items-center justify-center h-screen">
+          <.card_modal
+            id="booster-modal"
+            show={true}
+            title={"Booster Pack"}
+            subtitle={"Pick a card to add to your deck — #{my_booster && my_booster.remaining || 0} pack(s) remaining"}
+            cards={my_booster && my_booster.cards || []}
+            selectable={true}
+            on_select="pick_booster_card"
+          />
+        </div>
+      <% end %>
+
       <%= if @game_state && Map.get(@game_state, :current_view) == :combat do %>
         <.live_component
           module={GameWeb.CombatLive}

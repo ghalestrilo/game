@@ -277,6 +277,170 @@ defmodule GameWeb.LobbyLiveTest do
     end
   end
 
+  describe "LobbyLive - booster packs lobby settings" do
+    setup :two_players_in_lobby
+
+    test "host sees booster count input, non-host sees read-only badge", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      assert lobby_view1 |> element("form[phx-change='set_boosters']") |> has_element?()
+      refute lobby_view2 |> element("form[phx-change='set_boosters']") |> has_element?()
+    end
+
+    test "setting booster count broadcasts to all players", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      set_boosters(lobby_view1, 3)
+      assert render(lobby_view2) =~ "3"
+    end
+  end
+
+  describe "LobbyLive - booster packs in-game" do
+    setup :two_players_in_lobby_with_boosters
+
+    test "each player sees their own booster modal independently", %{
+      game_view1: game_view1,
+      game_view2: game_view2
+    } do
+      assert render(game_view1) =~ "Booster Pack"
+      assert render(game_view2) =~ "Booster Pack"
+    end
+
+    test "picking a booster card does not advance the other player's booster", %{
+      game_view1: game_view1,
+      game_view2: game_view2
+    } do
+      # Player 1 picks from their booster (2 packs configured, so 1 remaining after pick)
+      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
+      assert render(game_view1) =~ "1 pack(s) remaining"
+
+      # Player 2's booster is unaffected — still on their first pack (2 remaining)
+      assert render(game_view2) =~ "2 pack(s) remaining"
+    end
+
+    @tag booster_count: 1
+    test "after all boosters picked, combat view is shown", %{
+      game_view1: game_view1,
+      game_view2: game_view2
+    } do
+      # Each player picks their single booster card
+      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
+      game_view2 |> element("[phx-value-card_index='0']") |> render_click()
+
+      refute render(game_view1) =~ "Booster Pack"
+      refute render(game_view2) =~ "Booster Pack"
+      assert render(game_view1) =~ "game-board"
+      assert render(game_view2) =~ "game-board"
+    end
+
+    test "booster cards appear in the player's deck in combat", %{
+      game_view1: game_view1,
+      game_view2: game_view2,
+      game_pid: game_pid,
+      user1: user1
+    } do
+      # seed_base_classes gives fighters a 10-card Strike deck (5 in hand, 5 in draw).
+      # Pick 2 booster cards — total should increase by 2.
+      before = Game.get_state(game_pid)
+
+      # Find the player whose booster we're controlling via game_view1.
+      # current_player is set to the user's character during PvP mount.
+      # We identify them by matching the user id against the booster_state keys.
+      player1_id = Enum.find(Map.keys(before.booster_state), &(to_string(&1) == to_string(user1.id)))
+
+      assert player1_id != nil,
+             "user1 (id=#{user1.id}) not found in booster_state keys: #{inspect(Map.keys(before.booster_state))}"
+
+      # Player may be in queue OR in current_turn (the active player is popped from queue).
+      player1_before =
+        Enum.find(before.combat.queue, &(to_string(&1.id) == to_string(player1_id))) ||
+          (before.combat.current_turn.player &&
+             to_string(before.combat.current_turn.player.id) == to_string(player1_id) &&
+             before.combat.current_turn.player)
+
+      assert player1_before != nil,
+             "player1 not found in queue or current_turn for id #{player1_id}"
+
+      cards_before =
+        length(player1_before.cards.draw) +
+          length(player1_before.cards.hand) +
+          length(player1_before.cards.discard)
+
+      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
+      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
+      # player 2 also finishes so combat starts
+      game_view2 |> element("[phx-value-card_index='0']") |> render_click()
+      game_view2 |> element("[phx-value-card_index='0']") |> render_click()
+
+      after_state = Game.get_state(game_pid)
+
+      player1_after =
+        Enum.find(after_state.combat.queue, &(to_string(&1.id) == to_string(player1_id))) ||
+          (after_state.combat.current_turn.player &&
+             to_string(after_state.combat.current_turn.player.id) == to_string(player1_id) &&
+             after_state.combat.current_turn.player)
+
+      assert player1_after != nil, "player1 not found in queue or current_turn after boosters"
+
+      cards_after =
+        length(player1_after.cards.draw) +
+          length(player1_after.cards.hand) +
+          length(player1_after.cards.discard)
+
+      assert cards_after == cards_before + 2,
+             "Expected #{cards_before + 2} cards after 2 boosters, got #{cards_after}"
+    end
+  end
+
+  defp set_boosters(view, count) do
+    view
+    |> element("form[phx-change='set_boosters']")
+    |> render_change(%{"boosters" => to_string(count)})
+  end
+
+  defp two_players_in_lobby_with_boosters(%{booster_count: booster_count} = context),
+    do: do_two_players_in_lobby_with_boosters(context, booster_count)
+
+  defp two_players_in_lobby_with_boosters(context),
+    do: do_two_players_in_lobby_with_boosters(context, 2)
+
+  defp do_two_players_in_lobby_with_boosters(context, booster_count) do
+    base = two_players_in_lobby(context)
+    %{lobby_view1: lobby_view1, lobby_view2: lobby_view2, conn1: conn1, conn2: conn2} = base
+
+    set_boosters(lobby_view1, booster_count)
+
+    # Start the game
+    lobby_view1
+    |> element("form[phx-change='select_class']")
+    |> render_change(%{"class" => "fighter"})
+
+    lobby_view2
+    |> element("form[phx-change='select_class']")
+    |> render_change(%{"class" => "fighter"})
+
+    lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()
+    lobby_view2 |> element("button[phx-click='toggle_ready']") |> render_click()
+
+    {play_path1, _} = assert_redirect(lobby_view1)
+    {play_path2, _} = assert_redirect(lobby_view2)
+
+    {:ok, game_view1, _} = live(conn1, play_path1)
+    {:ok, game_view2, _} = live(conn2, play_path2)
+
+    lobby_id = play_path1 |> String.split("/") |> Enum.at(-2)
+    {:ok, %{game_pid: game_pid}} = Game.Lobby.get(lobby_id)
+
+    Map.merge(base, %{
+      game_view1: game_view1,
+      game_view2: game_view2,
+      game_pid: game_pid,
+      booster_count: booster_count
+    })
+  end
+
   defp two_players_in_lobby(context) do
     user1 = Game.AccountsFixtures.user_fixture()
     user2 = Game.AccountsFixtures.user_fixture()

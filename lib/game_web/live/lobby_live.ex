@@ -63,6 +63,16 @@ defmodule GameWeb.LobbyLive do
   end
 
   @impl true
+  def handle_event("set_boosters", %{"boosters" => value}, socket) do
+    count = value |> String.to_integer() |> max(0)
+
+    case Lobby.set_setting(socket.assigns.lobby_id, :boosters, count) do
+      {:ok, lobby_state} -> {:noreply, assign(socket, lobby: lobby_state)}
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_event("toggle_ready", _params, socket) do
     user = socket.assigns.current_scope.user
 
@@ -123,6 +133,25 @@ defmodule GameWeb.LobbyLive do
             <% end %>
           </select>
         </form>
+        <% is_host = hd(@lobby.players).id == @current_user_id %>
+        <% boosters = get_in(@lobby, [:settings, :boosters]) || 0 %>
+        <div class="flex items-center gap-2">
+          <label class="text-sm font-semibold">Booster packs at start:</label>
+          <%= if is_host do %>
+            <form phx-change="set_boosters">
+              <input
+                type="number"
+                name="boosters"
+                value={boosters}
+                min="0"
+                max="10"
+                class="input input-sm input-bordered w-20"
+              />
+            </form>
+          <% else %>
+            <span class="badge badge-lg">{boosters}</span>
+          <% end %>
+        </div>
         <button
           phx-click="toggle_ready"
           disabled={is_nil(my_class)}

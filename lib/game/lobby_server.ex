@@ -38,6 +38,10 @@ defmodule Game.LobbyServer do
     GenServer.call(via(id), {:select_team, user_id, team})
   end
 
+  def set_setting(id, key, value) do
+    GenServer.call(via(id), {:set_setting, key, value})
+  end
+
   def reset(id) do
     GenServer.cast(via(id), :reset)
   end
@@ -46,7 +50,7 @@ defmodule Game.LobbyServer do
 
   @impl true
   def init({id, :pvp}) do
-    {:ok, %{id: id, mode: :pvp, players: [], status: :waiting, game_pid: nil}}
+    {:ok, %{id: id, mode: :pvp, players: [], status: :waiting, game_pid: nil, settings: %{boosters: 0}}}
   end
 
   def init({id, mode, build_opts}) when mode in [:campaign, :sandbox] do
@@ -129,6 +133,13 @@ defmodule Game.LobbyServer do
   end
 
   @impl true
+  def handle_call({:set_setting, key, value}, _from, state) do
+    new_state = %{state | settings: Map.put(state.settings, key, value)}
+    broadcast(new_state)
+    {:reply, {:ok, new_state}, new_state}
+  end
+
+  @impl true
   def handle_call({:leave, user_id}, _from, state) do
     new_players = Enum.reject(state.players, &(&1.id == user_id))
     new_status = if length(new_players) >= @min_players, do: :ready, else: :waiting
@@ -178,7 +189,29 @@ defmodule Game.LobbyServer do
 
       combat = Game.CombatBuilder.build(specs)
       {:ok, game_pid} = Game.start_link()
-      :ok = GenServer.call(game_pid, {:set_state, %{current_view: :combat, combat: combat}})
+      boosters = get_in(state, [:settings, :boosters]) || 0
+      initial_view = if boosters > 0, do: :booster, else: :combat
+
+      # Per-player booster state: each player gets their own independent pack countdown and card list.
+      player_ids = Enum.map(players, & &1.id)
+
+      booster_state =
+        Map.new(player_ids, fn id ->
+          cards = if boosters > 0, do: Game.generate_booster_cards(5), else: []
+          {id, %{remaining: boosters, cards: cards}}
+        end)
+
+      :ok =
+        GenServer.call(game_pid, {
+          :set_state,
+          %{
+            current_view: initial_view,
+            combat: combat,
+            settings: state.settings,
+            booster_state: booster_state
+          }
+        })
+
       %{state | game_pid: game_pid}
     else
       state
