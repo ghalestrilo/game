@@ -29,7 +29,7 @@ defmodule GameWeb.CombatHUD do
       >
         <!-- Buttons -->
         <div class="flex flex-wrap gap-2 mb-2">
-          <button phx-click="reset" phx-target={@myself} class="btn btn-primary btn-sm">Reset</button>
+          <button :if={false} phx-click="reset" phx-target={@myself} class="btn btn-primary btn-sm">Reset</button>
           <button phx-click="skip_turn" phx-target={@myself} class="btn btn-success btn-sm">
             Skip Turn
           </button>
@@ -73,7 +73,7 @@ defmodule GameWeb.CombatHUD do
           <div class="fixed bottom-4 left-4 z-20">
             <button
               phx-click={show_modal("draw-pile-modal")}
-              class="btn btn-sm btn-ghost justify-between gap-2"
+              class="btn btn-md btn-accent justify-between gap-2"
             >
               <span class="font-semibold text-base-content/70">Draw</span>
               <span class="badge badge-sm">{length(@game_state.combat.current_turn.player.cards.draw)}</span>
@@ -108,7 +108,7 @@ defmodule GameWeb.CombatHUD do
           <div class="fixed bottom-4 right-4 z-20">
             <button
               phx-click={show_modal("discard-pile-modal")}
-              class="btn btn-sm btn-ghost justify-between gap-2"
+              class="btn btn-md btn-accent justify-between gap-2"
             >
               <span class="font-semibold text-base-content/70">Discard</span>
               <span class="badge badge-sm">{length(@game_state.combat.current_turn.player.cards.discard)}</span>

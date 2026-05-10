@@ -64,7 +64,7 @@ defmodule GameWeb.CoreComponents do
         tabindex="0"
       >
         <div class="flex min-h-full items-center justify-center">
-          <div class="w-full max-w-3xl p-4 sm:p-6 lg:py-8">
+          <div class="w-full max-w-6xl p-4 sm:p-6 lg:py-8">
             <.focus_wrap
               id={"#{@id}-container"}
               phx-window-keydown={JS.exec("data-cancel", to: "##{@id}")}
@@ -739,7 +739,7 @@ defmodule GameWeb.CoreComponents do
 
   def card_modal(assigns) do
     ~H"""
-    <.modal id={@id} show={@show} on_cancel={@on_cancel}>
+    <.modal id={@id} show={@show} on_cancel={@on_cancel} class="!max-w-none">
       <div class="flex flex-col gap-4">
         <div>
           <h2 class="text-2xl font-bold">{@title}</h2>
