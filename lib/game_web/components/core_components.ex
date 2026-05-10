@@ -736,6 +736,7 @@ defmodule GameWeb.CoreComponents do
   attr :on_cancel, JS, default: %JS{}
   attr :click_target, :any, default: nil
   attr :selected_index, :integer, default: nil
+  slot :inner_block, required: false
 
   def card_modal(assigns) do
     ~H"""
@@ -759,6 +760,9 @@ defmodule GameWeb.CoreComponents do
             />
           </div>
         </div>
+      </div>
+      <div>
+        {render_slot(@inner_block)}
       </div>
     </.modal>
     """

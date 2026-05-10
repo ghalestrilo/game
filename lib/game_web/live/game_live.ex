@@ -425,15 +425,20 @@ defmodule GameWeb.GameLive do
       <%= if @game_state && Map.get(@game_state, :current_view) == :booster do %>
         <% my_booster = Map.get(@game_state.booster_state || %{}, @current_player && @current_player.id) %>
         <div class="flex items-center justify-center h-screen">
-          <.card_modal
-            id="booster-modal"
-            show={true}
-            title={"Booster Pack"}
-            subtitle={"Pick a card to add to your deck — #{my_booster && my_booster.remaining || 0} pack(s) remaining"}
-            cards={my_booster && my_booster.cards || []}
-            selectable={true}
-            on_select="pick_booster_card"
-          />
+        <.card_modal
+        id="booster-modal"
+        show={true}
+        title={"Booster Pack"}
+        subtitle={"Pick a card to add to your deck — #{my_booster && my_booster.remaining || 0} pack(s) remaining"}
+        cards={my_booster && my_booster.cards || []}
+        selectable={true}
+        on_select="pick_booster_card"
+        >
+          <div :if={my_booster.remaining == 0} class="flex flex-col gap-4 items-center justify-center">
+            Waiting for other players
+            <span class="loading loading-spinner loading-xl"/>
+          </div>
+          </.card_modal>
         </div>
       <% end %>
 
