@@ -30,7 +30,11 @@ defmodule GameWeb.Admin.BaseCardLive do
       headline: %{
         module: Backpex.Fields.Text,
         label: "Headline",
-        default: fn assigns -> Map.get(assigns.params, "headline") end
+        default: fn assigns -> Map.get(assigns.params, "headline") end,
+        render: fn assigns -> ~H"""
+          <span class="w-50">{@item.headline}</span>
+         """
+        end
       },
       ap: %{
         module: Backpex.Fields.Number,
@@ -103,6 +107,7 @@ defmodule GameWeb.Admin.BaseCardLive do
             label: "Parameters"
           }
         ],
+        render: fn assigns -> GameWeb.CoreComponents.effect_list(%{card: assigns.item}) end,
         render_form: fn assigns ->
           ~H"""
           <div>
@@ -211,6 +216,9 @@ defmodule GameWeb.Admin.BaseCardLive do
     [
       deck: %{
         module: GameWeb.Admin.Filters.DeckFilter
+      },
+      rarity: %{
+        module: GameWeb.Admin.Filters.RarityFilter
       }
     ]
   end
