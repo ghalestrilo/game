@@ -98,72 +98,87 @@ defmodule GameWeb.LobbyLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="flex flex-col h-screen justify-center items-center gap-4">
-      <h1 class="text-2xl font-bold">Lobby</h1>
+    <div class="w-full max-w-screen h-screen justify-center items-center gap-4">
+      <h1 class="text-4xl font-bold">Multiplayer Lobby</h1>
       <%= if @lobby do %>
-        <ul class="flex flex-col gap-2">
-          <%= for player <- @lobby.players do %>
-            <li class="px-4 py-2 bg-secondary rounded flex gap-2 items-center">
-              {player.email}
-              <span>Team {player.team}</span>
-              <%= if player.class do %>
-                <span>{player.class}</span>
+        <div class="grid grid-cols-[320px_1fr]">
+        <div class="flex flex-col">
+          <% my_player = @lobby.players |> Enum.find(&(&1.id == @current_user_id)) %>
+          <% my_class = my_player && my_player.class %>
+          <% my_team = my_player && my_player.team %>
+          <form phx-change="select_class">
+            <select name="class">
+              <option value="" selected={is_nil(my_class)}>Pick a class</option>
+              <%= for bc <- @base_classes do %>
+                <option value={bc.class} selected={my_class == bc.class}>{bc.class}</option>
               <% end %>
-              <%= if player.ready do %>
-                <span>ready</span>
+            </select>
+          </form>
+          <form phx-change="select_team">
+            <select name="team">
+              <%= for index <- 1..8 do %>
+                <option value={index} selected={my_player.team == index}>Team {index}</option>
               <% end %>
-            </li>
-          <% end %>
-        </ul>
-        <% my_player = @lobby.players |> Enum.find(&(&1.id == @current_user_id)) %>
-        <% my_class = my_player && my_player.class %>
-        <% my_team = my_player && my_player.team %>
-        <form phx-change="select_class">
-          <select name="class">
-            <option value="" selected={is_nil(my_class)}>Pick a class</option>
-            <%= for bc <- @base_classes do %>
-              <option value={bc.class} selected={my_class == bc.class}>{bc.class}</option>
+            </select>
+          </form>
+          <% is_host = hd(@lobby.players).id == @current_user_id %>
+          <% boosters = get_in(@lobby, [:settings, :boosters]) || 0 %>
+          <ul class="flex flex-col items-start gap-2">
+            <h2>Lobby Settings</h2>
+            <span class="flex w-full justify-between">
+            <label class="text-sm font-semibold">Booster packs at start:</label>
+            <%= if is_host do %>
+              <form phx-change="set_boosters">
+                <input
+                  type="number"
+                  name="boosters"
+                  value={boosters}
+                  min="0"
+                  max="10"
+                  class="input input-sm input-bordered w-20"
+                />
+              </form>
+            <% else %>
+              <span class="badge badge-lg">{boosters}</span>
             <% end %>
-          </select>
-        </form>
-        <form phx-change="select_team">
-          <select name="team">
-            <%= for index <- 1..8 do %>
-              <option value={index} selected={my_player.team == index}>Team {index}</option>
+            </span>
+            <button
+              phx-click="toggle_ready"
+              disabled={is_nil(my_class)}
+              class="btn btn-primary w-full"
+            >
+              Ready
+            </button>
+            <%= if @lobby.status == :ready do %>
+              <p>Players connected. Game starting soon...</p>
+            <% else %>
+              <p>Waiting for players...</p>
             <% end %>
-          </select>
-        </form>
-        <% is_host = hd(@lobby.players).id == @current_user_id %>
-        <% boosters = get_in(@lobby, [:settings, :boosters]) || 0 %>
-        <div class="flex items-center gap-2">
-          <label class="text-sm font-semibold">Booster packs at start:</label>
-          <%= if is_host do %>
-            <form phx-change="set_boosters">
-              <input
-                type="number"
-                name="boosters"
-                value={boosters}
-                min="0"
-                max="10"
-                class="input input-sm input-bordered w-20"
-              />
-            </form>
-          <% else %>
-            <span class="badge badge-lg">{boosters}</span>
-          <% end %>
+            </ul>
+
         </div>
-        <button
-          phx-click="toggle_ready"
-          disabled={is_nil(my_class)}
-          class="px-4 py-2 rounded-2 bg-primary disabled:opacity-50"
-        >
-          Ready
-        </button>
-        <%= if @lobby.status == :ready do %>
-          <p>Players connected. Game starting soon...</p>
-        <% else %>
-          <p>Waiting for players...</p>
-        <% end %>
+          <ul class="grid grid-cols-2 xl:grid-cols-3 gap-8 p-4">
+            <%= for {team, players} <- Enum.group_by(@lobby.players, & &1.team) do %>
+              <li class={["indicator flex flex-col items-st w-full border-2 rounded-xl p-2", GameWeb.Theme.team_ring_class(team)]}>
+                <span class={["indicator-item indicator-start indicator-top ml-4 badge", GameWeb.Theme.team_bg_class(team)]}>Team {team}</span>
+                <ul>
+                  <li
+                    :for={player <- players}
+                    class="justify-between w-full text-lg  px-4 py-2 bg-base-200 rounded flex gap-2 items-center"
+                  >
+                    {player.email}
+                    <%= if player.class do %>
+                      <span class="badge badge-soft badge-lg badge-warning">{player.class}</span>
+                    <% end %>
+                    <%= if player.ready do %>
+                      <span>ready</span>
+                    <% end %>
+                  </li>
+                </ul>
+              </li>
+            <% end %>
+          </ul>
+        </div>
       <% else %>
         <p>Connecting...</p>
       <% end %>

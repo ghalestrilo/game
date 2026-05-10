@@ -348,7 +348,8 @@ defmodule GameWeb.LobbyLiveTest do
       # Find the player whose booster we're controlling via game_view1.
       # current_player is set to the user's character during PvP mount.
       # We identify them by matching the user id against the booster_state keys.
-      player1_id = Enum.find(Map.keys(before.booster_state), &(to_string(&1) == to_string(user1.id)))
+      player1_id =
+        Enum.find(Map.keys(before.booster_state), &(to_string(&1) == to_string(user1.id)))
 
       assert player1_id != nil,
              "user1 (id=#{user1.id}) not found in booster_state keys: #{inspect(Map.keys(before.booster_state))}"

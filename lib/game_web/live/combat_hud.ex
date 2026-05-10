@@ -3,28 +3,6 @@ defmodule GameWeb.CombatHUD do
   import GameWeb.CoreComponents
   alias Phoenix.LiveView.JS
 
-  @team_colors ~w(
-    border-sky-500
-    border-rose-500
-    border-emerald-500
-    border-amber-500
-    border-violet-500
-    border-orange-500
-    border-teal-500
-    border-pink-500
-  )
-
-  @team_bg_colors ~w(
-    bg-sky-500
-    bg-rose-500
-    bg-emerald-500
-    bg-amber-500
-    bg-violet-500
-    bg-orange-500
-    bg-teal-500
-    bg-pink-500
-  )
-
   @impl true
   def update(assigns, socket) do
     {:ok, assign(socket, assigns)}
@@ -40,7 +18,9 @@ defmodule GameWeb.CombatHUD do
       >
         <!-- Buttons -->
         <div class="flex flex-wrap gap-2 mb-2">
-          <button :if={false} phx-click="reset" phx-target={@myself} class="btn btn-primary btn-sm">Reset</button>
+          <button :if={false} phx-click="reset" phx-target={@myself} class="btn btn-primary btn-sm">
+            Reset
+          </button>
           <button phx-click="skip_turn" phx-target={@myself} class="btn btn-success btn-sm">
             Skip Turn
           </button>
@@ -87,7 +67,9 @@ defmodule GameWeb.CombatHUD do
               class="btn btn-md btn-accent justify-between gap-2"
             >
               <span class="font-semibold text-base-content/70">Draw</span>
-              <span class="badge badge-sm">{length(@game_state.combat.current_turn.player.cards.draw)}</span>
+              <span class="badge badge-sm">
+                {length(@game_state.combat.current_turn.player.cards.draw)}
+              </span>
             </button>
           </div>
           <.card_modal
@@ -122,7 +104,9 @@ defmodule GameWeb.CombatHUD do
               class="btn btn-md btn-accent justify-between gap-2"
             >
               <span class="font-semibold text-base-content/70">Discard</span>
-              <span class="badge badge-sm">{length(@game_state.combat.current_turn.player.cards.discard)}</span>
+              <span class="badge badge-sm">
+                {length(@game_state.combat.current_turn.player.cards.discard)}
+              </span>
             </button>
           </div>
           <.card_modal
@@ -203,12 +187,16 @@ defmodule GameWeb.CombatHUD do
     ~H"""
     <li class={[
       "indicator w-full p-3 border-2 rounded-lg flex items-start gap-2 transition-all duration-300",
-      team_ring_class(@character.team),
+      GameWeb.Theme.team_ring_class(@character.team),
       if(@is_self, do: "bg-yellow-400/15", else: "bg-base-200"),
       if(@same_team, do: "flex-row", else: "flex-row-reverse"),
       if(@current, do: "shadow-md animate-pulse", else: "scale-90")
     ]}>
-      <pre class={["indicator-item indicator-bottom indicator-end mr-[36px] mb-[9px] badge", team_bg_class(@character.team), team_ring_class(@character.team)]}>Team {@character.team}</pre>
+      <pre class={[
+        "indicator-item indicator-bottom indicator-end mr-[36px] mb-[9px] badge",
+        GameWeb.Theme.team_bg_class(@character.team),
+        GameWeb.Theme.team_ring_class(@character.team)
+      ]}>Team {@character.team}</pre>
       <%= if @character.avatar_url && @character.avatar_url != "" do %>
         <img src={@character.avatar_url} class="w-10 h-10 rounded-full object-cover flex-shrink-0" />
       <% else %>
@@ -296,24 +284,6 @@ defmodule GameWeb.CombatHUD do
       </div>
     </li>
     """
-  end
-
-  defp team_ring_class(team) when is_integer(team) do
-    Enum.at(@team_colors, rem(team, length(@team_colors)))
-  end
-
-  defp team_ring_class(team) do
-    index = team |> String.to_charlist() |> Enum.sum() |> rem(length(@team_colors))
-    Enum.at(@team_colors, index)
-  end
-
-  defp team_bg_class(team) when is_integer(team) do
-    Enum.at(@team_bg_colors, rem(team, length(@team_bg_colors)))
-  end
-
-  defp team_bg_class(team) do
-    index = team |> String.to_charlist() |> Enum.sum() |> rem(length(@team_bg_colors))
-    Enum.at(@team_bg_colors, index)
   end
 
   defp same_team?(_character, nil), do: true

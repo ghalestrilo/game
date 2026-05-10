@@ -31,9 +31,10 @@ defmodule GameWeb.Admin.BaseCardLive do
         module: Backpex.Fields.Text,
         label: "Headline",
         default: fn assigns -> Map.get(assigns.params, "headline") end,
-        render: fn assigns -> ~H"""
+        render: fn assigns ->
+          ~H"""
           <span class="w-50">{@item.headline}</span>
-         """
+          """
         end
       },
       ap: %{

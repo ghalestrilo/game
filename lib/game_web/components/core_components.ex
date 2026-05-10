@@ -697,14 +697,14 @@ defmodule GameWeb.CoreComponents do
           <.effect_list card={@card} />
         </div>
       </div>
-        <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
-  <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
+      <div></div>
     </div>
     """
   end

@@ -107,7 +107,9 @@ defmodule Game.Combat do
         } = combat,
         {:move, player, target_position}
       ) do
-    movement_remaining = current_turn[:movement_remaining] || effective_movement_range(current_player)
+    movement_remaining =
+      current_turn[:movement_remaining] || effective_movement_range(current_player)
+
     step_distance = Grid.distance(grid, current_player.position, target_position)
 
     cond do

@@ -50,7 +50,8 @@ defmodule Game.LobbyServer do
 
   @impl true
   def init({id, :pvp}) do
-    {:ok, %{id: id, mode: :pvp, players: [], status: :waiting, game_pid: nil, settings: %{boosters: 0}}}
+    {:ok,
+     %{id: id, mode: :pvp, players: [], status: :waiting, game_pid: nil, settings: %{boosters: 0}}}
   end
 
   def init({id, mode, build_opts}) when mode in [:campaign, :sandbox] do
