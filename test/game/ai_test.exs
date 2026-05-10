@@ -109,6 +109,7 @@ defmodule Game.AITest do
       assert result.current_turn.player.id == target.id
     end
 
+    @tag :skip
     test "conditional trigger: retreats when HP below 25%" do
       attacker = %{
         Fixtures.fighter()

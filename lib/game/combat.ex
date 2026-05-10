@@ -103,26 +103,28 @@ defmodule Game.Combat do
           state: :running,
           queue: _queue,
           grid: grid,
-          current_turn: %{starting_position: starting_position}
+          current_turn: %{player: current_player} = current_turn
         } = combat,
         {:move, player, target_position}
       ) do
+    movement_remaining = current_turn[:movement_remaining] || effective_movement_range(current_player)
+    step_distance = Grid.distance(grid, current_player.position, target_position)
+
     cond do
       not CombatState.is_players_turn?(combat, player) ->
         {:error, "Not player's turn"}
 
-      Grid.distance(grid, starting_position, target_position) > effective_movement_range(player) ->
+      step_distance > movement_remaining ->
         {:error, "Not enough movement"}
 
       Grid.tile_blocked?(grid, target_position) ->
         {:error, "Tile is blocked"}
 
       true ->
-        # First update the player's position property
+        combat = put_in(combat, [:current_turn, :movement_remaining], movement_remaining)
         updated_combat = CombatState.update_player_position(combat, player, target_position)
-        # Then properly update the grid with old and new positions
         updated_combat = CombatState.update_grid_position(updated_combat, player, target_position)
-        # Finally update the queue
+        updated_combat = CombatState.deduct_movement(updated_combat, step_distance)
         result = CombatState.update_players_and_queue(updated_combat)
 
         {:ok, result}

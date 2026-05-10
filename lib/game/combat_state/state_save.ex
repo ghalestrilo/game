@@ -57,6 +57,7 @@ defmodule Game.CombatState.StateSave do
       |> Map.update!(:current_turn, fn turn ->
         turn = %{
           starting_position: turn[:starting_position],
+          movement_remaining: turn[:movement_remaining],
           card: turn[:card],
           player: if(turn[:player], do: character_to_map(turn[:player]), else: nil)
         }

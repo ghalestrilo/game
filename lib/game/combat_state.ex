@@ -29,6 +29,7 @@ defmodule Game.CombatState do
             current_turn: %{
               player: nil,
               starting_position: {0, 0, 0},
+              movement_remaining: nil,
               card: nil
             },
             # Shop-related state
@@ -42,6 +43,7 @@ defmodule Game.CombatState do
           current_turn: %{
             player: Character.t() | nil,
             starting_position: {0, 0, 0},
+            movement_remaining: integer() | nil,
             card: Card.t() | nil
           },
           shop_cards: list(Card.t())
@@ -263,9 +265,14 @@ defmodule Game.CombatState do
   def new_turn(%Character{position: position} = player) do
     %{
       starting_position: position,
+      movement_remaining: nil,
       player: player,
       card: nil
     }
+  end
+
+  def deduct_movement(combat, distance) do
+    update_in(combat, [:current_turn, :movement_remaining], &(&1 - distance))
   end
 
   @doc """
