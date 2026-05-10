@@ -28,7 +28,7 @@ defmodule GameWeb.CombatHUD do
             Win Match
           </button>
         </div>
-        
+
     <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
@@ -40,7 +40,7 @@ defmodule GameWeb.CombatHUD do
           current_player={@current_player}
         />
       </div>
-      
+
     <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto min-w-[320px] min-h-full">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
@@ -56,7 +56,7 @@ defmodule GameWeb.CombatHUD do
           </li>
         </ul>
       </div>
-      
+
     <!-- Card piles -->
       <%= if Map.get(assigns, :game_mode, nil) == :sandbox || (@game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id)) do %>
@@ -152,7 +152,7 @@ defmodule GameWeb.CombatHUD do
 
   defp character_turn_queue(assigns) do
     ~H"""
-    <div>
+    <div class="max-h-[calc(100vh-200px)]">
       <% [current | queue] = Game.CombatState.get_current_queue(@combat) %>
       <h3 class="text-base font-bold mb-2">Current turn</h3>
       <.character_queue_card
@@ -161,7 +161,7 @@ defmodule GameWeb.CombatHUD do
         current={true}
       />
       <h3 class="text-base font-bold mt-2">Next up</h3>
-      <ul class="text-sm flex flex-col gap-3">
+      <ul class="max-h-[calc(100vh-600px)] text-sm flex flex-col gap-3 overflow-scroll">
         <.character_queue_card
           :for={character <- Enum.filter(queue, &(&1 != nil))}
           character={character}
@@ -193,7 +193,7 @@ defmodule GameWeb.CombatHUD do
       if(@current, do: "shadow-md animate-pulse", else: "scale-90")
     ]}>
       <pre class={[
-        "indicator-item indicator-bottom indicator-end mr-[36px] mb-[9px] badge",
+        "indicator-item indicator-bottom indicator-end mr-[36px] mb-[9px] badge rounded-br-lg rounded-tr-none rounded-bl-none",
         GameWeb.Theme.team_bg_class(@character.team),
         GameWeb.Theme.team_ring_class(@character.team)
       ]}>Team {@character.team}</pre>
