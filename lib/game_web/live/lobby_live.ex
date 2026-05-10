@@ -166,7 +166,7 @@ defmodule GameWeb.LobbyLive do
           <ul class="grid grid-cols-2 xl:grid-cols-3 gap-8 p-4">
             <%= for {team, players} <- Enum.group_by(@lobby.players, & &1.team) do %>
               <li class={[
-                "indicator flex flex-col items-st w-full border-2 rounded-xl p-2",
+                "indicator flex flex-col items-st w-full border-2 rounded-xl p-4",
                 GameWeb.Theme.team_ring_class(team)
               ]}>
                 <span class={[
@@ -179,7 +179,7 @@ defmodule GameWeb.LobbyLive do
                   <li
                     :for={player <- players}
                     class={[
-                      "list-row  list-col-wrap  w-full text-lg rounded",
+                      "list-row indicator list-col-wrap w-full text-lg rounded",
                       if(player.ready, do: "bg-success/30")
                     ]}
                   >
@@ -189,9 +189,7 @@ defmodule GameWeb.LobbyLive do
                         {player.class}
                       </span>
                     <% end %>
-                    <%= if player.ready do %>
-                      <span>ready</span>
-                    <% end %>
+                      <.icon name="hero-check-circle-mini" :if={player.ready} class="indicator-item indicator-top indicator-end bg-success rounded-full w-8 h-8"/>
                   </li>
                 </ul>
               </li>

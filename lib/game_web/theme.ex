@@ -27,6 +27,12 @@ defmodule GameWeb.Theme do
   def rarity_bg_class(:legendary), do: "bg-legendary"
   def rarity_bg_class(_), do: "bg-base-300"
 
+  def rarity_bg_class(:common, :soft), do: "bg-common/20"
+  def rarity_bg_class(:uncommon, :soft), do: "bg-uncommon/20"
+  def rarity_bg_class(:rare, :soft), do: "bg-rare/20"
+  def rarity_bg_class(:legendary, :soft), do: "bg-legendary/20"
+  def rarity_bg_class(_, _), do: "bg-base-300/20"
+
   def team_ring_class(team) when is_integer(team) do
     Enum.at(@team_colors, rem(team, length(@team_colors)))
   end
