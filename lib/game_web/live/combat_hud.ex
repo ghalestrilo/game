@@ -14,6 +14,17 @@ defmodule GameWeb.CombatHUD do
     border-pink-500
   )
 
+  @team_bg_colors ~w(
+    bg-sky-500
+    bg-rose-500
+    bg-emerald-500
+    bg-amber-500
+    bg-violet-500
+    bg-orange-500
+    bg-teal-500
+    bg-pink-500
+  )
+
   @impl true
   def update(assigns, socket) do
     {:ok, assign(socket, assigns)}
@@ -191,12 +202,13 @@ defmodule GameWeb.CombatHUD do
 
     ~H"""
     <li class={[
-      "p-3 border-2 rounded-lg flex items-start gap-2 transition-all duration-300",
+      "indicator w-full p-3 border-2 rounded-lg flex items-start gap-2 transition-all duration-300",
       team_ring_class(@character.team),
       if(@is_self, do: "bg-yellow-400/15", else: "bg-base-200"),
       if(@same_team, do: "flex-row", else: "flex-row-reverse"),
       if(@current, do: "shadow-md animate-pulse", else: "scale-90")
     ]}>
+      <pre class={["indicator-item indicator-bottom indicator-end mr-[36px] mb-[9px] badge", team_bg_class(@character.team), team_ring_class(@character.team)]}>Team {@character.team}</pre>
       <%= if @character.avatar_url && @character.avatar_url != "" do %>
         <img src={@character.avatar_url} class="w-10 h-10 rounded-full object-cover flex-shrink-0" />
       <% else %>
@@ -293,6 +305,15 @@ defmodule GameWeb.CombatHUD do
   defp team_ring_class(team) do
     index = team |> String.to_charlist() |> Enum.sum() |> rem(length(@team_colors))
     Enum.at(@team_colors, index)
+  end
+
+  defp team_bg_class(team) when is_integer(team) do
+    Enum.at(@team_bg_colors, rem(team, length(@team_bg_colors)))
+  end
+
+  defp team_bg_class(team) do
+    index = team |> String.to_charlist() |> Enum.sum() |> rem(length(@team_bg_colors))
+    Enum.at(@team_bg_colors, index)
   end
 
   defp same_team?(_character, nil), do: true

@@ -125,4 +125,11 @@ defmodule Game.Content do
   def change_base_class(%BaseClass{} = base_class, attrs \\ %{}) do
     BaseClass.changeset(base_class, attrs)
   end
+
+  def get_base_deck_cards(%BaseDeck{id: id}), do: get_base_deck_cards(id)
+
+  def get_base_deck_cards(deck_id) do
+    deck = Repo.get!(BaseDeck, deck_id) |> Repo.preload(base_deck_cards: :card)
+    BaseDeck.get_cards(deck)
+  end
 end

@@ -656,6 +656,7 @@ defmodule GameWeb.CoreComponents do
       class={[
         "rounded-lg shadow-md w-72 flex flex-col transition-[all] ease-in-out
         hover:-mt-4 hover:mb-4
+        hover-3d
         ",
         rarity_bg_class(Map.get(@card, :rarity)),
         if(@selected, do: "!bg-yellow-800 -mt-4 mb-4", else: ""),
@@ -696,6 +697,14 @@ defmodule GameWeb.CoreComponents do
           <.effect_list card={@card} />
         </div>
       </div>
+        <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
+  <div></div>
     </div>
     """
   end
