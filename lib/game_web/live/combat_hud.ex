@@ -152,7 +152,7 @@ defmodule GameWeb.CombatHUD do
 
   defp character_turn_queue(assigns) do
     ~H"""
-    <div class="max-h-[calc(100vh-200px)]">
+    <div class="max-h-[calc(100vh-350px)]">
       <% [current | queue] = Game.CombatState.get_current_queue(@combat) %>
       <h3 class="text-base font-bold mb-2">Current turn</h3>
       <.character_queue_card
@@ -161,7 +161,7 @@ defmodule GameWeb.CombatHUD do
         current={true}
       />
       <h3 class="text-base font-bold mt-2">Next up</h3>
-      <ul class="max-h-[calc(100vh-600px)] text-sm flex flex-col gap-3 overflow-scroll">
+      <ul class="max-h-[calc(100vh-650px)] text-sm flex flex-col gap-3 overflow-scroll">
         <.character_queue_card
           :for={character <- Enum.filter(queue, &(&1 != nil))}
           character={character}

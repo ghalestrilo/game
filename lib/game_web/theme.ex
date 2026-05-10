@@ -27,6 +27,14 @@ defmodule GameWeb.Theme do
   def rarity_bg_class(:legendary), do: "bg-legendary"
   def rarity_bg_class(_), do: "bg-base-300"
 
+  def card_z_index_class(1), do: "z-1"
+  def card_z_index_class(2), do: "z-2"
+  def card_z_index_class(3), do: "z-3"
+  def card_z_index_class(4), do: "z-4"
+  def card_z_index_class(5), do: "z-5"
+  def card_z_index_class(6), do: "z-6"
+  def card_z_index_class(_), do: "z-0"
+
   def rarity_bg_class(:common, :soft), do: "bg-common/20"
   def rarity_bg_class(:uncommon, :soft), do: "bg-uncommon/20"
   def rarity_bg_class(:rare, :soft), do: "bg-rare/20"

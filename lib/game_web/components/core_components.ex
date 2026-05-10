@@ -658,7 +658,8 @@ defmodule GameWeb.CoreComponents do
         hover:-mt-4 hover:mb-4
         hover-3d
         ",
-        rarity_bg_class(Map.get(@card, :rarity)),
+        GameWeb.Theme.card_z_index_class(@index),
+        GameWeb.Theme.rarity_bg_class(Map.get(@card, :rarity)),
         if(@selected, do: "!bg-yellow-800 -mt-4 mb-4", else: ""),
         if(@disabled, do: "opacity-40 cursor-not-allowed pointer-events-none", else: "")
       ]}
@@ -667,7 +668,7 @@ defmodule GameWeb.CoreComponents do
       phx-value-card_index={@index}
       phx-target={@click_target}
     >
-      <div class="bg-base-100 rounded-lg m-0.5 mt-2 ">
+      <div class="bg-base-100 rounded-lg m-0.5 mt-2">
         <div class={["p-4 pb-6", GameWeb.Theme.rarity_bg_class(Map.get(@card, :rarity), :soft)]}>
         <div class="flex items-center justify-between">
           <span class="font-bold text-sm text-base-content">{@card.name}</span>

@@ -64,7 +64,9 @@
   }
 
   .card-row {
-    @apply fixed left-0 right-0 bottom-8 flex justify-center gap-4
-           z-10 px-5;
+    @apply fixed left-0 right-0 bottom-8 flex justify-center lg:gap-4 z-10 px-5;
+    & > * {
+      @apply -mx-16 xl:mx-0 hover:mx-4
+    }
   }
 }
