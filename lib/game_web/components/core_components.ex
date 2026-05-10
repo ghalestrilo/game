@@ -624,8 +624,8 @@ defmodule GameWeb.CoreComponents do
       >
         <span>
           <.icon name={Game.Combat.CardEffect.get_icon(effect)} class="w-3 h-3" />
-          {if effect.type === :modify_attribute,
-            do: Map.get(effect, :attribute, nil),
+          {if effect.type === "modify_attribute",
+            do: Map.get(effect, :attribute, nil) <> " +",
             else: effect.type}
         </span>
         {GameWeb.Components.FormulaTreeComponent.render(effect)}

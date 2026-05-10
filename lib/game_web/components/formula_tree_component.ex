@@ -40,7 +40,7 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   # alias
   defp jl_node(%{value: %{"alias" => name}} = assigns) do
     ~H"""
-    <span class="jl-var badge badge-outline badge-primary">{@value["alias"]}</span>
+    <span class="jl-var badge badge-outline badge-warning">{@value["alias"]}</span>
     """
   end
 
@@ -96,15 +96,15 @@ defmodule GameWeb.Components.FormulaTreeComponent do
     ~H"""
     <div class="jl-if flex flex-col gap-1">
       <div class="jl-if-row flex flex-row items-center gap-1">
-        <span class="jl-if-label badge badge-soft badge-warning">IF</span>
+        <span class="jl-if-label badge badge-soft badge-info">IF</span>
         <.jl_node value={if_clause} />
       </div>
       <div class="jl-if-row flex flex-row items-center gap-1">
-        <span class="jl-if-label badge badge-soft badge-info">THEN</span>
+        <span class="jl-if-label badge badge-soft badge-success">THEN</span>
         <.jl_node value={then_clause} />
       </div>
       <div :if={Enum.at(rest, 0)} class="jl-if-row flex flex-row items-center gap-1">
-        <span class="jl-if-label badge badge-soft badge-neutral">ELSE</span>
+        <span class="jl-if-label badge badge-soft badge-error">ELSE</span>
         <.jl_node value={Enum.at(rest, 0)} />
       </div>
     </div>

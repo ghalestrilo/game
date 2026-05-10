@@ -45,7 +45,9 @@ defmodule Game.Content do
   def get_base_class_by_class!(class),
     do:
       BaseClass
-      |> Repo.get_by!([class: class], preload: [:deck])
+      # |> Repo.get_by!([class: class], preload: [:deck])
+      |> where([bc], fragment("lower(?)", bc.class) == fragment("lower(?)", ^class))
+      |> Repo.one!()
       |> Repo.preload(deck: [:cards], strategy: [])
 
   @doc """

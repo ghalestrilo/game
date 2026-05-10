@@ -50,7 +50,7 @@ defmodule GameWeb.Admin.BaseDeckLive do
             <div :for={card <- cards} class="tooltip" data-tip={card.name}>
               <a
                 class={["badge px-1 w-8 text-primary-content/60", rarity_bg_class(card.rarity)]}
-                href={"/admin/base_cards/#{card.id}/show"}
+                href={"/admin/base_card/#{card.id}/show"}
               >
                 {card.acronym}
               </a>
