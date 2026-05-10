@@ -229,37 +229,24 @@ defmodule Game do
   defp resolve_animation_target(_combat, _action), do: nil
 
   def handle_call({:pick_booster_card, player_id, card}, _from, state) do
-    add_card_to_player = fn p ->
-      new_id = length(p.cards.draw) + length(p.cards.hand) + length(p.cards.discard)
-      %{p | cards: %{p.cards | draw: p.cards.draw ++ [%{card | id: new_id}]}}
-    end
-
+    # Only update __constants__.players — the authoritative pre-combat character state.
+    # queue and current_turn are derived from it when combat is (re)initialized.
     updated_constants_players =
       Enum.map(state.combat.__constants__.players, fn p ->
-        if to_string(p.id) == to_string(player_id), do: add_card_to_player.(p), else: p
+        if to_string(p.id) == to_string(player_id) do
+          new_id = length(p.cards.draw) + length(p.cards.hand) + length(p.cards.discard)
+          %{p | cards: %{p.cards | draw: p.cards.draw ++ [%{card | id: new_id}]}}
+        else
+          p
+        end
       end)
-
-    updated_queue =
-      Enum.map(state.combat.queue, fn p ->
-        if to_string(p.id) == to_string(player_id), do: add_card_to_player.(p), else: p
-      end)
-
-    updated_current_turn_player =
-      if state.combat.current_turn.player &&
-           to_string(state.combat.current_turn.player.id) == to_string(player_id) do
-        add_card_to_player.(state.combat.current_turn.player)
-      else
-        state.combat.current_turn.player
-      end
 
     updated_combat = %{
       state.combat
-      | __constants__: %{state.combat.__constants__ | players: updated_constants_players},
-        queue: updated_queue,
-        current_turn: %{state.combat.current_turn | player: updated_current_turn_player}
+      | __constants__: %{state.combat.__constants__ | players: updated_constants_players}
     }
 
-    # Update this player's per-player booster state.
+    # Update this player's per-player booster countdown.
     player_booster = Map.get(state.booster_state, player_id, %{remaining: 1, cards: []})
     remaining = player_booster.remaining - 1
 
@@ -272,13 +259,25 @@ defmodule Game do
 
     new_booster_state = Map.put(state.booster_state, player_id, next_player_booster)
 
-    # Transition the whole game to :combat once every player has finished their boosters.
+    # When all players are done, rebuild combat from the updated __constants__.players
+    # so queue, current_turn, and grid are all derived cleanly from the final decks.
     all_done = Enum.all?(new_booster_state, fn {_, b} -> b.remaining == 0 end)
-    next_view = if all_done, do: :combat, else: :booster
+
+    {next_view, final_combat} =
+      if all_done do
+        specs =
+          Enum.map(updated_constants_players, fn p ->
+            %{character: p, team: p.team, position: p.position, id: p.id}
+          end)
+
+        {:combat, Game.CombatBuilder.build(specs)}
+      else
+        {:booster, updated_combat}
+      end
 
     new_state = %{
       state
-      | combat: updated_combat,
+      | combat: final_combat,
         booster_state: new_booster_state,
         current_view: next_view
     }

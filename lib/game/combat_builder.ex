@@ -54,7 +54,8 @@ defmodule Game.CombatBuilder do
     |> Map.put(:id, id)
     |> Map.put(:dead, false)
     |> Map.update!(:cards, fn cards ->
-      %{draw: Enum.shuffle(cards.draw), hand: [], discard: []}
+      all_cards = cards.draw ++ cards.hand ++ cards.discard
+      %{draw: Enum.shuffle(all_cards), hand: [], discard: []}
     end)
   end
 

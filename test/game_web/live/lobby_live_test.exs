@@ -376,13 +376,13 @@ defmodule GameWeb.LobbyLiveTest do
 
       after_state = Game.get_state(game_pid)
 
+      # After all boosters, combat is rebuilt — player is in queue or current_turn.
       player1_after =
         Enum.find(after_state.combat.queue, &(to_string(&1.id) == to_string(player1_id))) ||
-          (after_state.combat.current_turn.player &&
-             to_string(after_state.combat.current_turn.player.id) == to_string(player1_id) &&
+          (to_string(after_state.combat.current_turn.player.id) == to_string(player1_id) &&
              after_state.combat.current_turn.player)
 
-      assert player1_after != nil, "player1 not found in queue or current_turn after boosters"
+      assert player1_after != nil, "player1 not found after combat rebuild"
 
       cards_after =
         length(player1_after.cards.draw) +
