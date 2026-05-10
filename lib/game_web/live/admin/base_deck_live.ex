@@ -46,7 +46,7 @@ defmodule GameWeb.Admin.BaseDeckLive do
           ~H"""
         <div class="flex flex-wrap gap-1">
           <div :for={card <- cards} class="tooltip" data-tip={card.name}>
-            <a class={["badge px-1 w-8", rarity_bg_class(card.rarity)]} href={"/admin/base_cards/#{card.id}/show"}>
+            <a class={["badge px-1 w-8 text-primary-content/60", rarity_bg_class(card.rarity)]} href={"/admin/base_cards/#{card.id}/show"}>
             {card.acronym}
             </a>
           </div>
