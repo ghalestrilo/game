@@ -21,6 +21,9 @@ defmodule GameWeb.CombatHUD do
           <button :if={false} phx-click="reset" phx-target={@myself} class="btn btn-primary btn-sm">
             Reset
           </button>
+          <button phx-click="help" phx-target={@myself} class="btn btn-primary btn-sm">
+            Help??
+          </button>
           <button phx-click="skip_turn" phx-target={@myself} class="btn btn-success btn-sm">
             Skip Turn
           </button>
@@ -124,6 +127,11 @@ defmodule GameWeb.CombatHUD do
   @impl true
   def handle_event("reset", params, socket) do
     send(self(), {:parent_event, "reset", params})
+    {:noreply, socket}
+  end
+
+  def handle_event("help", params, socket) do
+    send(self(), {:parent_event, "help", params})
     {:noreply, socket}
   end
 

@@ -416,6 +416,22 @@ defmodule GameWeb.GameLive do
      |> put_flash(:info, "Card added to deck! Starting new combat...")}
   end
 
+  @impl true
+  def handle_event("help", params, socket) do
+    {:noreply,
+     socket
+     |> assign(modal: :help)
+    }
+  end
+
+  @impl true
+  def handle_event("clear_modal", params, socket) do
+    {:noreply,
+     socket
+     |> assign(modal: :nil)
+    }
+  end
+
   # ---- render ----
 
   @impl true
@@ -465,6 +481,25 @@ defmodule GameWeb.GameLive do
           <p class="text-xl">Loading...</p>
         </div>
       <% end %>
+      <.modal
+        :if={@modal == :help}
+        id="help-modal"
+        show={true}
+        on_cancel={JS.push("clear_modal")}
+        >
+        <h1 class="text-xl font-bold">Controls</h1>
+        <h2 class="text-lg">Mouse</h2>
+        <p>Clique numa carta, clique em onde jogar ela, depois aperte "Skip Turn" pra passar</p>
+
+        <h2 class="text-lg">Keyboard (experimental)</h2>
+        <ul>
+          <li class="ml-2">Movimento no tabuleiro: teclas <b>q a z</b> / <b>e d c</b></li>
+          <li class="ml-2"><b>"1-9"</b> para selecionar/deselecionar cartas</li>
+          <li class="ml-2"><b>w</b> e <b>s</b> para escolher entre os alvos disponíveis</li>
+          <li class="ml-2"><b>Barra de espaço</b> para jogar a carta selecionada carta</li>
+          <li class="ml-2"><b>Enter</b> para passar o turno</li>
+        </ul>
+      </.modal>
     </div>
     """
   end
