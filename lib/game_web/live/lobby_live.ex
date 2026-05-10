@@ -102,41 +102,38 @@ defmodule GameWeb.LobbyLive do
       <h1 class="text-4xl font-bold">Multiplayer Lobby</h1>
       <%= if @lobby do %>
         <div class="grid grid-cols-[320px_1fr] gap-8">
-          <div class="flex flex-col gap-4 mt-4">
-          <% my_player = @lobby.players |> Enum.find(&(&1.id == @current_user_id)) %>
-          <% my_class = my_player && my_player.class %>
-          <% my_team = my_player && my_player.team %>
-
+          <div class="list flex flex-col gap-4 mt-4">
+            <% my_player = @lobby.players |> Enum.find(&(&1.id == @current_user_id)) %>
+            <% my_class = my_player && my_player.class %>
+            <% my_team = my_player && my_player.team %>
             <div class="flex flex-col gap-2">
-            <h2 class="text-xl font-semibold">My Character</h2>
-            <form phx-change="select_class">
-              <span class="flex flex-1 justify-between">
-                <label>Class</label>
-                <select name="class">
+              <h2 class="text-xl font-semibold">My Character</h2>
+
+              <form class="list-row text-lg items-center" phx-change="select_class">
+                <label class=" list-col-grow">Class</label>
+                <select name="class" class="select">
                   <option value="" selected={is_nil(my_class)}>Pick a class</option>
                   <%= for bc <- @base_classes do %>
                     <option value={bc.class} selected={my_class == bc.class}>{bc.class}</option>
                   <% end %>
                 </select>
-              </span>
-            </form>
-            <form phx-change="select_team">
-              <span class="flex flex-1 justify-between">
-                <label>Team</label>
-                <select name="team">
+              </form>
+              <form class="list-row text-lg items-center" phx-change="select_team">
+                <label class=" list-col-grow">Team</label>
+                <select name="team" class="select">
+                  <option value={nil} selected={is_nil(my_class)}>Pick a team</option>
                   <%= for index <- 1..8 do %>
                     <option value={index} selected={my_player.team == index}>Team {index}</option>
                   <% end %>
                 </select>
-              </span>
-            </form>
+              </form>
             </div>
             <% is_host = hd(@lobby.players).id == @current_user_id %>
             <% boosters = get_in(@lobby, [:settings, :boosters]) || 0 %>
             <ul class="flex flex-col items-start gap-2">
               <h2 class="text-xl font-semibold">Lobby Settings</h2>
-              <span class="flex w-full justify-between">
-                <label class="text-sm font-semibold">Booster packs at start:</label>
+              <span class="flex w-full items-center justify-between">
+                <label class="text-lg">Booster packs at start:</label>
                 <%= if is_host do %>
                   <form phx-change="set_boosters">
                     <input
@@ -145,7 +142,7 @@ defmodule GameWeb.LobbyLive do
                       value={boosters}
                       min="0"
                       max="10"
-                      class="input input-sm input-bordered w-20"
+                      class="input input-lg input-bordered w-20"
                     />
                   </form>
                 <% else %>
@@ -181,13 +178,16 @@ defmodule GameWeb.LobbyLive do
                 <ul class="list">
                   <li
                     :for={player <- players}
-                    class={["list-row  list-col-wrap  w-full text-lg rounded",
-                    (if player.ready, do: "bg-success/30")
+                    class={[
+                      "list-row  list-col-wrap  w-full text-lg rounded",
+                      if(player.ready, do: "bg-success/30")
                     ]}
                   >
                     <p class="list-col-grow">{player.email}</p>
                     <%= if player.class do %>
-                      <span class="badge badge-soft badge-lg badge-warning min-w-fit">{player.class}</span>
+                      <span class="badge badge-soft badge-lg badge-warning min-w-fit">
+                        {player.class}
+                      </span>
                     <% end %>
                     <%= if player.ready do %>
                       <span>ready</span>
