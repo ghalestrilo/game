@@ -34,7 +34,7 @@ defmodule Game.Combat.CardEffects.Stealth do
     end
 
     @impl Game.Combat.CardEffect
-    def get_icon(%Stealth{}), do: "hero-eye-slash-mini"
+    def get_icon(%Stealth{}), do: "hero-eye-slash-solid"
 
     @impl Game.Combat.CardEffect
     def get_value_label(%Stealth{value_label: label}) when is_binary(label), do: label

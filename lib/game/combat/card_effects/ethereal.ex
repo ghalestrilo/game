@@ -24,7 +24,7 @@ defmodule Game.Combat.CardEffects.Ethereal do
     def get_description(%Ethereal{value: v}),
       do: "Become untargetable for #{v + 1} turns. Dispels on cast."
 
-    def get_icon(%Ethereal{}), do: "hero-cube-transparent-mini"
+    def get_icon(%Ethereal{}), do: "hero-cube-transparent-solid"
 
     def get_value_label(%Ethereal{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Ethereal{value: v}), do: "#{v}"

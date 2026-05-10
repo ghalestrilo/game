@@ -1,4 +1,4 @@
-@source inline("hero-{wifi,sparkles,trash,gift,arrow-path-rounded-square,adjustments-horizontal,arrows-pointing-out,heart,fire,no-symbol,bolt-slash,arrow-down,arrow-up,rectangle-stack,shield-check,eye-slash,user-plus,cube-transparent}-mini");
+@source inline("hero-{wifi,sparkles,trash,gift,arrow-path-rounded-square,adjustments-horizontal,arrows-pointing-out,heart,fire,no-symbol,bolt-slash,arrow-down,arrow-up,rectangle-stack,shield-check,eye-slash,user-plus,cube-transparent}-solid");
 
 @keyframes float-up {
   0%   { opacity: 1; translate: -50% 0; }

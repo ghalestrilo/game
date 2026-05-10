@@ -77,7 +77,7 @@ defmodule Game.Combat.CardEffects.Move do
       "Move target #{distance} tile(s) in direction #{angle}"
     end
 
-    def get_icon(%Move{}), do: "hero-arrows-pointing-out-mini"
+    def get_icon(%Move{}), do: "hero-arrows-pointing-out-solid"
 
     def get_value_label(%Move{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Move{distance: d}), do: "#{d}"

@@ -31,7 +31,7 @@ defmodule Game.Combat.CardEffects.Shield do
     end
 
     @impl Game.Combat.CardEffect
-    def get_icon(%Shield{}), do: "hero-shield-check-mini"
+    def get_icon(%Shield{}), do: "hero-shield-check-solid"
 
     @impl Game.Combat.CardEffect
     def get_value_label(%Shield{value_label: label}) when is_binary(label), do: label

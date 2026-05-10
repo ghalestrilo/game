@@ -25,7 +25,7 @@ defmodule Game.Combat.CardEffects.Cleanse do
     end
 
     def get_description(%Cleanse{}), do: "Remove all negative status effects"
-    def get_icon(%Cleanse{}), do: "hero-sparkles-mini"
+    def get_icon(%Cleanse{}), do: "hero-sparkles-solid"
 
     def get_value_label(%Cleanse{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Cleanse{}), do: ""

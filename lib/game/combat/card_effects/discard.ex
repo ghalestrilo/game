@@ -29,7 +29,7 @@ defmodule Game.Combat.CardEffects.Discard do
     end
 
     @impl Game.Combat.CardEffect
-    def get_icon(%Discard{}), do: "hero-trash-mini"
+    def get_icon(%Discard{}), do: "hero-trash-solid"
 
     @impl Game.Combat.CardEffect
     def get_value_label(%Discard{value: count}),

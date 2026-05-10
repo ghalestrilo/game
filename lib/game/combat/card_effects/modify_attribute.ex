@@ -42,7 +42,7 @@ defmodule Game.Combat.CardEffects.ModifyAttribute do
     def get_description(%ModifyAttribute{attribute: attr, value: v, duration: d}),
       do: "Modify #{attr} by #{v} for #{d} turns"
 
-    def get_icon(%ModifyAttribute{}), do: "hero-adjustments-horizontal-mini"
+    def get_icon(%ModifyAttribute{}), do: "hero-adjustments-horizontal-solid"
 
     def get_value_label(%ModifyAttribute{value_label: label}) when is_binary(label), do: label
     def get_value_label(%ModifyAttribute{value: v}), do: "#{v}"

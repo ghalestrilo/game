@@ -25,7 +25,7 @@ defmodule Game.Combat.CardEffects.Regen do
     def get_description(%Regen{heal: h, value: v}),
       do: "Restore #{h} HP per turn for #{v} turns"
 
-    def get_icon(%Regen{}), do: "hero-heart-mini"
+    def get_icon(%Regen{}), do: "hero-heart-solid"
 
     def get_value_label(%Regen{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Regen{heal: h}), do: "#{h}/turn"

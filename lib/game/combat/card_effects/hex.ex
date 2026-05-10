@@ -22,7 +22,7 @@ defmodule Game.Combat.CardEffects.Hex do
     def get_description(%Hex{value: v}),
       do: "Hex target for #{v} turns (inverts damage and healing)"
 
-    def get_icon(%Hex{}), do: "hero-arrow-path-rounded-square-mini"
+    def get_icon(%Hex{}), do: "hero-arrow-path-rounded-square-solid"
 
     def get_value_label(%Hex{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Hex{value: v}), do: "#{v}"

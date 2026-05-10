@@ -32,7 +32,7 @@ defmodule Game.Combat.CardEffects.Give do
     def process(%Give{}, _target, combat_state), do: combat_state
 
     def get_description(%Give{pile: pile}), do: "Give target a card into their #{pile}"
-    def get_icon(%Give{}), do: "hero-gift-mini"
+    def get_icon(%Give{}), do: "hero-gift-solid"
 
     def get_value_label(%Give{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Give{}), do: ""

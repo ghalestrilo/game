@@ -32,7 +32,7 @@ defmodule Game.Combat.CardEffects.Slow do
     def get_description(%Slow{value: v, duration: d}),
       do: "Reduce target's movement by #{v} for #{d} turns"
 
-    def get_icon(%Slow{}), do: "hero-arrow-down-mini"
+    def get_icon(%Slow{}), do: "hero-arrow-down-solid"
 
     def get_value_label(%Slow{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Slow{value: v}), do: "#{v}"

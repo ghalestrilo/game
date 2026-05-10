@@ -34,7 +34,7 @@ defmodule Game.Combat.CardEffects.SelfDestruct do
     def process(%SelfDestruct{}, _target, combat_state), do: combat_state
 
     def get_description(%SelfDestruct{}), do: "Remove this card from your deck permanently"
-    def get_icon(%SelfDestruct{}), do: "hero-fire-mini"
+    def get_icon(%SelfDestruct{}), do: "hero-fire-solid"
 
     def get_value_label(%SelfDestruct{value_label: label}) when is_binary(label), do: label
     def get_value_label(%SelfDestruct{}), do: ""

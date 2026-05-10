@@ -20,7 +20,7 @@ defmodule Game.Combat.CardEffects.Stuck do
     end
 
     def get_description(%Stuck{value: v}), do: "Target is stuck for #{v} turns"
-    def get_icon(%Stuck{}), do: "hero-no-symbol-mini"
+    def get_icon(%Stuck{}), do: "hero-no-symbol-solid"
 
     def get_value_label(%Stuck{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Stuck{value: v}), do: "#{v}"

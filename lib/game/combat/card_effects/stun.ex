@@ -21,7 +21,7 @@ defmodule Game.Combat.CardEffects.Stun do
     end
 
     def get_description(%Stun{value: v}), do: "Stun target for #{v} turns"
-    def get_icon(%Stun{}), do: "hero-bolt-slash-mini"
+    def get_icon(%Stun{}), do: "hero-bolt-slash-solid"
 
     def get_value_label(%Stun{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Stun{value: v}), do: "#{v}"

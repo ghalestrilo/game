@@ -64,7 +64,7 @@ defmodule Game.Combat.CardEffects.Summon do
     end
 
     @impl Game.Combat.CardEffect
-    def get_icon(%Summon{}), do: "hero-user-plus-mini"
+    def get_icon(%Summon{}), do: "hero-user-plus-solid"
 
     @impl Game.Combat.CardEffect
     def get_value_label(%Summon{value_label: label}) when is_binary(label), do: label
