@@ -270,7 +270,9 @@ defmodule Game do
             %{character: p, team: p.team, position: p.position, id: p.id}
           end)
 
-        {:combat, Game.CombatBuilder.build(specs)}
+        map_slug = get_in(state, [:settings, :map])
+        map_opt = if map_slug && map_slug != "", do: [map: map_slug], else: []
+        {:combat, Game.CombatBuilder.build(specs, map_opt)}
       else
         {:booster, updated_combat}
       end

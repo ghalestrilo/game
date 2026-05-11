@@ -395,6 +395,35 @@ defmodule GameWeb.LobbyLiveTest do
     end
   end
 
+  describe "LobbyLive - map + boosters" do
+    setup :two_players_in_lobby_with_boosters_and_map
+
+    @tag booster_count: 1
+    test "map wall tiles are present on the grid before and after boosters are picked", %{
+      game_view1: game_view1,
+      game_view2: game_view2,
+      game_pid: game_pid
+    } do
+      wall_coord = {0, 2, -2}
+
+      # Wall is on the grid from the moment combat is built (before any booster pick)
+      state_before = Game.get_state(game_pid)
+      wall_tile_before = state_before.combat.grid.tiles[wall_coord]
+      assert wall_tile_before != nil
+      assert Enum.any?(wall_tile_before[:objects] || [], &match?(%Game.MapObject.Wall{}, &1))
+
+      # Each player picks their single booster card → combat view opens
+      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
+      game_view2 |> element("[phx-value-card_index='0']") |> render_click()
+
+      # Wall tiles survive the booster-to-combat transition unchanged
+      state_after = Game.get_state(game_pid)
+      wall_tile_after = state_after.combat.grid.tiles[wall_coord]
+      assert wall_tile_after != nil
+      assert Enum.any?(wall_tile_after[:objects] || [], &match?(%Game.MapObject.Wall{}, &1))
+    end
+  end
+
   describe "LobbyLive - map selection" do
     setup :two_players_in_lobby
 
@@ -492,6 +521,60 @@ defmodule GameWeb.LobbyLiveTest do
     view
     |> element("form[phx-change='set_map']")
     |> render_change(%{"map" => slug})
+  end
+
+  defp two_players_in_lobby_with_boosters_and_map(%{booster_count: booster_count} = context) do
+    do_two_players_in_lobby_with_boosters_and_map(context, booster_count)
+  end
+
+  defp two_players_in_lobby_with_boosters_and_map(context) do
+    do_two_players_in_lobby_with_boosters_and_map(context, 1)
+  end
+
+  defp do_two_players_in_lobby_with_boosters_and_map(context, booster_count) do
+    base = two_players_in_lobby(context)
+    %{lobby_view1: lobby_view1, lobby_view2: lobby_view2, conn1: conn1, conn2: conn2} = base
+
+    {:ok, _map} =
+      Game.Maps.create_map(%{
+        slug: "booster_wall_map",
+        display_name: "Booster Wall Map",
+        tiles: [
+          %{"q" => 0, "r" => 2, "s" => -2, "terrain" => "plain",
+            "objects" => [%{"type" => "wall"}]}
+        ],
+        spawn_points: %{}
+      })
+
+    set_map(lobby_view1, "booster_wall_map")
+    set_boosters(lobby_view1, booster_count)
+
+    lobby_view1
+    |> element("form[phx-change='select_class']")
+    |> render_change(%{"class" => "fighter"})
+
+    lobby_view2
+    |> element("form[phx-change='select_class']")
+    |> render_change(%{"class" => "fighter"})
+
+    lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()
+    lobby_view2 |> element("button[phx-click='toggle_ready']") |> render_click()
+
+    {play_path1, _} = assert_redirect(lobby_view1)
+    {play_path2, _} = assert_redirect(lobby_view2)
+
+    {:ok, game_view1, _} = live(conn1, play_path1)
+    {:ok, game_view2, _} = live(conn2, play_path2)
+
+    lobby_id = play_path1 |> String.split("/") |> Enum.at(-2)
+    {:ok, %{game_pid: game_pid}} = Game.Lobby.get(lobby_id)
+
+    Map.merge(base, %{
+      game_view1: game_view1,
+      game_view2: game_view2,
+      game_pid: game_pid,
+      booster_count: booster_count
+    })
   end
 
   defp two_players_in_lobby_with_boosters(%{booster_count: booster_count} = context),
