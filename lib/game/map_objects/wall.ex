@@ -1,4 +1,5 @@
 defmodule Game.MapObject.Wall do
+  @derive Jason.Encoder
   defstruct []
 
   defimpl Game.MapObject do

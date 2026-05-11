@@ -1,4 +1,5 @@
 defmodule Game.MapObject.Pickup do
+  @derive Jason.Encoder
   defstruct item: nil, quantity: 1
 
   defimpl Game.MapObject do

@@ -1,4 +1,5 @@
 defmodule Game.MapObject.Breakable do
+  @derive Jason.Encoder
   defstruct hp: 1, max_hp: 1, blocks_movement: true
 
   defimpl Game.MapObject do

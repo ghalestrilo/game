@@ -2,6 +2,8 @@ defmodule Game.CombatTest do
   use ExUnit.Case, async: true
   alias Game.{Combat, Character, Fixtures, Grid, CombatState}
 
+  alias Game.{Card, MapObject}
+
   defp play_card(combat, position) do
     case Combat.process_action(combat, {:play_card, position}) do
       {:ok, updated, _animations} -> {:ok, updated}
@@ -57,6 +59,49 @@ defmodule Game.CombatTest do
     }
 
     {:ok, combat_state: combat_state, fighter: fighter, mage: mage}
+  end
+
+  describe "build_tile_overlay with map objects on grid" do
+    test "does not crash when grid tiles contain wall objects", %{
+      combat_state: combat_state,
+      fighter: fighter
+    } do
+      grid_with_walls = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, objects: [%MapObject.Wall{}], occupied_by: nil},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
+        }
+      }
+
+      combat = %{combat_state | grid: grid_with_walls}
+
+      # build_tile_overlay calls Jason.encode(combat) internally — this must not raise
+      assert {overlay, _blast_map} = Card.build_tile_overlay(@cards.attack, combat)
+      assert is_map(overlay)
+    end
+
+    test "does not crash when grid tiles contain breakable objects", %{
+      combat_state: combat_state,
+      fighter: fighter
+    } do
+      grid_with_breakables = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{
+            terrain: :plain,
+            objects: [%MapObject.Breakable{hp: 3, max_hp: 3, blocks_movement: true}],
+            occupied_by: nil
+          },
+          {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
+        }
+      }
+
+      combat = %{combat_state | grid: grid_with_breakables}
+
+      assert {overlay, _blast_map} = Card.build_tile_overlay(@cards.attack, combat)
+      assert is_map(overlay)
+    end
   end
 
   describe "pick_card" do
