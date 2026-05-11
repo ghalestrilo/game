@@ -98,7 +98,10 @@ defmodule GameWeb.GameLive do
   end
 
   defp mount_connected(:sandbox, params, socket) do
-    combatants = parse_initial_state(params["initial_state"])
+    combatants =
+      parse_characters(params["characters"]) ||
+        parse_initial_state(params["initial_state"])
+
     map_slug = params["map"]
 
     {:ok, lobby_id} =
@@ -534,6 +537,17 @@ defmodule GameWeb.GameLive do
     combat = Game.CombatBuilder.build(campaign_combatants(updated_campaign))
 
     %{game_state | current_view: :combat, combat: combat, campaign: updated_campaign}
+  end
+
+  defp parse_characters(nil), do: nil
+
+  defp parse_characters(encoded) do
+    encoded
+    |> String.split(",")
+    |> Enum.with_index()
+    |> Enum.map(fn {class, idx} ->
+      %{class: String.trim(class), team: rem(idx, 2) + 1, id: idx}
+    end)
   end
 
   defp parse_initial_state(nil), do: default_sandbox_combatants()

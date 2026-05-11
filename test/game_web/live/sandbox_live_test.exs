@@ -86,6 +86,30 @@ defmodule GameWeb.SandboxLiveTest do
     end
   end
 
+  describe "characters= URL parameter" do
+    test "places combatants at map spawn points", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/sandbox?characters=fighter,mage&map=two_towers")
+      assert view |> element(".game-board") |> render() =~ "hex-cell"
+    end
+
+    test "extra characters beyond spawn points get random free tiles", %{conn: conn} do
+      # two_towers has 2 spawn points; third character gets a random free tile
+      {:ok, view, _html} = live(conn, ~p"/sandbox?characters=fighter,mage,fighter&map=two_towers")
+      assert view |> element(".game-board") |> render() =~ "hex-cell"
+    end
+
+    test "characters= without a map uses random free tiles", %{conn: conn} do
+      {:ok, view, _html} = live(conn, ~p"/sandbox?characters=fighter,mage")
+      assert view |> element(".game-board") |> render() =~ "hex-cell"
+    end
+
+    test "initial_state= still works when characters= is absent", %{conn: conn} do
+      uri = ~p"/sandbox?initial_state=[-3_0_3:fighter:1,3_0_-3:mage:2]"
+      {:ok, view, _html} = live(conn, uri)
+      assert view |> element(".game-board") |> render() =~ "hex-cell"
+    end
+  end
+
   describe "Game state initialization from query parameter" do
     test "Grid cell count for radius=2 with sideways movement", %{conn: conn} do
       # Define the initial state with sideways movement

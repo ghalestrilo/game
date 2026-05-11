@@ -9,16 +9,16 @@ defmodule Game.CombatBuilder do
   Each player descriptor is a map with:
     - :class     — string class name (looked up from DB)
     - :team      — integer team number
-    - :position  — {q, r, s} tuple, or a spawn point atom (e.g. :team_1) when using a map
+    - :position  — {q, r, s} tuple, or omitted (auto-assigned from map spawn points / free tiles)
     - :id        — integer character id
     - :character — optional pre-built Character struct (skips DB lookup if present)
 
   Options:
-    - :map — atom name of a MapTemplate from Game.Maps (nil = dynamic grid, current default)
+    - :map — atom or string slug of a MapTemplate from Game.Maps (nil = dynamic grid)
   """
   def build(player_specs, opts \\ []) do
     map_template = resolve_map(opts[:map])
-    player_specs = resolve_spawn_points(player_specs, map_template)
+    player_specs = maybe_assign_positions(player_specs, map_template)
 
     characters =
       player_specs
@@ -51,15 +51,73 @@ defmodule Game.CombatBuilder do
   defp resolve_map(nil), do: nil
   defp resolve_map(name) when is_atom(name) or is_binary(name), do: Maps.get(name)
 
-  defp resolve_spawn_points(specs, nil), do: specs
+  # If any spec is missing :position, auto-assign all of them.
+  defp maybe_assign_positions(specs, map_template) do
+    if Enum.any?(specs, &(not Map.has_key?(&1, :position))) do
+      assign_positions(specs, map_template)
+    else
+      specs
+    end
+  end
 
-  defp resolve_spawn_points(specs, %MapTemplate{spawn_points: spawn_points}) do
-    Enum.map(specs, fn spec ->
-      case spec.position do
-        pos when is_atom(pos) -> %{spec | position: Map.fetch!(spawn_points, pos)}
-        pos -> %{spec | position: pos}
+  # Fills :position for each spec: spawn points first, then :random sentinels for overflow.
+  # Random sentinels are resolved against a temporary plain grid.
+  defp assign_positions(specs, map_template) do
+    spawn_coords = spawn_point_coords(map_template)
+
+    specs_with_sentinels =
+      specs
+      |> Enum.with_index()
+      |> Enum.map(fn {spec, i} ->
+        Map.put(spec, :position, Enum.at(spawn_coords, i, :random))
+      end)
+
+    resolve_random_positions(specs_with_sentinels, map_template)
+  end
+
+  defp spawn_point_coords(nil), do: []
+  defp spawn_point_coords(%MapTemplate{spawn_points: sp}), do: Map.values(sp)
+
+  # Substitutes :random sentinels with actual free tile coordinates.
+  defp resolve_random_positions(specs, map_template) do
+    taken =
+      specs
+      |> Enum.map(& &1.position)
+      |> Enum.reject(&(&1 == :random))
+      |> MapSet.new()
+
+    # Estimate radius from taken positions, defaulting to padding radius when all are :random.
+    base_radius =
+      if MapSet.size(taken) > 0 do
+        taken
+        |> Enum.map(&Grid.normalize/1)
+        |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end)
+        |> Enum.max()
+      else
+        @default_grid_padding
       end
-    end)
+
+    scratch_grid = build_grid(base_radius, map_template)
+
+    free_tiles =
+      scratch_grid.tiles
+      |> Enum.reject(fn {coord, tile} ->
+        MapSet.member?(taken, coord) or Grid.tile_blocked?(%Grid{tiles: scratch_grid.tiles}, coord)
+      end)
+      |> Enum.map(fn {coord, _} -> coord end)
+      |> Enum.shuffle()
+
+    {resolved_specs, _remaining} =
+      Enum.map_reduce(specs, free_tiles, fn spec, available ->
+        if spec.position == :random do
+          [next | rest] = available
+          {%{spec | position: next}, rest}
+        else
+          {spec, available}
+        end
+      end)
+
+    resolved_specs
   end
 
   defp build_grid(max_radius, nil) do
