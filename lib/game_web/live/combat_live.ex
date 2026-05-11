@@ -41,14 +41,14 @@ defmodule GameWeb.CombatLive do
         current_player={@current_player}
         game_mode={Map.get(assigns, :game_mode)}
       />
-      
+
     <!-- Game area -->
       <div class="flex-1 flex flex-col overflow-hidden">
         <%= if @game_state do %>
           <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
           <% rows = Game.Grid.to_rows(@game_state.combat.grid) %>
           <% pos = build_position_index(rows) %>
-          
+
     <!-- Board -->
           <div class="flex-1 flex items-center justify-center overflow-hidden">
             <div
@@ -74,7 +74,7 @@ defmodule GameWeb.CombatLive do
                   </div>
                 <% end %>
               </div>
-              
+
     <!-- Entity layer -->
               <div class="absolute inset-0 pointer-events-none">
                 <%= for character <- queue, character != nil, visible_to?(character, @current_player) do %>
@@ -91,6 +91,18 @@ defmodule GameWeb.CombatLive do
                     data-character-id={character.id}
                     style={character_style(pos, character)}
                   >
+                    <div
+                      :if={Game.Character.get_status_effect(character, :shield) != nil}
+                      class="rounded-full absolute inset-0 bg-info/60 animate-pulse pointer-events-none"
+                    />
+                    <span class="indicator-item indicator-top indicator-center">
+                    <span
+                      :for={effect <- character.status_effects}
+                      class="badge badge-sm badge-info rounded-full !p-0.5"
+                    >
+                      <.icon name={Game.StatusEffect.icon_for(effect.type)} class="size-3" />
+                    </span>
+                    </span>
                     <div class="character-name !mt-10 px-2 py-1 rounded-[8px] bg-black opacity-[0.6]">
                       {character.name}
                     </div>
@@ -101,7 +113,7 @@ defmodule GameWeb.CombatLive do
           </div>
         <% end %>
       </div>
-      
+
     <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}

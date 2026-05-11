@@ -11,6 +11,18 @@ defmodule Game.StatusEffect do
     :removal_condition
   ]
 
+  def icon_for(:shield), do: "hero-shield-check-solid"
+  def icon_for(:stun), do: "hero-bolt-slash-solid"
+  def icon_for(:ethereal), do: "hero-cube-transparent-solid"
+  def icon_for(:stealth), do: "hero-eye-slash-solid"
+  def icon_for(:hex), do: "hero-arrow-path-rounded-square-solid"
+  def icon_for(:dot), do: "hero-fire-solid"
+  def icon_for(:regen), do: "hero-heart-solid"
+  def icon_for(:slow), do: "hero-arrow-down-solid"
+  def icon_for(:stuck), do: "hero-no-symbol-solid"
+  def icon_for(:modify_attribute), do: "hero-adjustments-horizontal-solid"
+  def icon_for(_), do: "hero-sparkles-solid"
+
   def get_display_text(%{
         type: :modify_attribute,
         value: value,
