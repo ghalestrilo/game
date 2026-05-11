@@ -55,7 +55,7 @@ defmodule Game.LobbyServer do
   @impl true
   def init({id, :pvp}) do
     {:ok,
-     %{id: id, mode: :pvp, players: [], status: :waiting, game_pid: nil, settings: %{boosters: 0}}}
+     %{id: id, mode: :pvp, players: [], status: :waiting, game_pid: nil, settings: %{boosters: 0, map: nil}}}
   end
 
   def init({id, mode, build_opts}) when mode in [:campaign, :sandbox] do
@@ -205,7 +205,9 @@ defmodule Game.LobbyServer do
           %{class: p.class, team: p.team, position: pos, id: p.id, name: p.name || p.email}
         end)
 
-      combat = Game.CombatBuilder.build(specs)
+      map_slug = get_in(state, [:settings, :map])
+      map_opt = if map_slug && map_slug != "", do: [map: map_slug], else: []
+      combat = Game.CombatBuilder.build(specs, map_opt)
       {:ok, game_pid} = Game.start_link()
       boosters = get_in(state, [:settings, :boosters]) || 0
       initial_view = if boosters > 0, do: :booster, else: :combat

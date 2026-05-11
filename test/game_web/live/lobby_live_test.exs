@@ -395,10 +395,103 @@ defmodule GameWeb.LobbyLiveTest do
     end
   end
 
+  describe "LobbyLive - map selection" do
+    setup :two_players_in_lobby
+
+    test "host sees map dropdown, non-host sees read-only badge", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      assert lobby_view1 |> element("form[phx-change='set_map']") |> has_element?()
+      refute lobby_view2 |> element("form[phx-change='set_map']") |> has_element?()
+    end
+
+    test "host selecting a map broadcasts to all players", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      {:ok, map} =
+        Game.Maps.create_map(%{
+          slug: "broadcast_test_map",
+          display_name: "Broadcast Test Map",
+          tiles: [],
+          spawn_points: %{}
+        })
+
+      set_map(lobby_view1, map.slug)
+
+      assert render(lobby_view2) =~ map.slug
+    end
+
+    test "map is loaded onto the grid when combat begins", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2,
+      lobby_path: lobby_path
+    } do
+      {:ok, _map} =
+        Game.Maps.create_map(%{
+          slug: "wall_map",
+          display_name: "Wall Map",
+          tiles: [
+            %{"q" => 0, "r" => 2, "s" => -2, "terrain" => "plain",
+              "objects" => [%{"type" => "wall"}]}
+          ],
+          spawn_points: %{}
+        })
+
+      set_map(lobby_view1, "wall_map")
+      select_class(lobby_view1, "fighter")
+      select_class(lobby_view2, "fighter")
+      lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()
+      lobby_view2 |> element("button[phx-click='toggle_ready']") |> render_click()
+
+      assert_redirect(lobby_view1)
+
+      lobby_id = lobby_path |> String.split("/") |> List.last()
+      {:ok, %{game_pid: game_pid}} = Game.Lobby.get(lobby_id)
+
+      state = Game.get_state(game_pid)
+      wall_tile = state.combat.grid.tiles[{0, 2, -2}]
+
+      assert wall_tile != nil
+      assert Enum.any?(wall_tile[:objects] || [], &match?(%Game.MapObject.Wall{}, &1))
+    end
+
+    test "no map selected means plain grid with no wall objects", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2,
+      lobby_path: lobby_path
+    } do
+      select_class(lobby_view1, "fighter")
+      select_class(lobby_view2, "fighter")
+      lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()
+      lobby_view2 |> element("button[phx-click='toggle_ready']") |> render_click()
+
+      assert_redirect(lobby_view1)
+
+      lobby_id = lobby_path |> String.split("/") |> List.last()
+      {:ok, %{game_pid: game_pid}} = Game.Lobby.get(lobby_id)
+
+      state = Game.get_state(game_pid)
+      any_wall =
+        Enum.any?(state.combat.grid.tiles, fn {_, tile} ->
+          Enum.any?(tile[:objects] || [], &match?(%Game.MapObject.Wall{}, &1))
+        end)
+
+      refute any_wall
+    end
+  end
+
   defp set_boosters(view, count) do
     view
     |> element("form[phx-change='set_boosters']")
     |> render_change(%{"boosters" => to_string(count)})
+  end
+
+  defp set_map(view, slug) do
+    view
+    |> element("form[phx-change='set_map']")
+    |> render_change(%{"map" => slug})
   end
 
   defp two_players_in_lobby_with_boosters(%{booster_count: booster_count} = context),

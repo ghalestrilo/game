@@ -1,7 +1,7 @@
 defmodule GameWeb.LobbyLive do
   use GameWeb, :live_view
 
-  alias Game.{Content, Lobby}
+  alias Game.{Content, Lobby, Maps}
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -22,11 +22,18 @@ defmodule GameWeb.LobbyLive do
             {:ok, lobby_state} ->
               base_classes = Content.list_playable_classes()
 
+              db_maps = Maps.list_db()
+
+              map_options =
+                [{"No map", ""}] ++
+                  Enum.map(db_maps, &{&1.display_name, &1.slug})
+
               {:ok,
                assign(socket,
                  lobby: lobby_state,
                  lobby_id: id,
                  base_classes: base_classes,
+                 map_options: map_options,
                  current_user_id: user.id
                )}
 
@@ -38,7 +45,7 @@ defmodule GameWeb.LobbyLive do
           end
       end
     else
-      {:ok, assign(socket, lobby: nil, lobby_id: id, base_classes: [], current_user_id: nil)}
+      {:ok, assign(socket, lobby: nil, lobby_id: id, base_classes: [], map_options: [], current_user_id: nil)}
     end
   end
 
@@ -77,6 +84,16 @@ defmodule GameWeb.LobbyLive do
     count = value |> String.to_integer() |> max(0)
 
     case Lobby.set_setting(socket.assigns.lobby_id, :boosters, count) do
+      {:ok, lobby_state} -> {:noreply, assign(socket, lobby: lobby_state)}
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("set_map", %{"map" => slug}, socket) do
+    map_slug = if slug == "", do: nil, else: slug
+
+    case Lobby.set_setting(socket.assigns.lobby_id, :map, map_slug) do
       {:ok, lobby_state} -> {:noreply, assign(socket, lobby: lobby_state)}
       _ -> {:noreply, socket}
     end
@@ -168,6 +185,23 @@ defmodule GameWeb.LobbyLive do
                   </form>
                 <% else %>
                   <span class="badge badge-lg">{boosters}</span>
+                <% end %>
+              </span>
+              <% selected_map = get_in(@lobby, [:settings, :map]) || "" %>
+              <span class="flex w-full items-center justify-between">
+                <label class="text-lg">Map:</label>
+                <%= if is_host do %>
+                  <form phx-change="set_map">
+                    <select name="map" class="select select-bordered">
+                      <%= for {label, value} <- @map_options do %>
+                        <option value={value} selected={value == selected_map}>{label}</option>
+                      <% end %>
+                    </select>
+                  </form>
+                <% else %>
+                  <span class="badge badge-lg">
+                    {if selected_map == "", do: "None", else: selected_map}
+                  </span>
                 <% end %>
               </span>
               <button
