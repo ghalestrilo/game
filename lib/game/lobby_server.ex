@@ -245,7 +245,7 @@ defmodule Game.LobbyServer do
     combat = Game.CombatBuilder.build(build_opts.combatants, map_opt)
 
     game_state =
-      Map.merge(%{current_view: :combat, combat: combat}, build_opts[:extra_state] || %{})
+      Map.merge(%{current_view: :combat, combat: combat, action_log: []}, build_opts[:extra_state] || %{})
 
     :ok = GenServer.call(game_pid, {:set_state, game_state})
 

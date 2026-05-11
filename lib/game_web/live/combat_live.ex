@@ -106,7 +106,10 @@ defmodule GameWeb.CombatLive do
                       <.icon name={Game.StatusEffect.icon_for(effect.type)} class="size-3" />
                     </span>
                     </span>
-                    <div class="character-name !mt-10 px-2 py-1 rounded-[8px] bg-black opacity-[0.6]">
+                    <div class={[
+                      "badge !border-0 !mt-14 badge-sm text-base-content",
+                      (if same_team?(@current_player, character), do: "bg-red-800", else: "bg-green-800")
+                      ]}>
                       {character.name}
                     </div>
                   </div>
@@ -335,4 +338,8 @@ defmodule GameWeb.CombatLive do
     def visible_to_for_test?(character, current_player),
       do: visible_to?(character, current_player)
   end
+
+  def same_team?(%{team: team } = current_player, %{team: team} = character) when not is_nil(team), do: true
+
+  def same_team?(_current_player, _character), do: false
 end

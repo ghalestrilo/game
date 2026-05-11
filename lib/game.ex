@@ -220,7 +220,7 @@ defmodule Game do
 
   defp append_log(state, entry) do
     log = Map.get(state, :action_log, [])
-    %{state | action_log: Enum.slice([entry | log], 0, 20)}
+    Map.put(state, :action_log, Enum.slice([entry | log], 0, 20))
   end
 
   defp resolve_animation_target(_combat, {:play_card_on_character, character}),
