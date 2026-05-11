@@ -326,7 +326,7 @@ defmodule GameWeb.GameLive do
       {:noreply, put_flash(socket, :error, "It's not your turn")}
     else
       action = "#{player.name} skipped their turn"
-      Game.process_action(socket.assigns.game_pid, {:skip_turn, player})
+      Game.process_action(socket.assigns.game_pid, {:skip_turn, player}, action)
       {:noreply, socket}
     end
   end
