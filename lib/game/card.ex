@@ -31,6 +31,7 @@ defmodule Game.Card do
 
   defstruct [
     :id,
+    :base_card_id,
     :name,
     :headline,
     # AP cost to play
@@ -60,6 +61,7 @@ defmodule Game.Card do
 
   @type t() :: %__MODULE__{
           id: integer(),
+          base_card_id: integer(),
           name: String.t(),
           headline: String.t(),
           cost: integer(),

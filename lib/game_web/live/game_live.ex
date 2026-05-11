@@ -220,7 +220,6 @@ defmodule GameWeb.GameLive do
         %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket
       ) do
     targets = keyboard_targets(combat)
-    dbg(socket.assigns.keyboard_target_index)
     result = Enum.at(targets, socket.assigns.keyboard_target_index)
 
     if result do

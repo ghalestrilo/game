@@ -169,7 +169,7 @@ defmodule GameWeb.CombatHUD do
         current={true}
       />
       <h3 class="text-base font-bold mt-2">Next up</h3>
-      <ul class="max-h-[calc(100vh-650px)] text-sm flex flex-col gap-3 overflow-scroll ">
+      <ul class="max-h-[calc(100vh-650px)] text-sm flex flex-col gap-3 overflow-y-scroll overflow-x-clip">
         <.character_queue_card
           :for={character <- Enum.filter(queue, &(&1 != nil))}
           character={character}

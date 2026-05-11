@@ -35,7 +35,7 @@ defmodule Game.BaseDecks.BaseDeck do
     )
     |> Enum.map(&base_card_to_card/1)
     |> Enum.with_index()
-    |> Enum.map(fn {card, idx} -> %{card | id: idx} end)
+    |> Enum.map(fn {card, idx} -> %{card | id: idx, base_card_id: card.id} end)
   end
 
   defp base_card_to_card(card) do

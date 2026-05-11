@@ -33,7 +33,7 @@ defmodule GameWeb.Admin.BaseDeckLive do
         render: fn assigns ->
           cards =
             Game.Content.get_base_deck_cards(assigns.item)
-            |> Enum.map(&Map.take(&1, [:id, :name, :rarity]))
+            |> Enum.map(&Map.take(&1, [:id, :base_card_id, :name, :rarity]))
             |> Enum.map(fn %{name: name} = card ->
               acronym =
                 name
@@ -50,7 +50,7 @@ defmodule GameWeb.Admin.BaseDeckLive do
             <div :for={card <- cards} class="tooltip" data-tip={card.name}>
               <a
                 class={["badge px-1 w-8 text-primary-content/60", rarity_bg_class(card.rarity)]}
-                href={"/admin/base_card/#{card.id}/show"}
+                href={"/admin/base_cards/#{card.base_card_id}/show"}
               >
                 {card.acronym}
               </a>
