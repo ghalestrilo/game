@@ -62,12 +62,15 @@ defmodule GameWeb.CombatLive do
               <div id="map-layer" phx-update="ignore">
                 <%= for row <- rows do %>
                   <div class="flex flex-row justify-center gap-2">
-                    <%= for {q, r, s, _tile} <- row do %>
+                    <%= for {q, r, s, tile} <- row do %>
                       <div
                         phx-click="interact"
                         phx-value-target_position={"#{q}_#{r}_#{s}"}
                         data-coord={"#{q}_#{r}_#{s}"}
-                        class="hex-cell border border-base-content/20 w-20 h-20 flex items-center justify-center bg-base-100"
+                        class={[
+                          "hex-cell border border-base-content/20 w-20 h-20 flex items-center justify-center bg-base-100",
+                          wall_class(tile)
+                        ]}
                       >
                       </div>
                     <% end %>
@@ -98,7 +101,7 @@ defmodule GameWeb.CombatLive do
                     <span class="indicator-item indicator-top indicator-center">
                     <span
                       :for={effect <- character.status_effects}
-                      class="badge badge-sm badge-info rounded-full !p-0.5"
+                      class={["badge badge-sm rounded-full !p-0.5", Game.StatusEffect.badge_class(effect)]}
                     >
                       <.icon name={Game.StatusEffect.icon_for(effect.type)} class="size-3" />
                     </span>
@@ -318,6 +321,14 @@ defmodule GameWeb.CombatLive do
 
   defp visible_to?(character, current_player) do
     not stealthy?(character) or character.team == current_player.team
+  end
+
+  defp wall?(tile) do
+    Enum.any?(tile[:objects] || [], fn obj -> match?(%Game.MapObject.Wall{}, obj) end)
+  end
+
+  defp wall_class(tile) do
+    if wall?(tile), do: "!bg-amber-900/80 cursor-not-allowed", else: nil
   end
 
   if Mix.env() == :test do

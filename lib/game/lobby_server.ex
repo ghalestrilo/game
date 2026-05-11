@@ -240,7 +240,8 @@ defmodule Game.LobbyServer do
 
   defp start_single_player_game(state, build_opts) do
     {:ok, game_pid} = Game.start_link()
-    combat = Game.CombatBuilder.build(build_opts.combatants)
+    map_opt = if build_opts[:map], do: [map: build_opts[:map]], else: []
+    combat = Game.CombatBuilder.build(build_opts.combatants, map_opt)
 
     game_state =
       Map.merge(%{current_view: :combat, combat: combat}, build_opts[:extra_state] || %{})

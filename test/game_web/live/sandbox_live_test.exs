@@ -3,6 +3,89 @@ defmodule GameWeb.SandboxLiveTest do
 
   import Phoenix.LiveViewTest
 
+  describe "Map loading via URL parameter" do
+    test "loads a builtin map by slug and renders the battlefield", %{conn: conn} do
+      # two_towers has wall objects at {0,0,0}, {1,0,-1}, {-1,0,1}
+      # combatants placed away from walls so they don't collide
+      initial_state = "[-3_0_3:fighter:1,3_0_-3:mage:2]"
+
+      uri = ~p"/sandbox?initial_state=#{initial_state}&map=two_towers"
+
+      {:ok, view, _html} = live(conn, uri)
+
+      rendered = view |> element(".game-board") |> render()
+      assert rendered =~ "hex-cell"
+    end
+
+    test "loads a DB-persisted map by slug and renders the battlefield", %{conn: conn} do
+      {:ok, _map} =
+        Game.Maps.create_map(%{
+          slug: "test_arena",
+          display_name: "Test Arena",
+          tiles: [
+            %{
+              "q" => 0,
+              "r" => 1,
+              "s" => -1,
+              "terrain" => "plain",
+              "objects" => [%{"type" => "wall"}]
+            }
+          ],
+          spawn_points: %{"team_1" => [-3, 0, 3], "team_2" => [3, 0, -3]}
+        })
+
+      initial_state = "[-3_0_3:fighter:1,3_0_-3:mage:2]"
+      uri = ~p"/sandbox?initial_state=#{initial_state}&map=test_arena"
+
+      {:ok, view, _html} = live(conn, uri)
+
+      rendered = view |> element(".game-board") |> render()
+      assert rendered =~ "hex-cell"
+    end
+
+    test "wall tiles from a DB map block movement", %{conn: conn} do
+      # Place a wall at {0,1,-1} — the tile between the two combatants
+      {:ok, _map} =
+        Game.Maps.create_map(%{
+          slug: "walled_arena",
+          display_name: "Walled Arena",
+          tiles: [
+            %{
+              "q" => 0,
+              "r" => 1,
+              "s" => -1,
+              "terrain" => "plain",
+              "objects" => [%{"type" => "wall"}]
+            }
+          ],
+          spawn_points: %{}
+        })
+
+      initial_state = "[-3_0_3:fighter:1,3_0_-3:mage:2]"
+      uri = ~p"/sandbox?initial_state=#{initial_state}&map=walled_arena"
+
+      {:ok, _view, _html} = live(conn, uri)
+
+      template = Game.Maps.get("walled_arena")
+      assert template != nil
+      assert Map.has_key?(template.tiles, {0, 1, -1})
+
+      tile = template.tiles[{0, 1, -1}]
+      assert Enum.any?(tile.objects, &Game.MapObject.blocks_movement?/1)
+    end
+
+    test "unknown map slug is ignored and game still loads", %{conn: conn} do
+      initial_state = "[-3_0_3:fighter:1,3_0_-3:mage:2]"
+      uri = ~p"/sandbox?initial_state=#{initial_state}&map=nonexistent_map"
+
+      # nil template returned → no overlay applied, game loads with plain grid
+      {:ok, view, _html} = live(conn, uri)
+
+      rendered = view |> element(".game-board") |> render()
+      assert rendered =~ "hex-cell"
+    end
+  end
+
   describe "Game state initialization from query parameter" do
     test "Grid cell count for radius=2 with sideways movement", %{conn: conn} do
       # Define the initial state with sideways movement

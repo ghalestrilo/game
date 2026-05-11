@@ -127,6 +127,7 @@ defmodule Game.Combat do
         updated_combat = CombatState.update_player_position(combat, player, target_position)
         updated_combat = CombatState.update_grid_position(updated_combat, player, target_position)
         updated_combat = CombatState.deduct_movement(updated_combat, step_distance)
+        updated_combat = apply_entry_effects(updated_combat, player, target_position)
         result = CombatState.update_players_and_queue(updated_combat)
 
         {:ok, result}
@@ -359,6 +360,17 @@ defmodule Game.Combat do
       "self_destruct",
       "give"
     ]
+  end
+
+  defp apply_entry_effects(%CombatState{grid: grid} = combat, _character, position) do
+    objects = get_in(grid.tiles, [position, :objects]) || []
+
+    Enum.reduce(objects, combat, fn object, acc ->
+      case Game.MapObject.on_enter(object, acc.current_turn.player, acc) do
+        {:ok, updated} -> updated
+        _ -> acc
+      end
+    end)
   end
 
   defp effective_movement_range(player) do

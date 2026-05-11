@@ -11,6 +11,22 @@ defmodule Game.StatusEffect do
     :removal_condition
   ]
 
+  def kind(:shield), do: :buff
+  def kind(:regen), do: :buff
+  def kind(:ethereal), do: :buff
+  def kind(:stealth), do: :buff
+  def kind(:dot), do: :debuff
+  def kind(:stun), do: :debuff
+  def kind(:hex), do: :debuff
+  def kind(:slow), do: :debuff
+  def kind(:stuck), do: :debuff
+  def kind(_), do: :neutral
+
+  def badge_class(effect), do: badge_class_for_kind(kind(effect.type))
+  defp badge_class_for_kind(:buff), do: "badge-success"
+  defp badge_class_for_kind(:debuff), do: "badge-error"
+  defp badge_class_for_kind(:neutral), do: "badge-info"
+
   def icon_for(:shield), do: "hero-shield-check-solid"
   def icon_for(:stun), do: "hero-bolt-slash-solid"
   def icon_for(:ethereal), do: "hero-cube-transparent-solid"

@@ -103,14 +103,17 @@ defmodule Game.Grid do
   end
 
   @doc """
-  Returns true if a tile is blocked (wall or occupied)
+  Returns true if a tile is blocked (wall terrain, a blocking map object, or occupied by a character)
   """
   def tile_blocked?(%Grid{tiles: tiles}, target_position) do
     case Map.get(tiles, target_position) do
-      nil -> true
-      %{terrain: :wall} -> true
-      %{occupied_by: character} when not is_nil(character) -> true
-      _ -> false
+      nil ->
+        true
+
+      tile ->
+        tile[:terrain] == :wall or
+          Enum.any?(tile[:objects] || [], &Game.MapObject.blocks_movement?/1) or
+          not is_nil(tile[:occupied_by])
     end
   end
 

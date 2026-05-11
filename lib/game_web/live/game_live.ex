@@ -99,9 +99,10 @@ defmodule GameWeb.GameLive do
 
   defp mount_connected(:sandbox, params, socket) do
     combatants = parse_initial_state(params["initial_state"])
+    map_slug = params["map"]
 
     {:ok, lobby_id} =
-      Lobby.create_single_player(:sandbox, %{combatants: combatants})
+      Lobby.create_single_player(:sandbox, %{combatants: combatants, map: map_slug})
 
     {:ok, lobby} = Lobby.get(lobby_id)
     Game.subscribe(lobby.game_pid)

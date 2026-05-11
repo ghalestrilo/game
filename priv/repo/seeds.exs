@@ -579,3 +579,17 @@ Repo.insert!(%BaseClass{
   base_movement: 2,
   deck_id: druid_deck.id
 })
+
+# Maps
+alias Game.Maps.Map, as: GameMap
+
+Repo.insert!(%GameMap{
+  slug: "two_towers",
+  display_name: "Two Towers",
+  tiles: [
+    %{"q" => 0, "r" => 0, "s" => 0, "terrain" => "plain", "objects" => [%{"type" => "wall"}]},
+    %{"q" => 1, "r" => 0, "s" => -1, "terrain" => "plain", "objects" => [%{"type" => "wall"}]},
+    %{"q" => -1, "r" => 0, "s" => 1, "terrain" => "plain", "objects" => [%{"type" => "wall"}]}
+  ],
+  spawn_points: %{"team_1" => [-3, 0, 3], "team_2" => [3, 0, -3]}
+})
