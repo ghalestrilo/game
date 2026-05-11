@@ -5,7 +5,7 @@ defmodule Mix.Tasks.Game.PushContentSync do
   alias Game.BaseDecks.BaseDeck
   alias Game.Content.{BaseDeckCard, BaseClass, Strategy}
   alias Game.FormulaAliases.FormulaAlias
-  alias Game.Maps.Map
+  alias Game.Maps.Map, as: GameMap
 
   @shortdoc "Pushes local content (cards/decks/classes) into production database"
 
@@ -27,7 +27,7 @@ defmodule Mix.Tasks.Game.PushContentSync do
       local_classes = Game.Repo.all(BaseClass)
       local_strategies = Game.Repo.all(Strategy)
       local_formula_aliases = Game.Repo.all(FormulaAlias)
-      local_maps = Game.Repo.all(Map)
+      local_maps = Game.Repo.all(GameMap)
 
       Mix.shell().info(
         "Found: #{length(local_cards)} cards, #{length(local_decks)} decks, " <>
@@ -45,7 +45,7 @@ defmodule Mix.Tasks.Game.PushContentSync do
         Game.ProdRepo.delete_all(BaseCard)
         Game.ProdRepo.delete_all(Strategy)
         Game.ProdRepo.delete_all(FormulaAlias)
-        Game.ProdRepo.delete_all(Map)
+        Game.ProdRepo.delete_all(GameMap)
 
         formula_alias_id_map =
           Enum.reduce(local_formula_aliases, %{}, fn local_formula_alias, acc ->
@@ -129,8 +129,8 @@ defmodule Mix.Tasks.Game.PushContentSync do
         end)
 
         Enum.each(local_maps, fn local_map ->
-          %Map{}
-          |> Map.changeset(%{
+          %GameMap{}
+          |> GameMap.changeset(%{
             slug: local_map.slug,
             display_name: local_map.display_name,
             tiles: local_map.tiles,

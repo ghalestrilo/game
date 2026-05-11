@@ -5,7 +5,7 @@ defmodule Mix.Tasks.Game.PullContentSync do
   alias Game.BaseDecks.BaseDeck
   alias Game.Content.{BaseDeckCard, BaseClass, Strategy}
   alias Game.FormulaAliases.FormulaAlias
-  alias Game.Maps.Map
+  alias Game.Maps.Map, as: GameMap
 
   @shortdoc "Pulls production content (cards/decks/classes) into local database"
 
@@ -20,7 +20,6 @@ defmodule Mix.Tasks.Game.PullContentSync do
 
     Migrator.with_repo(
       Game.ProdRepo,
-      [queue_target: 10_000, queue_interval: 10_000],
       fn _prod_repo ->
         Mix.shell().info("Reading production data...")
 
@@ -30,7 +29,7 @@ defmodule Mix.Tasks.Game.PullContentSync do
         prod_classes = Game.ProdRepo.all(BaseClass)
         prod_strategies = Game.ProdRepo.all(Strategy)
         prod_formula_aliases = Game.ProdRepo.all(FormulaAlias)
-        prod_maps = Game.ProdRepo.all(Map)
+        prod_maps = Game.ProdRepo.all(GameMap)
 
         Mix.shell().info(
           "Found: #{length(prod_cards)} cards, #{length(prod_decks)} decks, " <>
@@ -48,7 +47,7 @@ defmodule Mix.Tasks.Game.PullContentSync do
           Game.Repo.delete_all(BaseCard)
           Game.Repo.delete_all(Strategy)
           Game.Repo.delete_all(FormulaAlias)
-          Game.Repo.delete_all(Map)
+          Game.Repo.delete_all(GameMap)
 
           formula_alias_id_map =
             Enum.reduce(prod_formula_aliases, %{}, fn prod_formula_alias, acc ->
@@ -132,8 +131,8 @@ defmodule Mix.Tasks.Game.PullContentSync do
           end)
 
           Enum.each(prod_maps, fn prod_map ->
-            %Map{}
-            |> Map.changeset(%{
+            %GameMap{}
+            |> GameMap.changeset(%{
               slug: prod_map.slug,
               display_name: prod_map.display_name,
               tiles: prod_map.tiles,
