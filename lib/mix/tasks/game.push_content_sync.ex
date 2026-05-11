@@ -5,6 +5,7 @@ defmodule Mix.Tasks.Game.PushContentSync do
   alias Game.BaseDecks.BaseDeck
   alias Game.Content.{BaseDeckCard, BaseClass, Strategy}
   alias Game.FormulaAliases.FormulaAlias
+  alias Game.Maps.Map
 
   @shortdoc "Pushes local content (cards/decks/classes) into production database"
 
@@ -26,11 +27,13 @@ defmodule Mix.Tasks.Game.PushContentSync do
       local_classes = Game.Repo.all(BaseClass)
       local_strategies = Game.Repo.all(Strategy)
       local_formula_aliases = Game.Repo.all(FormulaAlias)
+      local_maps = Game.Repo.all(Map)
 
       Mix.shell().info(
         "Found: #{length(local_cards)} cards, #{length(local_decks)} decks, " <>
           "#{length(local_deck_cards)} deck_cards, #{length(local_classes)} classes, " <>
-          "#{length(local_strategies)} strategies, #{length(local_formula_aliases)} formula_aliases"
+          "#{length(local_strategies)} strategies, #{length(local_formula_aliases)} formula_aliases, " <>
+          "#{length(local_maps)} maps"
       )
 
       Mix.shell().info("Syncing to production database...")
@@ -42,6 +45,7 @@ defmodule Mix.Tasks.Game.PushContentSync do
         Game.ProdRepo.delete_all(BaseCard)
         Game.ProdRepo.delete_all(Strategy)
         Game.ProdRepo.delete_all(FormulaAlias)
+        Game.ProdRepo.delete_all(Map)
 
         formula_alias_id_map =
           Enum.reduce(local_formula_aliases, %{}, fn local_formula_alias, acc ->
@@ -122,6 +126,17 @@ defmodule Mix.Tasks.Game.PushContentSync do
             card_id: Map.fetch!(card_id_map, bdc.card_id),
             deck_id: Map.fetch!(deck_id_map, bdc.deck_id)
           })
+        end)
+
+        Enum.each(local_maps, fn local_map ->
+          %Map{}
+          |> Map.changeset(%{
+            slug: local_map.slug,
+            display_name: local_map.display_name,
+            tiles: local_map.tiles,
+            spawn_points: local_map.spawn_points
+          })
+          |> Game.ProdRepo.insert!()
         end)
 
         Enum.each(local_classes, fn cls ->

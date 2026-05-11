@@ -205,9 +205,7 @@ defmodule Game.LobbyServer do
           %{class: p.class, team: p.team, position: pos, id: p.id, name: p.name || p.email}
         end)
 
-      map_slug = get_in(state, [:settings, :map])
-      map_opt = if map_slug && map_slug != "", do: [map: map_slug], else: []
-      combat = Game.CombatBuilder.build(specs, map_opt)
+      combat = Game.CombatBuilder.build(specs, settings: state.settings)
       {:ok, game_pid} = Game.start_link()
       boosters = get_in(state, [:settings, :boosters]) || 0
       initial_view = if boosters > 0, do: :booster, else: :combat

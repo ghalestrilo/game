@@ -15,9 +15,10 @@ defmodule Game.CombatBuilder do
 
   Options:
     - :map — atom or string slug of a MapTemplate from Game.Maps (nil = dynamic grid)
+    - :settings — lobby settings map; `:map` key used if `:map` opt is absent
   """
   def build(player_specs, opts \\ []) do
-    map_template = resolve_map(opts[:map])
+    map_template = resolve_map(opts[:map] || get_in(opts[:settings], [:map]))
     player_specs = maybe_assign_positions(player_specs, map_template)
 
     characters =

@@ -608,21 +608,10 @@ defmodule GameWeb.CoreComponents do
     ~H"""
     <ul class="flex flex-col items-stretch gap-2 text-xs text-base-content/70">
       <li
-        :for={
-          {effect, index} <-
-            @card.effects
-            |> Enum.filter(&Game.Card.effect_implemented?/1)
-            |> Enum.map(&Game.Card.get_structured_effect/1)
-            |> Enum.with_index()
-        }
-        class={[
-          "flex gap-1 card bg-amber-500/10 p-2",
-          if(Map.has_key?(effect, :value) and not is_map(effect.value),
-            do: "flex-row items-center justify-between"
-          )
-        ]}
+        :for={{effect, index} <- get_indexed_card_effects(@card)}
+        class="flex flex-row flex-wrap justify-between items-center gap-1 card bg-amber-500/10 p-2"
       >
-        <span>
+        <span class="min-w-fit">
           <.icon name={Game.Combat.CardEffect.get_icon(effect)} class="w-3 h-3" />
           {if effect.type === "modify_attribute",
             do: Map.get(effect, :attribute, nil) <> " +",
@@ -875,5 +864,12 @@ defmodule GameWeb.CoreComponents do
     else
       Gettext.dgettext(GameWeb.Gettext, "backpex", msg, opts)
     end
+  end
+
+  defp get_indexed_card_effects(%{effects: effects}) do
+        effects
+        |> Enum.filter(&Game.Card.effect_implemented?/1)
+        |> Enum.map(&Game.Card.get_structured_effect/1)
+        |> Enum.with_index()
   end
 end
