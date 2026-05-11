@@ -71,8 +71,8 @@ defmodule Game do
     GenServer.call(game_pid, :get_state)
   end
 
-  def process_action(game_pid, action) do
-    GenServer.call(game_pid, {:process_action, action})
+  def process_action(game_pid, action, log_entry \\ nil) do
+    GenServer.call(game_pid, {:process_action, action, log_entry})
   end
 
   @doc """
@@ -195,17 +195,17 @@ defmodule Game do
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:process_action, action}, _from, state) do
+  def handle_call({:process_action, action, log_entry}, _from, state) do
     case Combat.process_action(state.combat, action) do
       {:ok, updated_combat} ->
         {:ok, final_combat} = Game.AI.advance_through_ai_turns(updated_combat)
-        new_state = %{state | combat: final_combat}
+        new_state = append_log(%{state | combat: final_combat}, log_entry)
         broadcast(self(), new_state)
         {:reply, {:ok, new_state}, new_state}
 
       {:ok, updated_combat, animations} ->
         {:ok, final_combat} = Game.AI.advance_through_ai_turns(updated_combat)
-        new_state = %{state | combat: final_combat}
+        new_state = append_log(%{state | combat: final_combat}, log_entry)
         target_id = resolve_animation_target(state.combat, action)
         tagged_animations = Enum.map(animations, &Map.put(&1, :target_id, target_id))
         broadcast(self(), new_state, tagged_animations)
@@ -214,6 +214,13 @@ defmodule Game do
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
+  end
+
+  defp append_log(state, nil), do: state
+
+  defp append_log(state, entry) do
+    log = Map.get(state, :action_log, [])
+    %{state | action_log: Enum.slice([entry | log], 0, 20)}
   end
 
   defp resolve_animation_target(_combat, {:play_card_on_character, character}),

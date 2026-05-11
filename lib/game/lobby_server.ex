@@ -226,7 +226,8 @@ defmodule Game.LobbyServer do
             current_view: initial_view,
             combat: combat,
             settings: state.settings,
-            booster_state: booster_state
+            booster_state: booster_state,
+            action_log: []
           }
         })
 

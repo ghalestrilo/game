@@ -166,6 +166,27 @@ defmodule GameWeb.MultiplayerPlayLiveTest do
       assert redirect2 == lobby_path
     end
 
+    test "action log: one player's committed action appears in the other player's view", %{
+      conn1: conn1,
+      conn2: conn2,
+      play_path: play_path
+    } do
+      {:ok, view1, _} = live(conn1, play_path)
+      {:ok, view2, _} = live(conn2, play_path)
+
+      # Determine which player is active (fighter goes first, but class assignment order
+      # isn't guaranteed, so we detect it from the rendered state).
+      {active_view, idle_view} =
+        if render(view1) =~ "card-row", do: {view1, view2}, else: {view2, view1}
+
+      # Skip turn — a valid, committed action that always succeeds for the active player.
+      render_click(active_view, "skip_turn", %{})
+
+      # The skip action string must appear in the idle player's rendered view,
+      # proving the log is shared via the game server rather than being socket-local.
+      assert render(idle_view) =~ "skipped their turn"
+    end
+
     test "old game process is stopped after lobby reset", %{
       conn1: conn1,
       conn2: conn2,
