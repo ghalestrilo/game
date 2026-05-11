@@ -30,6 +30,7 @@ defmodule GameWeb.Router do
     end
 
     live "/campaign/character-select", Campaign.CharacterSelectLive
+    live "/sandbox/setup", SandboxSetupLive
 
     # Catch-all: redirect any other /campaign/* routes to character select
     live "/campaign/*path", Campaign.CatchAllLive
