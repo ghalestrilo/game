@@ -38,6 +38,10 @@ defmodule Game.LobbyServer do
     GenServer.call(via(id), {:select_team, user_id, team})
   end
 
+  def set_name(id, user_id, name) do
+    GenServer.call(via(id), {:set_name, user_id, name})
+  end
+
   def set_setting(id, key, value) do
     GenServer.call(via(id), {:set_setting, key, value})
   end
@@ -78,7 +82,7 @@ defmodule Game.LobbyServer do
 
       true ->
         team = "#{length(players) + 1}"
-        player = %{id: user.id, email: user.email, ready: false, class: nil, team: team}
+        player = %{id: user.id, email: user.email, name: nil, ready: false, class: nil, team: team}
         new_players = players ++ [player]
         new_status = if length(new_players) >= @min_players, do: :ready, else: :waiting
         new_state = %{state | players: new_players, status: new_status}
@@ -112,6 +116,19 @@ defmodule Game.LobbyServer do
     new_players =
       Enum.map(state.players, fn
         %{id: ^user_id} = p -> %{p | class: class}
+        p -> p
+      end)
+
+    new_state = %{state | players: new_players}
+    broadcast(new_state)
+    {:reply, {:ok, new_state}, new_state}
+  end
+
+  @impl true
+  def handle_call({:set_name, user_id, name}, _from, state) do
+    new_players =
+      Enum.map(state.players, fn
+        %{id: ^user_id} = p -> %{p | name: name}
         p -> p
       end)
 
@@ -185,7 +202,7 @@ defmodule Game.LobbyServer do
         players
         |> Enum.zip(positions)
         |> Enum.map(fn {p, pos} ->
-          %{class: p.class, team: p.team, position: pos, id: p.id}
+          %{class: p.class, team: p.team, position: pos, id: p.id, name: p.name || p.email}
         end)
 
       combat = Game.CombatBuilder.build(specs)

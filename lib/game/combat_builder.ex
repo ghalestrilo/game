@@ -59,7 +59,7 @@ defmodule Game.CombatBuilder do
     end)
   end
 
-  defp build_character(%{class: class, team: team, position: position, id: id}) do
+  defp build_character(%{class: class, team: team, position: position, id: id} = spec) do
     class
     |> to_string()
     |> Content.get_base_class_by_class!()
@@ -69,5 +69,11 @@ defmodule Game.CombatBuilder do
     |> Map.put(:team, team)
     |> Map.put(:id, id)
     |> Map.put(:dead, false)
+    |> then(fn char ->
+      case Map.get(spec, :name) do
+        nil -> char
+        name -> %{char | name: name}
+      end
+    end)
   end
 end

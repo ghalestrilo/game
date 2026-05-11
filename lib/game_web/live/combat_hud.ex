@@ -169,7 +169,7 @@ defmodule GameWeb.CombatHUD do
         current={true}
       />
       <h3 class="text-base font-bold mt-2">Next up</h3>
-      <ul class="max-h-[calc(100vh-650px)] text-sm flex flex-col gap-3 overflow-scroll">
+      <ul class="max-h-[calc(100vh-650px)] text-sm flex flex-col gap-3 overflow-scroll ">
         <.character_queue_card
           :for={character <- Enum.filter(queue, &(&1 != nil))}
           character={character}
@@ -211,9 +211,9 @@ defmodule GameWeb.CombatHUD do
         <div class="w-10 h-10 rounded-full bg-base-300 flex-shrink-0" />
       <% end %>
       <div class={["flex-1 min-w-0", if(@same_team, do: "items-start", else: "items-end text-end")]}>
-        <div class={["flex gap-1 mb-1 items-center", if(@same_team, do: "", else: "flex-row-reverse")]}>
-          <span>{@character.name}</span>
-          <span class="badge badge-soft badge-sm ml-auto">
+        <div class={["flex !flex-row gap-1 mb-1 items-start", if(@same_team, do: "", else: "flex-row-reverse")]}>
+          <div class="flex flex-wrap items-baseline gap-1"><span>{@character.name}</span><span class="badge badge-sm badge-soft badge-info px-1">{@character.class}</span></div>
+          <span class="badge badge-soft badge-md badge-info my-0.5 ml-auto px-1 min-w-fit tooltip tooltip-bottom tooltip-info" data-tip={"Cards in: draw / hand / discard "}>
             <.icon name="hero-rectangle-stack-mini" class="size-4 px-0" />
             {Enum.count(@character.cards.draw)} / {Enum.count(@character.cards.hand)} / {Enum.count(
               @character.cards.discard

@@ -51,6 +51,13 @@ defmodule Game.Lobby do
     end
   end
 
+  def set_name(id, user_id, name) do
+    case Registry.lookup(Game.LobbyRegistry, id) do
+      [{_pid, _}] -> LobbyServer.set_name(id, user_id, name)
+      [] -> {:error, :not_found}
+    end
+  end
+
   def toggle_ready(id, user_id) do
     case Registry.lookup(Game.LobbyRegistry, id) do
       [{_pid, _}] -> LobbyServer.toggle_ready(id, user_id)

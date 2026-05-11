@@ -56,16 +56,18 @@ defmodule GameWeb.MultiplayerPlayLiveTest do
     test "both players can mount the play view and see the combat board", %{
       conn1: conn1,
       conn2: conn2,
+      user1: user1,
+      user2: user2,
       play_path: play_path
     } do
       {:ok, view1, _} = live(conn1, play_path)
       {:ok, view2, _} = live(conn2, play_path)
 
-      # Both see the combat board with both characters
-      assert render(view1) =~ "Fighter"
-      assert render(view1) =~ "Mage"
-      assert render(view2) =~ "Fighter"
-      assert render(view2) =~ "Mage"
+      # Both see the combat board with both characters (names default to user emails)
+      assert render(view1) =~ user1.email
+      assert render(view1) =~ user2.email
+      assert render(view2) =~ user1.email
+      assert render(view2) =~ user2.email
     end
 
     test "non-active player gets told it's not their turn", %{

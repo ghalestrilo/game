@@ -53,6 +53,16 @@ defmodule GameWeb.LobbyLive do
   end
 
   @impl true
+  def handle_event("set_name", %{"name" => name}, socket) do
+    user = socket.assigns.current_scope.user
+
+    case Lobby.set_name(socket.assigns.lobby_id, user.id, name) do
+      {:ok, lobby_state} -> {:noreply, assign(socket, lobby: lobby_state)}
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_event("select_team", %{"team" => team}, socket) do
     user = socket.assigns.current_scope.user
 
@@ -127,6 +137,17 @@ defmodule GameWeb.LobbyLive do
                   <% end %>
                 </select>
               </form>
+              <% my_name = my_player && my_player.name %>
+              <form class="list-row text-lg items-center" phx-change="set_name">
+                <label class="list-col-grow">Display Name</label>
+                <input
+                  type="text"
+                  name="name"
+                  value={my_name || ""}
+                  placeholder={@current_scope.user.email}
+                  class="input input-bordered"
+                />
+              </form>
             </div>
             <% is_host = hd(@lobby.players).id == @current_user_id %>
             <% boosters = get_in(@lobby, [:settings, :boosters]) || 0 %>
@@ -183,7 +204,7 @@ defmodule GameWeb.LobbyLive do
                       if(player.ready, do: "bg-success/30")
                     ]}
                   >
-                    <p class="list-col-grow">{player.email}</p>
+                    <p class="list-col-grow">{player.name || player.email}</p>
                     <%= if player.class do %>
                       <span class="badge badge-soft badge-lg badge-warning min-w-fit">
                         {player.class}
