@@ -75,6 +75,14 @@ defmodule GameWeb.Admin.MapEditorLive do
           <Backpex.HTML.CoreComponents.icon name="hero-map-pin" class="h-5 w-5" />
           Spawn Point
         </button>
+        <button
+          class={["btn btn-lg gap-2", @selected_tool == :terrain && "btn-active"]}
+          phx-click="select_tool"
+          phx-value-tool="terrain"
+        >
+          <Backpex.HTML.CoreComponents.icon name="hero-square-2-stack" class="h-5 w-5" />
+          Terrain
+        </button>
       </div>
 
       <.modal id="exit-modal">
@@ -135,6 +143,7 @@ defmodule GameWeb.Admin.MapEditorLive do
       case socket.assigns.selected_tool do
         :wall -> apply_wall_toggle(coord, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
         :spawn_point -> apply_spawn_toggle(coord, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
+        :terrain -> apply_terrain_toggle(coord, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
       end
 
     map = %{socket.assigns.map | tiles: pending_tiles, spawn_points: pending_spawn_points}
@@ -162,6 +171,19 @@ defmodule GameWeb.Admin.MapEditorLive do
       tiles = clear_walls_in_tile(tiles, q, r, s)
       spawn_points = Elixir.Map.put(spawn_points, next_team, [q, r, s])
       {tiles, spawn_points}
+    end
+  end
+
+  # Toggles terrain existence. Adding clears walls (a wall on a non-tile makes no sense).
+  # Removing also evicts any spawn point on that coord.
+  defp apply_terrain_toggle({q, r, s} = coord, tiles, spawn_points) do
+    case Enum.find_index(tiles, &(&1["q"] == q and &1["r"] == r and &1["s"] == s)) do
+      nil ->
+        new_tile = %{"q" => q, "r" => r, "s" => s, "terrain" => "plain", "objects" => []}
+        {[new_tile | tiles], spawn_points}
+
+      idx ->
+        {List.delete_at(tiles, idx), remove_spawn_at(spawn_points, coord)}
     end
   end
 
@@ -225,15 +247,19 @@ defmodule GameWeb.Admin.MapEditorLive do
   defp build_grid(map) do
     template = Maps.from_db(map)
     radius = content_radius(map) + @editor_padding
-    base = Grid.new({radius, radius, radius})
+
+    # All base tiles start as OOB; overlay marks terrain tiles as in-bounds.
+    base_tiles =
+      Grid.new({radius, radius, radius}).tiles
+      |> Elixir.Map.new(fn {coord, tile} -> {coord, Elixir.Map.put(tile, :is_oob, true)} end)
 
     overlay =
       Elixir.Map.new(template.tiles, fn {coords, tile_data} ->
-        base_tile = Elixir.Map.get(base.tiles, coords, %{terrain: :plain, occupied_by: nil})
-        {coords, Elixir.Map.merge(base_tile, tile_data)}
+        base_tile = Elixir.Map.get(base_tiles, coords, %{terrain: :plain, occupied_by: nil})
+        {coords, Elixir.Map.merge(base_tile, tile_data) |> Elixir.Map.put(:is_oob, false)}
       end)
 
-    %{base | tiles: Elixir.Map.merge(base.tiles, overlay)}
+    %Game.Grid{tiles: Elixir.Map.merge(base_tiles, overlay)}
   end
 
   defp content_radius(map) do
@@ -266,4 +292,5 @@ defmodule GameWeb.Admin.MapEditorLive do
 
   defp tool_icon(:wall), do: "hero-cube"
   defp tool_icon(:spawn_point), do: "hero-map-pin"
+  defp tool_icon(:terrain), do: "hero-square-2-stack"
 end

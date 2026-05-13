@@ -63,11 +63,11 @@ defmodule Game.Combat.CardEffects.MoveTest do
       assert updated.current_turn.player.position == {1, 0, -1}
     end
 
-    test "moves freely beyond stored grid tiles into open space", %{combat: combat, mage: mage} do
-      # mage at {2,0,-2}, angle 0 = east — open space is passable, moves full distance
+    test "stops at grid edge when distance exceeds available tiles", %{combat: combat, mage: mage} do
+      # mage at {2,0,-2}, angle 0 = east — blocked by grid boundary at {3,0,-3}
       updated = CardEffect.process(%Move{angle: 0, distance: 10}, mage, combat)
       updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
-      assert updated_mage.position == {12, 0, -12}
+      assert updated_mage.position == {3, 0, -3}
     end
 
     test "stops at last unblocked tile when path is partially blocked", %{

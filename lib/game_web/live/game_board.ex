@@ -56,7 +56,8 @@ defmodule GameWeb.GameBoard do
                   class={[
                     "hex-cell border border-base-content/20 w-20 h-20 flex items-center justify-center bg-base-100",
                     wall_class(tile),
-                    spawn_class({q, r, s}, spawn_index, @context)
+                    spawn_class({q, r, s}, spawn_index, @context),
+                    terrain_class(tile, @context)
                   ]}
                 >
                   <span
@@ -294,6 +295,9 @@ defmodule GameWeb.GameBoard do
   end
 
   defp spawn_class(_coord, _spawn_index, _context), do: nil
+
+  defp terrain_class(%{is_oob: true}, :edit), do: "!opacity-30 !bg-base-300 !border-dashed"
+  defp terrain_class(_tile, _context), do: nil
 
   def same_team?(%{team: team}, %{team: team}) when not is_nil(team), do: true
   def same_team?(_current_player, _character), do: false

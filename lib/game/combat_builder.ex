@@ -19,6 +19,7 @@ defmodule Game.CombatBuilder do
   """
   def build(player_specs, opts \\ []) do
     map_template = resolve_map(opts[:map] || get_in(opts[:settings], [:map]))
+    dbg(map_template)
     player_specs = maybe_assign_positions(player_specs, map_template)
 
     characters =
