@@ -11,7 +11,7 @@ defmodule GameWeb.Admin.MapEditorLive do
 
     {:ok,
      socket
-     |> assign(map: map, pending_tiles: map.tiles, dirty: false, show_exit_modal: false)
+     |> assign(map: map, pending_tiles: map.tiles, dirty: false)
      |> assign_grid(map.tiles)}
   end
 
@@ -20,7 +20,10 @@ defmodule GameWeb.Admin.MapEditorLive do
     ~H"""
     <div class="p-6">
       <div class="flex items-center gap-4 mb-6">
-        <button class="btn btn-ghost btn-sm" phx-click="maybe_exit">
+        <button
+          class="btn btn-ghost btn-sm"
+          phx-click={if @dirty, do: show_modal("exit-modal"), else: JS.navigate("/admin/maps")}
+        >
           <Backpex.HTML.CoreComponents.icon name="hero-arrow-left" class="h-4 w-4" />
           Maps
         </button>
@@ -42,12 +45,12 @@ defmodule GameWeb.Admin.MapEditorLive do
         static_map={true}
       />
 
-      <.modal id="exit-modal" show={@show_exit_modal}>
+      <.modal id="exit-modal">
         <div class="flex flex-col gap-4">
           <h3 class="text-lg font-bold">Unsaved changes</h3>
           <p>You have unsaved changes. Leave without saving?</p>
           <div class="flex justify-end gap-3">
-            <button class="btn btn-ghost btn-sm" phx-click="close_exit_modal">
+            <button class="btn btn-ghost btn-sm" phx-click={hide_modal("exit-modal")}>
               Stay
             </button>
             <button class="btn btn-error btn-sm" phx-click="discard_and_exit">
@@ -69,20 +72,6 @@ defmodule GameWeb.Admin.MapEditorLive do
   def handle_event("save", _params, socket) do
     {:ok, map} = Maps.update_map(socket.assigns.map, %{tiles: socket.assigns.pending_tiles})
     {:noreply, assign(socket, map: map, dirty: false)}
-  end
-
-  @impl true
-  def handle_event("maybe_exit", _params, socket) do
-    if socket.assigns.dirty do
-      {:noreply, assign(socket, show_exit_modal: true)}
-    else
-      {:noreply, push_navigate(socket, to: "/admin/maps")}
-    end
-  end
-
-  @impl true
-  def handle_event("close_exit_modal", _params, socket) do
-    {:noreply, assign(socket, show_exit_modal: false)}
   end
 
   @impl true
