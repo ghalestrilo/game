@@ -461,10 +461,11 @@ defmodule GameWeb.LobbyLiveTest do
         Game.Maps.create_map(%{
           slug: "wall_map",
           display_name: "Wall Map",
-          tiles: [
-            %{"q" => 0, "r" => 2, "s" => -2, "terrain" => "plain",
-              "objects" => [%{"type" => "wall"}]}
-          ],
+          tiles:
+            (for q <- -3..3, r <- -3..3, s <- -3..3, q + r + s == 0 do
+               objects = if {q, r, s} == {0, 2, -2}, do: [%{"type" => "wall"}], else: []
+               %{"q" => q, "r" => r, "s" => s, "terrain" => "plain", "objects" => objects}
+             end),
           spawn_points: %{}
         })
 
@@ -539,10 +540,11 @@ defmodule GameWeb.LobbyLiveTest do
       Game.Maps.create_map(%{
         slug: "booster_wall_map",
         display_name: "Booster Wall Map",
-        tiles: [
-          %{"q" => 0, "r" => 2, "s" => -2, "terrain" => "plain",
-            "objects" => [%{"type" => "wall"}]}
-        ],
+        tiles:
+          (for q <- -3..3, r <- -3..3, s <- -3..3, q + r + s == 0 do
+             objects = if {q, r, s} == {0, 2, -2}, do: [%{"type" => "wall"}], else: []
+             %{"q" => q, "r" => r, "s" => s, "terrain" => "plain", "objects" => objects}
+           end),
         spawn_points: %{}
       })
 

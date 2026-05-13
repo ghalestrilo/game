@@ -43,7 +43,7 @@ defmodule Game.Combat.CardEffects.Move do
       {tq, tr, ts} = target.position
       next_pos = {tq + dq, tr + dr, ts + ds}
 
-      if Grid.tile_blocked?(grid, next_pos) do
+      if not Map.has_key?(grid.tiles, next_pos) or Grid.tile_blocked?(grid, next_pos) do
         {target, grid}
       else
         new_grid = Grid.update_position(grid, target, target.position, next_pos)
@@ -64,7 +64,7 @@ defmodule Game.Combat.CardEffects.Move do
       {tq, tr, ts} = target.position
       next_pos = {tq + dq, tr + dr, ts + ds}
 
-      if Grid.tile_blocked?(grid, next_pos) do
+      if not Map.has_key?(grid.tiles, next_pos) or Grid.tile_blocked?(grid, next_pos) do
         {target, grid}
       else
         new_grid = Grid.update_position(grid, target, target.position, next_pos)

@@ -75,6 +75,14 @@ defmodule GameWeb.Admin.MapEditorLive do
           <Backpex.HTML.CoreComponents.icon name="hero-map-pin" class="h-5 w-5" />
           Spawn Point
         </button>
+        <button
+          class={["btn btn-lg gap-2", @selected_tool == :terrain && "btn-active"]}
+          phx-click="select_tool"
+          phx-value-tool="terrain"
+        >
+          <Backpex.HTML.CoreComponents.icon name="hero-square-2-stack" class="h-5 w-5" />
+          Terrain
+        </button>
       </div>
 
       <.modal id="exit-modal">
@@ -130,11 +138,15 @@ defmodule GameWeb.Admin.MapEditorLive do
 
   defp handle_tile_click(pos_str, socket) do
     coord = parse_coord(pos_str)
+    grid_tile = get_in(socket.assigns.grid.tiles, [coord])
+    oob? = is_nil(grid_tile) or grid_tile[:terrain] == nil
 
     {pending_tiles, pending_spawn_points} =
       case socket.assigns.selected_tool do
-        :wall -> apply_wall_toggle(coord, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
-        :spawn_point -> apply_spawn_toggle(coord, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
+        :wall when not oob? -> apply_wall_toggle(coord, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
+        :spawn_point when not oob? -> apply_spawn_toggle(coord, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
+        :terrain -> apply_terrain_toggle(coord, oob?, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
+        _ -> {socket.assigns.pending_tiles, socket.assigns.pending_spawn_points}
       end
 
     map = %{socket.assigns.map | tiles: pending_tiles, spawn_points: pending_spawn_points}
@@ -163,6 +175,19 @@ defmodule GameWeb.Admin.MapEditorLive do
       spawn_points = Elixir.Map.put(spawn_points, next_team, [q, r, s])
       {tiles, spawn_points}
     end
+  end
+
+  # oob? comes from the rendered grid tile — more reliable than checking pending_tiles,
+  # since OOB tiles exist in the grid but are never in pending_tiles.
+  defp apply_terrain_toggle({q, r, s} = _coord, _oob? = true, tiles, spawn_points) do
+    new_tile = %{"q" => q, "r" => r, "s" => s, "terrain" => "plain", "objects" => []}
+    {[new_tile | tiles], spawn_points}
+  end
+
+  defp apply_terrain_toggle({q, r, s} = coord, _oob? = false, tiles, spawn_points) do
+    idx = Enum.find_index(tiles, &(&1["q"] == q and &1["r"] == r and &1["s"] == s))
+    tiles = if idx, do: List.delete_at(tiles, idx), else: tiles
+    {tiles, remove_spawn_at(spawn_points, coord)}
   end
 
   defp parse_coord(pos_str) do
@@ -225,15 +250,21 @@ defmodule GameWeb.Admin.MapEditorLive do
   defp build_grid(map) do
     template = Maps.from_db(map)
     radius = content_radius(map) + @editor_padding
-    base = Grid.new({radius, radius, radius})
+
+    # Base tiles have no terrain — they are empty/OOB cells used only for editor rendering.
+    base_tiles =
+      for q <- -radius..radius, r <- -radius..radius, s <- -radius..radius, q + r + s == 0,
+          into: %{} do
+        {Game.Grid.normalize({q, r, s}), %{terrain: nil, occupied_by: nil}}
+      end
 
     overlay =
       Elixir.Map.new(template.tiles, fn {coords, tile_data} ->
-        base_tile = Elixir.Map.get(base.tiles, coords, %{terrain: :plain, occupied_by: nil})
+        base_tile = Elixir.Map.get(base_tiles, coords, %{terrain: nil, occupied_by: nil})
         {coords, Elixir.Map.merge(base_tile, tile_data)}
       end)
 
-    %{base | tiles: Elixir.Map.merge(base.tiles, overlay)}
+    %Game.Grid{tiles: Elixir.Map.merge(base_tiles, overlay)}
   end
 
   defp content_radius(map) do
@@ -266,4 +297,5 @@ defmodule GameWeb.Admin.MapEditorLive do
 
   defp tool_icon(:wall), do: "hero-cube"
   defp tool_icon(:spawn_point), do: "hero-map-pin"
+  defp tool_icon(:terrain), do: "hero-square-2-stack"
 end

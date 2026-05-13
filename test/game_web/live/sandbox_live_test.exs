@@ -50,13 +50,9 @@ defmodule GameWeb.SandboxLiveTest do
           slug: "walled_arena",
           display_name: "Walled Arena",
           tiles: [
-            %{
-              "q" => 0,
-              "r" => 1,
-              "s" => -1,
-              "terrain" => "plain",
-              "objects" => [%{"type" => "wall"}]
-            }
+            %{"q" => -3, "r" => 0, "s" => 3, "terrain" => "plain", "objects" => []},
+            %{"q" => 0, "r" => 1, "s" => -1, "terrain" => "plain", "objects" => [%{"type" => "wall"}]},
+            %{"q" => 3, "r" => 0, "s" => -3, "terrain" => "plain", "objects" => []}
           ],
           spawn_points: %{}
         })
