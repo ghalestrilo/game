@@ -58,6 +58,25 @@
   --color-legendary: oklch(78% 0.18 80);
 }
 
+/* FAB (Floating Action Button) — not in this vendored DaisyUI build */
+.fab {
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: center;
+  gap: 0.5rem;
+}
+.fab > *:not(:first-child) {
+  transition: opacity 0.15s, transform 0.15s;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(0.5rem);
+}
+.fab:focus-within > *:not(:first-child) {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
 /* Alerts and form errors */
 .alert:empty { display: none; }
 

@@ -86,7 +86,7 @@ defmodule Game.Maps do
 
     spawn_points =
       Elixir.Map.new(db_map.spawn_points, fn {key, [q, r, s]} ->
-        {String.to_existing_atom(key), {q, r, s}}
+        {String.to_atom(key), {q, r, s}}
       end)
 
     %MapTemplate{

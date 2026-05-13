@@ -11,14 +11,20 @@ defmodule GameWeb.Admin.MapEditorLive do
 
     {:ok,
      socket
-     |> assign(map: map, pending_tiles: map.tiles, dirty: false)
-     |> assign_grid(map.tiles)}
+     |> assign(
+       map: map,
+       pending_tiles: map.tiles,
+       pending_spawn_points: map.spawn_points,
+       selected_tool: :wall,
+       dirty: false
+     )
+     |> assign_grid(map)}
   end
 
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="p-6">
+    <div class="p-6 relative">
       <div class="flex items-center gap-4 mb-6">
         <button
           class="btn btn-ghost btn-sm"
@@ -36,14 +42,39 @@ defmodule GameWeb.Admin.MapEditorLive do
           </button>
         </div>
       </div>
-      <p class="text-sm text-base-content/60 mb-4">Click a tile to toggle a wall.</p>
+
       <.live_component
         module={GameWeb.GameBoard}
         id="map-editor-board"
         game_state={editor_game_state(@grid)}
         current_player={nil}
         static_map={true}
+        context={:edit}
+        spawn_points={@spawn_points}
       />
+
+      <!-- FAB tool selector -->
+      <div class="fab fixed bottom-8 right-8 !items-end">
+        <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-neutral">
+          <Backpex.HTML.CoreComponents.icon name={tool_icon(@selected_tool)} class="h-6 w-6" />
+        </div>
+        <button
+          class={["btn btn-lg gap-2", @selected_tool == :wall && "btn-active"]}
+          phx-click="select_tool"
+          phx-value-tool="wall"
+        >
+          <Backpex.HTML.CoreComponents.icon name="hero-cube" class="h-5 w-5" />
+          Wall
+        </button>
+        <button
+          class={["btn btn-lg gap-2", @selected_tool == :spawn_point && "btn-active"]}
+          phx-click="select_tool"
+          phx-value-tool="spawn_point"
+        >
+          <Backpex.HTML.CoreComponents.icon name="hero-map-pin" class="h-5 w-5" />
+          Spawn Point
+        </button>
+      </div>
 
       <.modal id="exit-modal">
         <div class="flex flex-col gap-4">
@@ -64,13 +95,23 @@ defmodule GameWeb.Admin.MapEditorLive do
   end
 
   @impl true
+  def handle_event("select_tool", %{"tool" => tool}, socket) do
+    {:noreply, assign(socket, selected_tool: String.to_existing_atom(tool))}
+  end
+
+  @impl true
   def handle_event("interact", %{"target_position" => pos_str}, socket) do
     handle_tile_click(pos_str, socket)
   end
 
   @impl true
   def handle_event("save", _params, socket) do
-    {:ok, map} = Maps.update_map(socket.assigns.map, %{tiles: socket.assigns.pending_tiles})
+    {:ok, map} =
+      Maps.update_map(socket.assigns.map, %{
+        tiles: socket.assigns.pending_tiles,
+        spawn_points: socket.assigns.pending_spawn_points
+      })
+
     {:noreply, assign(socket, map: map, dirty: false)}
   end
 
@@ -87,26 +128,78 @@ defmodule GameWeb.Admin.MapEditorLive do
   def handle_info({:parent_event, _event, _params}, socket), do: {:noreply, socket}
 
   defp handle_tile_click(pos_str, socket) do
-    [q, r, s] = pos_str |> String.split("_") |> Enum.map(&String.to_integer/1)
-    pending_tiles = toggle_wall_in_tiles(socket.assigns.pending_tiles, {q, r, s})
+    coord = parse_coord(pos_str)
+
+    {pending_tiles, pending_spawn_points} =
+      case socket.assigns.selected_tool do
+        :wall -> apply_wall_toggle(coord, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
+        :spawn_point -> apply_spawn_toggle(coord, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
+      end
+
+    map = %{socket.assigns.map | tiles: pending_tiles, spawn_points: pending_spawn_points}
 
     {:noreply,
      socket
-     |> assign(pending_tiles: pending_tiles, dirty: true)
-     |> assign_grid(pending_tiles)}
+     |> assign(pending_tiles: pending_tiles, pending_spawn_points: pending_spawn_points, dirty: true)
+     |> assign_grid(map)}
   end
 
-  defp assign_grid(socket, tiles) do
-    assign(socket, grid: build_grid(tiles))
+  # Toggles a wall on the tile. Clears any spawn point occupying this coord first.
+  defp apply_wall_toggle({q, r, s} = coord, tiles, spawn_points) do
+    spawn_points = remove_spawn_at(spawn_points, coord)
+    tiles = toggle_wall_in_tiles(tiles, q, r, s)
+    {tiles, spawn_points}
   end
 
-  defp toggle_wall_in_tiles(tiles, {q, r, s}) do
+  # Toggles a spawn point. If one exists at this coord, removes it.
+  # If not, assigns the next free team slot and clears any wall on that tile.
+  defp apply_spawn_toggle({q, r, s} = coord, tiles, spawn_points) do
+    if spawn_at?(spawn_points, coord) do
+      {tiles, remove_spawn_at(spawn_points, coord)}
+    else
+      next_team = next_team_key(spawn_points)
+      tiles = clear_walls_in_tile(tiles, q, r, s)
+      spawn_points = Elixir.Map.put(spawn_points, next_team, [q, r, s])
+      {tiles, spawn_points}
+    end
+  end
+
+  defp parse_coord(pos_str) do
+    [q, r, s] = pos_str |> String.split("_") |> Enum.map(&String.to_integer/1)
+    {q, r, s}
+  end
+
+  defp spawn_at?(spawn_points, {q, r, s}) do
+    Enum.any?(spawn_points, fn {_team, coords} -> coords == [q, r, s] end)
+  end
+
+  defp remove_spawn_at(spawn_points, {q, r, s}) do
+    Elixir.Map.reject(spawn_points, fn {_team, coords} -> coords == [q, r, s] end)
+  end
+
+  # Returns the next team key string ("team_1", "team_2", ...) not yet in use.
+  defp next_team_key(spawn_points) do
+    existing = Elixir.Map.keys(spawn_points) |> Enum.map(&to_string/1) |> MapSet.new()
+
+    Stream.iterate(1, &(&1 + 1))
+    |> Stream.map(&"team_#{&1}")
+    |> Enum.find(&(not MapSet.member?(existing, &1)))
+  end
+
+  defp toggle_wall_in_tiles(tiles, q, r, s) do
     case Enum.find_index(tiles, &(&1["q"] == q and &1["r"] == r and &1["s"] == s)) do
       nil ->
         [%{"q" => q, "r" => r, "s" => s, "terrain" => "plain", "objects" => [%{"type" => "wall"}]} | tiles]
 
       idx ->
         List.update_at(tiles, idx, &toggle_wall_object/1)
+    end
+  end
+
+  defp clear_walls_in_tile(tiles, q, r, s) do
+    case Enum.find_index(tiles, &(&1["q"] == q and &1["r"] == r and &1["s"] == s)) do
+      nil -> tiles
+      idx -> List.update_at(tiles, idx, &Elixir.Map.put(&1, "objects", []))
     end
   end
 
@@ -123,8 +216,13 @@ defmodule GameWeb.Admin.MapEditorLive do
 
   defp toggle_wall_object(tile), do: Elixir.Map.put(tile, "objects", [%{"type" => "wall"}])
 
-  defp build_grid(tiles) do
-    template = Maps.from_db(%Game.Maps.Map{tiles: tiles, spawn_points: %{}})
+  defp assign_grid(socket, map) do
+    spawn_points = deserialize_spawn_points(map.spawn_points)
+    assign(socket, grid: build_grid(map), spawn_points: spawn_points)
+  end
+
+  defp build_grid(map) do
+    template = Maps.from_db(map)
     base = Grid.new({@editor_radius, @editor_radius, @editor_radius})
 
     overlay =
@@ -136,7 +234,16 @@ defmodule GameWeb.Admin.MapEditorLive do
     %{base | tiles: Elixir.Map.merge(base.tiles, overlay)}
   end
 
+  defp deserialize_spawn_points(spawn_points) do
+    Elixir.Map.new(spawn_points, fn {team, [q, r, s]} ->
+      {String.to_atom(team), {q, r, s}}
+    end)
+  end
+
   defp editor_game_state(grid) do
     %{combat: %CombatState{grid: grid, state: :initialized}}
   end
+
+  defp tool_icon(:wall), do: "hero-cube"
+  defp tool_icon(:spawn_point), do: "hero-map-pin"
 end

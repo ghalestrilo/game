@@ -23,6 +23,8 @@ defmodule GameWeb.GameBoard do
      socket
      |> assign(assigns)
      |> assign_new(:static_map, fn -> false end)
+     |> assign_new(:context, fn -> :combat end)
+     |> assign_new(:spawn_points, fn -> %{} end)
      |> assign(:tile_classes_json, tile_classes_json)
      |> assign(:blast_map_json, blast_map_json)}
   end
@@ -34,6 +36,7 @@ defmodule GameWeb.GameBoard do
       <% queue = Game.CombatState.get_current_queue(@game_state.combat) %>
       <% rows = Game.Grid.to_rows(@game_state.combat.grid) %>
       <% pos = build_position_index(rows) %>
+      <% spawn_index = build_spawn_index(@spawn_points) %>
       <div
         id="game-board"
         class="game-board"
@@ -52,9 +55,16 @@ defmodule GameWeb.GameBoard do
                   data-coord={"#{q}_#{r}_#{s}"}
                   class={[
                     "hex-cell border border-base-content/20 w-20 h-20 flex items-center justify-center bg-base-100",
-                    wall_class(tile)
+                    wall_class(tile),
+                    spawn_class({q, r, s}, spawn_index, @context)
                   ]}
                 >
+                  <span
+                    :if={@context == :edit}
+                    class="text-[10px] font-bold select-none pointer-events-none text-base-content/60"
+                  >
+                    {Elixir.Map.get(spawn_index, {q, r, s})}
+                  </span>
                 </div>
               <% end %>
             </div>
@@ -265,6 +275,25 @@ defmodule GameWeb.GameBoard do
   defp wall_class(tile) do
     if wall?(tile), do: "!bg-amber-900/80 cursor-not-allowed", else: nil
   end
+
+  # Returns a map of {q,r,s} => display label for each spawn point.
+  defp build_spawn_index(spawn_points) do
+    Elixir.Map.new(spawn_points, fn {team, coords} ->
+      label =
+        team
+        |> to_string()
+        |> String.replace("team_", "T")
+        |> String.upcase()
+
+      {coords, label}
+    end)
+  end
+
+  defp spawn_class(coord, spawn_index, :edit) do
+    if Elixir.Map.has_key?(spawn_index, coord), do: "!bg-info/20 ring-2 ring-inset ring-info/40", else: nil
+  end
+
+  defp spawn_class(_coord, _spawn_index, _context), do: nil
 
   def same_team?(%{team: team}, %{team: team}) when not is_nil(team), do: true
   def same_team?(_current_player, _character), do: false
