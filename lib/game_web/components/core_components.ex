@@ -606,10 +606,10 @@ defmodule GameWeb.CoreComponents do
 
   def effect_list(assigns) do
     ~H"""
-    <ul class="flex flex-col items-stretch gap-2 text-xs text-base-content/70">
+    <ul class="flex flex-col items-stretch gap-2 text-xs text-base-content/70 w-[100%]">
       <li
         :for={{effect, index} <- get_indexed_card_effects(@card)}
-        class="flex flex-row flex-wrap justify-between items-baseline gap-1 card bg-amber-500/10 p-2"
+        class="flex flex-row flex-wrap justify-between items-baseline gap-1 card bg-amber-500/10 p-2 w-[100%]"
       >
         <span class="min-w-fit">
           <.icon name={Game.Combat.CardEffect.get_icon(effect)} class="w-3 h-3" />

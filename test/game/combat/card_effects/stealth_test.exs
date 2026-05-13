@@ -202,24 +202,24 @@ defmodule Game.Combat.CardEffects.StealthTest do
     test "stealthy character is not visible to an enemy player" do
       stealthy = %{team: :a, status_effects: [%{type: :stealth, value: 1}]}
       observer = %{team: :b}
-      refute GameWeb.CombatLive.visible_to_for_test?(stealthy, observer)
+      refute GameWeb.GameBoard.visible_to_for_test?(stealthy, observer)
     end
 
     test "stealthy character is visible to a teammate" do
       stealthy = %{team: :a, status_effects: [%{type: :stealth, value: 1}]}
       teammate = %{team: :a}
-      assert GameWeb.CombatLive.visible_to_for_test?(stealthy, teammate)
+      assert GameWeb.GameBoard.visible_to_for_test?(stealthy, teammate)
     end
 
     test "non-stealthy character is visible to everyone" do
       plain = %{team: :a, status_effects: []}
       enemy = %{team: :b}
-      assert GameWeb.CombatLive.visible_to_for_test?(plain, enemy)
+      assert GameWeb.GameBoard.visible_to_for_test?(plain, enemy)
     end
 
     test "any character is visible when current_player is nil (campaign/single-player)" do
       stealthy = %{team: :a, status_effects: [%{type: :stealth, value: 1}]}
-      assert GameWeb.CombatLive.visible_to_for_test?(stealthy, nil)
+      assert GameWeb.GameBoard.visible_to_for_test?(stealthy, nil)
     end
   end
 end
