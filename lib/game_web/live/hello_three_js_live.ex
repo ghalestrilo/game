@@ -2,7 +2,19 @@ defmodule GameWeb.HelloThreeJsLive do
   use GameWeb, :live_view
 
   @impl true
-  def mount(_params, _session, socket), do: {:ok, socket}
+  def mount(_params, _session, socket) do
+    tiles =
+      case Game.Maps.list_db() do
+        [first | _] ->
+          map = Game.Maps.from_db(first)
+          map.tiles |> Map.keys() |> Enum.map(fn {q, r, s} -> %{q: q, r: r, s: s} end)
+
+        [] ->
+          [{0, 0, 0}] |> Enum.map(fn {q, r, s} -> %{q: q, r: r, s: s} end)
+      end
+
+    {:ok, push_event(socket, "load_map", %{tiles: tiles})}
+  end
 
   @impl true
   def handle_event("randomize_cube", _params, socket) do
