@@ -40,6 +40,18 @@ const ThreeJS = {
     }
     window.addEventListener("resize", this._onResize)
 
+    const raycaster = new THREE.Raycaster()
+    const pointer   = new THREE.Vector2()
+    this._onClick = (e) => {
+      const rect = this._renderer.domElement.getBoundingClientRect()
+      pointer.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1
+      pointer.y = -((e.clientY - rect.top)   / rect.height) * 2 + 1
+      raycaster.setFromCamera(pointer, this._camera)
+      if (raycaster.intersectObject(this._cube).length > 0)
+        this.pushEvent("randomize_cube", {})
+    }
+    this._renderer.domElement.addEventListener("click", this._onClick)
+
     this.handleEvent("randomize_cube", ({ size, x, y }) => {
       this._cube.geometry.dispose()
       this._cube.geometry = new THREE.BoxGeometry(size, size, size)
@@ -50,6 +62,7 @@ const ThreeJS = {
   destroyed() {
     if (this._animFrameId !== null) cancelAnimationFrame(this._animFrameId)
     window.removeEventListener("resize", this._onResize)
+    this._renderer.domElement.removeEventListener("click", this._onClick)
     this._cube.geometry.dispose()
     this._cube.material.dispose()
     this._renderer.dispose()
