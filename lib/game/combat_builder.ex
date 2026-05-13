@@ -28,8 +28,16 @@ defmodule Game.CombatBuilder do
 
     positions = Enum.map(characters, & &1.position)
 
+    template_coords =
+      case map_template do
+        %MapTemplate{tiles: tiles, spawn_points: sp} ->
+          Elixir.Map.keys(tiles) ++ Elixir.Map.values(sp)
+        nil ->
+          []
+      end
+
     max_radius =
-      positions
+      (positions ++ template_coords)
       |> Enum.map(&Grid.normalize/1)
       |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end)
       |> Enum.max()

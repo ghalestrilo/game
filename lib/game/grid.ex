@@ -108,7 +108,7 @@ defmodule Game.Grid do
   def tile_blocked?(%Grid{tiles: tiles}, target_position) do
     case Map.get(tiles, target_position) do
       nil ->
-        true
+        false
 
       tile ->
         tile[:terrain] == :wall or
@@ -132,10 +132,27 @@ defmodule Game.Grid do
   Updates a character's position on the grid
   """
   def update_position(%Grid{} = grid, character, old_position, new_position) do
-    # First clear the old position
     grid = %{grid | tiles: Map.update!(grid.tiles, old_position, &%{&1 | occupied_by: nil})}
-    # Then set the new position
+    grid = maybe_expand(grid, new_position)
     %{grid | tiles: Map.update!(grid.tiles, new_position, &%{&1 | occupied_by: character})}
+  end
+
+  # Ensures new_position exists in the tile set, expanding the grid if needed.
+  # When the grid is sparse (hand-constructed in tests, or a 1D corridor), a position
+  # may be absent even if its distance from origin is within the current max radius.
+  # In that case we expand to a full hex grid covering the required radius.
+  defp maybe_expand(%Grid{tiles: tiles} = grid, position) do
+    if Map.has_key?(tiles, position) do
+      grid
+    else
+      {q, r, s} = position
+      needed_radius = div(abs(q) + abs(r) + abs(s), 2) + 1
+      current_radius = tiles |> Map.keys() |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end) |> Enum.max(fn -> 0 end)
+      expand_radius = max(needed_radius, current_radius)
+      expanded = new({expand_radius, expand_radius, expand_radius})
+      # Existing tiles win on merge — preserves terrain, objects, and occupants
+      %{grid | tiles: Map.merge(expanded.tiles, tiles)}
+    end
   end
 
   @doc """

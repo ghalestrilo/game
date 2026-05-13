@@ -3,7 +3,8 @@ defmodule GameWeb.Admin.MapEditorLive do
 
   alias Game.{CombatState, Grid, Maps}
 
-  @editor_radius 4
+  @editor_padding 2
+  @editor_min_radius 3
 
   @impl true
   def mount(%{"id" => id}, _session, socket) do
@@ -223,7 +224,8 @@ defmodule GameWeb.Admin.MapEditorLive do
 
   defp build_grid(map) do
     template = Maps.from_db(map)
-    base = Grid.new({@editor_radius, @editor_radius, @editor_radius})
+    radius = content_radius(map) + @editor_padding
+    base = Grid.new({radius, radius, radius})
 
     overlay =
       Elixir.Map.new(template.tiles, fn {coords, tile_data} ->
@@ -232,6 +234,24 @@ defmodule GameWeb.Admin.MapEditorLive do
       end)
 
     %{base | tiles: Elixir.Map.merge(base.tiles, overlay)}
+  end
+
+  defp content_radius(map) do
+    tile_coords = Enum.map(map.tiles, &{&1["q"], &1["r"], &1["s"]})
+
+    spawn_coords =
+      Enum.map(map.spawn_points, fn {_team, [q, r, s]} -> {q, r, s} end)
+
+    case tile_coords ++ spawn_coords do
+      [] ->
+        @editor_min_radius
+
+      coords ->
+        coords
+        |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end)
+        |> Enum.max()
+        |> max(@editor_min_radius)
+    end
   end
 
   defp deserialize_spawn_points(spawn_points) do
