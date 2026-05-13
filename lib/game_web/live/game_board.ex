@@ -296,7 +296,7 @@ defmodule GameWeb.GameBoard do
 
   defp spawn_class(_coord, _spawn_index, _context), do: nil
 
-  defp terrain_class(%{is_oob: true}, :edit), do: "!opacity-30 !bg-base-300 !border-dashed"
+  defp terrain_class(%{terrain: nil}, :edit), do: "!opacity-30 !bg-base-300 !border-dashed"
   defp terrain_class(_tile, _context), do: nil
 
   def same_team?(%{team: team}, %{team: team}) when not is_nil(team), do: true

@@ -23,11 +23,15 @@ defmodule Game.Maps do
     "two_towers" => %MapTemplate{
       name: "two_towers",
       display_name: "Two Towers",
-      tiles: %{
-        {0, 0, 0} => %{terrain: :plain, objects: [%MapObject.Wall{}]},
-        {1, 0, -1} => %{terrain: :plain, objects: [%MapObject.Wall{}]},
-        {-1, 0, 1} => %{terrain: :plain, objects: [%MapObject.Wall{}]}
-      },
+      tiles:
+        (for q <- -4..4, r <- -4..4, s <- -4..4, q + r + s == 0, into: %{} do
+           objects =
+             if {q, r, s} in [{0, 0, 0}, {1, 0, -1}, {-1, 0, 1}],
+               do: [%MapObject.Wall{}],
+               else: []
+
+           {{q, r, s}, %{terrain: :plain, objects: objects}}
+         end),
       spawn_points: %{
         team_1: {-3, 0, 3},
         team_2: {3, 0, -3}

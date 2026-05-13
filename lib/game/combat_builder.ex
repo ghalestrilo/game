@@ -19,7 +19,6 @@ defmodule Game.CombatBuilder do
   """
   def build(player_specs, opts \\ []) do
     map_template = resolve_map(opts[:map] || get_in(opts[:settings], [:map]))
-    dbg(map_template)
     player_specs = maybe_assign_positions(player_specs, map_template)
 
     characters =
@@ -29,19 +28,18 @@ defmodule Game.CombatBuilder do
 
     positions = Enum.map(characters, & &1.position)
 
-    template_coords =
-      case map_template do
-        %MapTemplate{tiles: tiles, spawn_points: sp} ->
-          Elixir.Map.keys(tiles) ++ Elixir.Map.values(sp)
-        nil ->
-          []
-      end
-
     max_radius =
-      (positions ++ template_coords)
-      |> Enum.map(&Grid.normalize/1)
-      |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end)
-      |> Enum.max()
+      case map_template do
+        nil ->
+          positions
+          |> Enum.map(&Grid.normalize/1)
+          |> Enum.map(fn {q, r, s} -> div(abs(q) + abs(r) + abs(s), 2) end)
+          |> Enum.max()
+
+        # With a template the grid is exactly the template tiles — max_radius unused.
+        %MapTemplate{} ->
+          0
+      end
 
     grid =
       build_grid(max_radius, map_template)
@@ -135,17 +133,21 @@ defmodule Game.CombatBuilder do
     Grid.new({padded, padded, padded})
   end
 
-  defp build_grid(max_radius, %MapTemplate{tiles: template_tiles}) do
-    padded = max_radius + @default_grid_padding
-    base_grid = Grid.new({padded, padded, padded})
+  defp build_grid(_max_radius, %MapTemplate{tiles: template_tiles, spawn_points: spawn_points}) do
+    # Spawn point coords that aren't already in the tile set get plain tiles so
+    # Grid.update_character can place characters there.
+    spawn_tiles =
+      spawn_points
+      |> Map.values()
+      |> Enum.reject(&Map.has_key?(template_tiles, &1))
+      |> Map.new(fn coords -> {coords, %{terrain: :plain, occupied_by: nil}} end)
 
-    overlay =
+    tiles =
       Map.new(template_tiles, fn {coords, tile_data} ->
-        base_tile = Map.get(base_grid.tiles, coords, %{terrain: :plain, occupied_by: nil})
-        {coords, Map.merge(base_tile, tile_data)}
+        {coords, Map.merge(%{terrain: :plain, occupied_by: nil}, tile_data)}
       end)
 
-    %{base_grid | tiles: Map.merge(base_grid.tiles, overlay)}
+    %Grid{tiles: Map.merge(spawn_tiles, tiles)}
   end
 
   defp build_character(%{character: char, team: team, position: position, id: id}) do
