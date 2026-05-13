@@ -74,8 +74,8 @@ defmodule Game.Maps do
   @doc "Deletes a DB map record."
   def delete_map(%Map{} = map), do: Repo.delete(map)
 
-  # Converts a DB Map record into a MapTemplate, deserializing tile and spawn_point data.
-  defp from_db(%Map{} = db_map) do
+  @doc "Converts a DB Map record into a MapTemplate, deserializing tile and spawn_point data."
+  def from_db(%Map{} = db_map) do
     tiles =
       Elixir.Map.new(db_map.tiles, fn tile ->
         coords = {tile["q"], tile["r"], tile["s"]}

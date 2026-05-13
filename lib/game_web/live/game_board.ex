@@ -162,14 +162,16 @@ defmodule GameWeb.GameBoard do
 
   defp within_movement_range?(combat, coord) do
     player = Game.CombatState.get_current_player(combat)
-    turn = Game.CombatState.get_current_turn(combat)
 
-    movement_remaining =
-      turn[:movement_remaining] ||
-        Game.Character.effective_attribute(player, "movement_range")
+    if player do
+      turn = Game.CombatState.get_current_turn(combat)
 
-    player &&
+      movement_remaining =
+        turn[:movement_remaining] ||
+          Game.Character.effective_attribute(player, "movement_range")
+
       Grid.distance(combat.grid, coord, player.position) <= movement_remaining
+    end
   end
 
   defp current_turn_visible?(combat, queue, current_player) do

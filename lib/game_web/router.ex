@@ -59,6 +59,8 @@ defmodule GameWeb.Router do
       live_resources "/base_classes", Admin.BaseClassLive
       live_resources "/formula_aliases", Admin.FormulaAliasLive
       live_resources "/strategies", Admin.StrategyLive
+      live_resources "/maps", Admin.MapLive
+      live "/maps/:id/edit-map", Admin.MapEditorLive
     end
   end
 
