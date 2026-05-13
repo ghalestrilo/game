@@ -29,6 +29,10 @@ defmodule GameWeb.Router do
       live "/campaign/play", GameLive, :campaign
     end
 
+    live_session :hello_threejs, layout: {GameWeb.Layouts, :game} do
+      live "/hello-threejs", HelloThreeJsLive
+    end
+
     live "/campaign/character-select", Campaign.CharacterSelectLive
     live "/sandbox/setup", SandboxSetupLive
 
