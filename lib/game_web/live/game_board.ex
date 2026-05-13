@@ -22,6 +22,7 @@ defmodule GameWeb.GameBoard do
     {:ok,
      socket
      |> assign(assigns)
+     |> assign_new(:static_map, fn -> false end)
      |> assign(:tile_classes_json, tile_classes_json)
      |> assign(:blast_map_json, blast_map_json)}
   end
@@ -41,7 +42,7 @@ defmodule GameWeb.GameBoard do
         data-blast-map={@blast_map_json}
       >
         <!-- Map layer -->
-        <div id="map-layer" phx-update="ignore">
+        <div id="map-layer" phx-update={if @static_map, do: "replace", else: "ignore"}>
           <%= for row <- rows do %>
             <div class="flex flex-row justify-center gap-2">
               <%= for {q, r, s, tile} <- row do %>

@@ -15,7 +15,7 @@ defmodule GameWeb.Admin.MapEditorLiveTest do
           spawn_points: %{}
         })
 
-      {:ok, _view, html} = live(conn, "/admin/maps/#{map.id}/edit-map")
+      {:ok, _view, html} = live(conn, "/admin/maps/#{map.id}/edit-tiles")
 
       assert html =~ "game-board"
       assert html =~ "hex-cell"
@@ -32,7 +32,7 @@ defmodule GameWeb.Admin.MapEditorLiveTest do
           spawn_points: %{}
         })
 
-      {:ok, _view, html} = live(conn, "/admin/maps/#{map.id}/edit-map")
+      {:ok, _view, html} = live(conn, "/admin/maps/#{map.id}/edit-tiles")
 
       assert html =~ "game-board"
       assert html =~ "hex-cell"
@@ -47,11 +47,10 @@ defmodule GameWeb.Admin.MapEditorLiveTest do
           spawn_points: %{}
         })
 
-      {:ok, view, _html} = live(conn, "/admin/maps/#{map.id}/edit-map")
+      {:ok, view, _html} = live(conn, "/admin/maps/#{map.id}/edit-tiles")
 
-      view
-      |> element("[phx-value-target_position=\"0_0_0\"]")
-      |> render_click()
+      view |> element("[phx-value-target_position=\"0_0_0\"]") |> render_click()
+      view |> element("button[phx-click=\"save\"]") |> render_click()
 
       updated = Game.Maps.get_map!(map.id)
       tile = Enum.find(updated.tiles, &(&1["q"] == 0 and &1["r"] == 0 and &1["s"] == 0))
@@ -70,11 +69,10 @@ defmodule GameWeb.Admin.MapEditorLiveTest do
           spawn_points: %{}
         })
 
-      {:ok, view, _html} = live(conn, "/admin/maps/#{map.id}/edit-map")
+      {:ok, view, _html} = live(conn, "/admin/maps/#{map.id}/edit-tiles")
 
-      view
-      |> element("[phx-value-target_position=\"0_0_0\"]")
-      |> render_click()
+      view |> element("[phx-value-target_position=\"0_0_0\"]") |> render_click()
+      view |> element("button[phx-click=\"save\"]") |> render_click()
 
       updated = Game.Maps.get_map!(map.id)
       tile = Enum.find(updated.tiles, &(&1["q"] == 0 and &1["r"] == 0 and &1["s"] == 0))
