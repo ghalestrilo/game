@@ -148,14 +148,26 @@ These rigs are designed for the Medium humanoid skeleton (`Rig_Medium`). New cha
 
 ## Coordinate system
 
-The scene uses a flat-top hex layout. World positions are computed by:
+The scene is **Z-up**: the hex board sits in the **XY plane**, Z is the vertical axis. `camera.up = (0,0,1)` and `OrbitControls` is configured accordingly.
+
+Hex axial coords map to world XY:
 ```js
 const HEX_SIZE = 1.1
 x = HEX_SIZE * (3/2 * q)
-y = -HEX_SIZE * (√3/2 * q + √3 * r)   // negated: map r increases downward, Three.js Y increases upward
+y = -HEX_SIZE * (√3/2 * q + √3 * r)   // negated: map r increases downward, world Y increases upward
+z = 0                                   // board surface; objects sit above this
 ```
 
-Models authored Y-up need `rotation.x = Math.PI / 2` to lay flat (tiles) or stand upright (characters) in this scene. Tiles also get `rotation.y = Math.PI / 6` (30°) for visual alignment with the hex grid.
+All GLB assets are authored Y-up. To place them in this Z-up scene:
+- **Tiles / map objects** — `rotation.set(Math.PI / 2, Math.PI / 6, 0)`: X-rotation lays the model flat in XY, Y-rotation aligns it to the hex grid.
+- **Characters** — `rotation.set(Math.PI / 2, 0, 0)`: X-rotation makes the model stand upright along Z. Yaw (facing direction) is then controlled via `rotation.y`.
+
+`OrbitControls` setup that matches this convention:
+```js
+camera.up.set(0, 0, 1)
+controls.minPolarAngle = 0
+controls.maxPolarAngle = Math.PI / 2 - 0.05  // prevent going below the board
+```
 
 ## Common mistakes
 
@@ -163,4 +175,5 @@ Models authored Y-up need `rotation.x = Math.PI / 2` to lay flat (tiles) or stan
 - **Model not served** — forgot to copy GLB to `priv/static/3d/`. Check browser network tab for 404.
 - **Gate count wrong** — added a new `loader.load()` call but forgot to increment the `onModelLoaded` counter threshold. Symptom: board never renders after adding the new model.
 - **Animation not found** — `AnimationClip.findByName` returns `null` silently if the name doesn't match. `mixer.clipAction(null)` will throw. Log `gltf.animations.map(a => a.name)` to verify.
-- **Character faces wrong direction after move** — the `+ Math.PI / 2` offset in `atan2` corrects for the model's local forward being +Y (after the X rotation). Adjust this offset if using a different model orientation.
+- **Character faces wrong direction after move** — yaw is `rotation.y` (not `rotation.z`) because the model is X-rotated 90°. The `+ Math.PI / 2` offset in `atan2` corrects for the model's local forward being +Y in its rotated frame. Adjust this offset if using a model with a different authored facing direction.
+- **Camera flips upside-down when tilting** — `OrbitControls` defaults to Y-up. If `camera.up` is not explicitly set to `(0,0,1)`, rotating past vertical will flip the view. Always set `camera.up.set(0, 0, 1)` before constructing `OrbitControls`.
