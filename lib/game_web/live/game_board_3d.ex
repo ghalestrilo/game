@@ -5,6 +5,23 @@ defmodule GameWeb.GameBoard3D do
     valid: "valid",
     invalid: "invalid"
   }
+
+  @assets_for_testing %{
+    tiles: %{
+      default: "/3d/tiles/hex_forest_detail.gltf.glb"
+    },
+    game_objects: %{
+      default: "/3d/tiles/detail_treeA.gltf.glb"
+    },
+    characters: %{
+      default: "/3d/characters/Mage.glb"
+    },
+    animations: %{
+      idle: %{url: "/3d/characters/Rig_Medium_General.glb",      clip: "Idle_A"},
+      walk: %{url: "/3d/characters/Rig_Medium_MovementBasic.glb", clip: "Walking_A"}
+    }
+  }
+
   @movement_class "movement"
   @player_pos_class "player"
 
@@ -25,6 +42,16 @@ defmodule GameWeb.GameBoard3D do
       socket
       |> assign(assigns)
       |> assign_new(:current_player, fn -> nil end)
+      |> assign_new(:assets_initialized, fn -> false end)
+
+    socket =
+      if socket.assigns.assets_initialized do
+        socket
+      else
+        socket
+        |> assign(:assets_initialized, true)
+        |> push_event("init", %{assets: @assets_for_testing})
+      end
 
     tiles = build_tiles(combat, overlay)
     characters = build_characters(combat, assigns[:current_player])

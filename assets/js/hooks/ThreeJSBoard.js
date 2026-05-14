@@ -39,11 +39,6 @@ const ThreeJSBoard = {
     this._tileMap      = new Map()  // coord key -> { tileNode, objectNode | null }
     this._characterMap = new Map()  // character id -> { node, mixer }
 
-    this._tileTemplate   = null
-    this._objectTemplate = null
-    this._mageTemplate   = null
-    this._idleClip       = null
-    this._walkClip       = null
     this._pendingState   = null
 
     this._camera.up.set(0, 0, 1)  // Z is up — matches the scene (board in XY plane, tiles rotated flat)
@@ -134,26 +129,57 @@ const ThreeJSBoard = {
     this._renderer.domElement.addEventListener("pointerdown", this._onPointerDown)
     this._renderer.domElement.addEventListener("pointerup",   this._onPointerUp)
 
-    let loadedCount = 0
-    const onModelLoaded = () => {
-      if (++loadedCount < 5) return
-      if (this._pendingState) {
-        this._applyBoardState(this._pendingState)
-        this._pendingState = null
-      }
-    }
+    // Asset registries — populated by the `init` event
+    this._tileTemplates      = {}  // key -> THREE.Group
+    this._objectTemplates    = {}  // key -> THREE.Group
+    this._characterTemplates = {}  // key -> THREE.Group
+    this._animationClips     = {}  // key -> THREE.AnimationClip
+    this._assetsReady        = false
 
     const loader = new GLTFLoader()
-    loader.load("/3d/tiles/hex_forest_detail.gltf.glb",       gltf => { this._tileTemplate   = gltf.scene; onModelLoaded() })
-    loader.load("/3d/tiles/detail_treeA.gltf.glb",            gltf => { this._objectTemplate = gltf.scene; onModelLoaded() })
-    loader.load("/3d/characters/Mage.glb",                    gltf => { this._mageTemplate   = gltf.scene; onModelLoaded() })
-    loader.load("/3d/characters/Rig_Medium_General.glb",      gltf => { this._idleClip  = THREE.AnimationClip.findByName(gltf.animations, "Idle_A");   onModelLoaded() })
-    loader.load("/3d/characters/Rig_Medium_MovementBasic.glb",gltf => { this._walkClip  = THREE.AnimationClip.findByName(gltf.animations, "Walking_A"); onModelLoaded() })
 
-    const allLoaded = () => this._tileTemplate && this._objectTemplate && this._mageTemplate && this._idleClip && this._walkClip
+    this.handleEvent("init", ({ assets }) => {
+      const loads = []
+
+      Object.entries(assets.tiles || {}).forEach(([key, url]) => {
+        loads.push(new Promise(resolve => loader.load(url, gltf => {
+          this._tileTemplates[key] = gltf.scene
+          resolve()
+        })))
+      })
+
+      Object.entries(assets.game_objects || {}).forEach(([key, url]) => {
+        loads.push(new Promise(resolve => loader.load(url, gltf => {
+          this._objectTemplates[key] = gltf.scene
+          resolve()
+        })))
+      })
+
+      Object.entries(assets.characters || {}).forEach(([key, url]) => {
+        loads.push(new Promise(resolve => loader.load(url, gltf => {
+          this._characterTemplates[key] = gltf.scene
+          resolve()
+        })))
+      })
+
+      Object.entries(assets.animations || {}).forEach(([key, { url, clip }]) => {
+        loads.push(new Promise(resolve => loader.load(url, gltf => {
+          this._animationClips[key] = THREE.AnimationClip.findByName(gltf.animations, clip)
+          resolve()
+        })))
+      })
+
+      Promise.all(loads).then(() => {
+        this._assetsReady = true
+        if (this._pendingState) {
+          this._applyBoardState(this._pendingState)
+          this._pendingState = null
+        }
+      })
+    })
 
     this.handleEvent("board_state", (state) => {
-      if (allLoaded()) this._applyBoardState(state)
+      if (this._assetsReady) this._applyBoardState(state)
       else this._pendingState = state
     })
   },
@@ -184,15 +210,16 @@ const ThreeJSBoard = {
       let entry = this._tileMap.get(key)
 
       if (!entry) {
-        const tileNode = this._tileTemplate.clone()
+        const tileTemplate = this._tileTemplates.default
+        const tileNode = tileTemplate.clone()
         tileNode.position.set(x, y, 0)
         tileNode.rotation.set(Math.PI / 2, Math.PI / 6, 0)
         tileNode.userData.coord = key
         this._scene.add(tileNode)
 
         let objectNode = null
-        if (has_object) {
-          objectNode = this._objectTemplate.clone()
+        if (has_object && this._objectTemplates.default) {
+          objectNode = this._objectTemplates.default.clone()
           objectNode.scale.set(3, 3, 3)
           objectNode.position.set(x, y, 0.9)
           objectNode.rotation.set(Math.PI / 2, Math.PI / 6, 0)
@@ -235,15 +262,15 @@ const ThreeJSBoard = {
       let entry = this._characterMap.get(id)
 
       if (!entry) {
-        const node = cloneSkeleton(this._mageTemplate)
+        const node = cloneSkeleton(this._characterTemplates.default)
         node.userData.characterId = id
         node.rotation.set(Math.PI / 2, 0, 0)
         node.scale.setScalar(0.6)
         this._scene.add(node)
 
         const mixer = new THREE.AnimationMixer(node)
-        const idleAction = mixer.clipAction(this._idleClip)
-        const walkAction = mixer.clipAction(this._walkClip)
+        const idleAction = mixer.clipAction(this._animationClips.idle)
+        const walkAction = mixer.clipAction(this._animationClips.walk)
         walkAction.enabled = true
         idleAction.play()
 
