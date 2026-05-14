@@ -29,6 +29,7 @@ defmodule GameWeb.GameLive do
          action_log: [],
          modal: nil,
          mode: mode,
+         render_3d: false,
          keyboard_target_index: 0
        )}
     end
@@ -60,6 +61,7 @@ defmodule GameWeb.GameLive do
            action_log: [],
            modal: nil,
            mode: :pvp,
+           render_3d: false,
            keyboard_target_index: 0
          )}
     end
@@ -92,6 +94,7 @@ defmodule GameWeb.GameLive do
          action_log: [],
          modal: nil,
          mode: :campaign,
+         render_3d: params["3d"] == "true",
          keyboard_target_index: 0
        )}
     end
@@ -119,6 +122,7 @@ defmodule GameWeb.GameLive do
        action_log: [],
        modal: nil,
        mode: :sandbox,
+       render_3d: params["3d"] == "true",
        keyboard_target_index: 0
      )}
   end
@@ -472,6 +476,7 @@ defmodule GameWeb.GameLive do
           action_log={@action_log}
           modal={@modal}
           current_player={@current_player}
+          render_3d={@render_3d}
         />
       <% end %>
 

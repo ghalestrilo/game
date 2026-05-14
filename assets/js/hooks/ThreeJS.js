@@ -27,9 +27,13 @@ const ThreeJS = {
     dirLight.position.set(5, 8, 10)
     this._scene.add(dirLight)
 
-    this._tiles    = []
-    this._tileTemplate = null  // cloned per tile once loaded
-    this._pendingTiles = null  // tile coords waiting for model to load
+    this._tiles         = []
+    this._characters    = []
+    this._tileTemplate  = null
+    this._objectTemplate = null
+    this._mageTemplate  = null
+    this._pendingTiles  = null
+    this._pendingChars  = null
 
     this._animFrameId = null
     const animate = () => {
@@ -53,7 +57,7 @@ const ThreeJS = {
       pointer.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1
       pointer.y = -((e.clientY - rect.top)   / rect.height) * 2 + 1
       raycaster.setFromCamera(pointer, this._camera)
-      const meshes = this._tiles.flatMap(t => {
+      const meshes = [...this._tiles, ...this._characters].flatMap(t => {
         const hits = []
         t.traverse(o => { if (o.isMesh) hits.push(o) })
         return hits
@@ -63,31 +67,51 @@ const ThreeJS = {
     }
     this._renderer.domElement.addEventListener("click", this._onClick)
 
-    this._objectTemplate = null
+    // Load all three models; spawn pending data once all are ready
     let loadedCount = 0
-    const onLoaded = () => {
+    const TOTAL_MODELS = 3
+    const onModelLoaded = () => {
       loadedCount++
-      if (loadedCount === 2 && this._pendingTiles) {
+      if (loadedCount < TOTAL_MODELS) return
+      if (this._pendingTiles) {
         this._spawnTiles(this._pendingTiles)
         this._pendingTiles = null
+      }
+      if (this._pendingChars) {
+        this._spawnCharacters(this._pendingChars)
+        this._pendingChars = null
       }
     }
 
     const loader = new GLTFLoader()
     loader.load("/3d/tiles/hex_forest_detail.gltf.glb", (gltf) => {
       this._tileTemplate = gltf.scene
-      onLoaded()
+      onModelLoaded()
     })
     loader.load("/3d/tiles/detail_treeA.gltf.glb", (gltf) => {
       this._objectTemplate = gltf.scene
-      onLoaded()
+      onModelLoaded()
+    })
+    loader.load("/3d/characters/Mage.glb", (gltf) => {
+      this._mageTemplate = gltf.scene
+      onModelLoaded()
     })
 
+    const allLoaded = () => this._tileTemplate && this._objectTemplate && this._mageTemplate
+
     this.handleEvent("load_map", ({ tiles }) => {
-      if (this._tileTemplate && this._objectTemplate) {
+      if (allLoaded()) {
         this._spawnTiles(tiles)
       } else {
         this._pendingTiles = tiles
+      }
+    })
+
+    this.handleEvent("load_characters", ({ characters }) => {
+      if (allLoaded()) {
+        this._spawnCharacters(characters)
+      } else {
+        this._pendingChars = characters
       }
     })
 
@@ -117,7 +141,7 @@ const ThreeJS = {
 
       if (has_object) {
         const obj = this._objectTemplate.clone()
-        obj.scale.set(3,3,3)
+        obj.scale.set(3, 3, 3)
         obj.position.set(x, y, 0.9)
         obj.rotation.set(Math.PI / 2, Math.PI / 6, 0)
         this._scene.add(obj)
@@ -127,9 +151,26 @@ const ThreeJS = {
     this._fitCamera()
   },
 
+  _spawnCharacters(characters) {
+    this._clearCharacters()
+    characters.forEach(({ id, q, r }) => {
+      const { x, y } = hexToWorld(q, r)
+      const mage = this._mageTemplate.clone()
+      mage.position.set(x, y, 1)
+      mage.userData.characterId = id
+      this._scene.add(mage)
+      this._characters.push(mage)
+    })
+  },
+
   _clearTiles() {
     this._tiles.forEach(t => this._scene.remove(t))
     this._tiles = []
+  },
+
+  _clearCharacters() {
+    this._characters.forEach(c => this._scene.remove(c))
+    this._characters = []
   },
 
   _fitCamera() {
@@ -149,6 +190,7 @@ const ThreeJS = {
     window.removeEventListener("resize", this._onResize)
     this._renderer.domElement.removeEventListener("click", this._onClick)
     this._clearTiles()
+    this._clearCharacters()
     this._renderer.dispose()
   }
 }

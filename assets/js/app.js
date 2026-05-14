@@ -25,12 +25,13 @@ import {Hooks as BackpexHooks} from "backpex"
 import BoardTileClasses from "./hooks/BoardTileClasses"
 import CharacterEffects from "./hooks/CharacterEffects"
 import ThreeJS from "./hooks/ThreeJS"
+import ThreeJSBoard from "./hooks/ThreeJSBoard"
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {
   longPollFallbackMs: 2500,
   params: {_csrf_token: csrfToken},
-  hooks: {...BackpexHooks, CharacterEffects, BoardTileClasses, ThreeJS}
+  hooks: {...BackpexHooks, CharacterEffects, BoardTileClasses, ThreeJS, ThreeJSBoard}
 })
 
 // Show progress bar on live navigation and form submits

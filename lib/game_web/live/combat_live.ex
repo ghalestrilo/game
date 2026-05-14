@@ -26,7 +26,7 @@ defmodule GameWeb.CombatLive do
       <div class="flex-1 flex flex-col overflow-hidden">
         <%= if @game_state do %>
           <.live_component
-            module={GameWeb.GameBoard}
+            module={if(@render_3d, do: GameWeb.GameBoard3D, else: GameWeb.GameBoard)}
             id="game-board-component"
             game_state={@game_state}
             current_player={@current_player}
