@@ -1,9 +1,9 @@
 import * as THREE from "three"
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
+import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js"
 
 const HEX_SIZE = 1.1
 
-// Flat-top axial to world XY
 function hexToWorld(q, r) {
   return {
     x: HEX_SIZE * (3 / 2 * q),
@@ -12,10 +12,10 @@ function hexToWorld(q, r) {
 }
 
 const HIGHLIGHT_COLORS = {
-  movement: new THREE.Color(0xf59e0b),  // amber
-  player:   new THREE.Color(0x22c55e),  // green
-  valid:    new THREE.Color(0xef4444),  // red
-  invalid:  new THREE.Color(0x6b7280),  // gray
+  movement: new THREE.Color(0xf59e0b),
+  player:   new THREE.Color(0x22c55e),
+  valid:    new THREE.Color(0xef4444),
+  invalid:  new THREE.Color(0x6b7280),
 }
 
 const ThreeJSBoard = {
@@ -34,19 +34,21 @@ const ThreeJSBoard = {
     dirLight.position.set(5, 8, 10)
     this._scene.add(dirLight)
 
-    // tile coord key -> { tileNode, objectNode | null }
-    this._tileMap      = new Map()
-    // character id -> node
-    this._characterMap = new Map()
+    this._tileMap      = new Map()  // coord key -> { tileNode, objectNode | null }
+    this._characterMap = new Map()  // character id -> { node, mixer }
 
-    this._tileTemplate  = null
+    this._tileTemplate   = null
     this._objectTemplate = null
-    this._mageTemplate  = null
-    this._pendingState  = null
+    this._mageTemplate   = null
+    this._idleClip       = null
+    this._pendingState   = null
 
+    const clock = new THREE.Clock()
     this._animFrameId = null
     const animate = () => {
       this._animFrameId = requestAnimationFrame(animate)
+      const delta = clock.getDelta()
+      for (const { mixer } of this._characterMap.values()) mixer.update(delta)
       this._renderer.render(this._scene, this._camera)
     }
     animate()
@@ -59,7 +61,6 @@ const ThreeJSBoard = {
     }
     window.addEventListener("resize", this._onResize)
 
-    // Raycaster — clicks on tiles push interact with coord, clicks on characters push interact with id
     const raycaster = new THREE.Raycaster()
     const pointer   = new THREE.Vector2()
     this._onClick = (e) => {
@@ -72,20 +73,18 @@ const ThreeJSBoard = {
         ...[...this._tileMap.values()].flatMap(({ tileNode, objectNode }) =>
           objectNode ? [tileNode, objectNode] : [tileNode]
         ),
-        ...[...this._characterMap.values()]
+        ...[...this._characterMap.values()].map(e => e.node)
       ]
       const meshes = allNodes.flatMap(n => {
         const acc = []
-        n.traverse(o => { if (o.isMesh) acc.push(o) })
+        n.traverse(o => { if (o.isMesh || o.isSkinnedMesh) acc.push(o) })
         return acc
       })
 
       const hits = raycaster.intersectObjects(meshes)
       if (hits.length === 0) return
 
-      const hitMesh = hits[0].object
-      // Walk up to find the root node we track
-      let node = hitMesh
+      let node = hits[0].object
       while (node.parent && !node.userData.coord && !node.userData.characterId)
         node = node.parent
 
@@ -96,10 +95,9 @@ const ThreeJSBoard = {
     }
     this._renderer.domElement.addEventListener("click", this._onClick)
 
-    // Load all models before accepting board_state
     let loadedCount = 0
     const onModelLoaded = () => {
-      if (++loadedCount < 3) return
+      if (++loadedCount < 4) return
       if (this._pendingState) {
         this._applyBoardState(this._pendingState)
         this._pendingState = null
@@ -110,8 +108,12 @@ const ThreeJSBoard = {
     loader.load("/3d/tiles/hex_forest_detail.gltf.glb", gltf => { this._tileTemplate   = gltf.scene; onModelLoaded() })
     loader.load("/3d/tiles/detail_treeA.gltf.glb",      gltf => { this._objectTemplate = gltf.scene; onModelLoaded() })
     loader.load("/3d/characters/Mage.glb",               gltf => { this._mageTemplate   = gltf.scene; onModelLoaded() })
+    loader.load("/3d/characters/Rig_Medium_General.glb", gltf => {
+      this._idleClip = THREE.AnimationClip.findByName(gltf.animations, "Idle_A")
+      onModelLoaded()
+    })
 
-    const allLoaded = () => this._tileTemplate && this._objectTemplate && this._mageTemplate
+    const allLoaded = () => this._tileTemplate && this._objectTemplate && this._mageTemplate && this._idleClip
 
     this.handleEvent("board_state", (state) => {
       if (allLoaded()) this._applyBoardState(state)
@@ -119,7 +121,7 @@ const ThreeJSBoard = {
     })
   },
 
-  _applyBoardState({ tiles, characters, blast_map }) {
+  _applyBoardState({ tiles, characters }) {
     this._syncTiles(tiles)
     this._syncCharacters(characters)
     if (this._tileMap.size > 0 && !this._cameraFitted) {
@@ -131,7 +133,6 @@ const ThreeJSBoard = {
   _syncTiles(tiles) {
     const incoming = new Set(tiles.map(t => `${t.q}_${t.r}_${t.s}`))
 
-    // Remove tiles no longer in the map
     for (const [key, { tileNode, objectNode }] of this._tileMap) {
       if (!incoming.has(key)) {
         this._scene.remove(tileNode)
@@ -143,11 +144,9 @@ const ThreeJSBoard = {
     tiles.forEach(({ q, r, s, has_object, highlight }) => {
       const key = `${q}_${r}_${s}`
       const { x, y } = hexToWorld(q, r)
-
       let entry = this._tileMap.get(key)
 
       if (!entry) {
-        // New tile — clone and place
         const tileNode = this._tileTemplate.clone()
         tileNode.position.set(x, y, 0)
         tileNode.rotation.set(Math.PI / 2, Math.PI / 6, 0)
@@ -167,7 +166,6 @@ const ThreeJSBoard = {
         this._tileMap.set(key, entry)
       }
 
-      // Apply highlight tint
       const color = highlight ? HIGHLIGHT_COLORS[highlight] : null
       entry.tileNode.traverse(o => {
         if (!o.isMesh) return
@@ -186,9 +184,9 @@ const ThreeJSBoard = {
   _syncCharacters(characters) {
     const incoming = new Set(characters.map(c => String(c.id)))
 
-    // Remove characters no longer present
-    for (const [id, node] of this._characterMap) {
+    for (const [id, { node, mixer }] of this._characterMap) {
       if (!incoming.has(String(id))) {
+        mixer.stopAllAction()
         this._scene.remove(node)
         this._characterMap.delete(id)
       }
@@ -196,23 +194,31 @@ const ThreeJSBoard = {
 
     characters.forEach(({ id, q, r }) => {
       const { x, y } = hexToWorld(q, r)
-      let node = this._characterMap.get(id)
-
-      if (!node) {
-        node = this._mageTemplate.clone()
+      let entry = this._characterMap.get(id)
+  
+      if (!entry) {
+        const node = cloneSkeleton(this._mageTemplate)
         node.userData.characterId = id
+        node.rotation.set(Math.PI / 2, 0, 0)
+        node.scale.setScalar(0.6)
+        
         this._scene.add(node)
-        this._characterMap.set(id, node)
+
+        const mixer = new THREE.AnimationMixer(node)
+        mixer.clipAction(this._idleClip).play()
+
+        entry = { node, mixer }
+        this._characterMap.set(id, entry)
       }
 
-      node.position.set(x, y, 0)
+      entry.node.position.set(x, y, 1)
     })
   },
 
   _fitCamera() {
     const allNodes = [
       ...[...this._tileMap.values()].map(e => e.tileNode),
-      ...[...this._characterMap.values()]
+      ...[...this._characterMap.values()].map(e => e.node)
     ]
     if (allNodes.length === 0) return
     const box = new THREE.Box3()
@@ -233,7 +239,10 @@ const ThreeJSBoard = {
       this._scene.remove(tileNode)
       if (objectNode) this._scene.remove(objectNode)
     }
-    for (const node of this._characterMap.values()) this._scene.remove(node)
+    for (const { node, mixer } of this._characterMap.values()) {
+      mixer.stopAllAction()
+      this._scene.remove(node)
+    }
     this._renderer.dispose()
   }
 }

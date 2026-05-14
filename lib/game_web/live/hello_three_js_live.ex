@@ -48,7 +48,7 @@ defmodule GameWeb.HelloThreeJsLive do
     <div style="position: relative; width: 100vw; height: 100vh;">
       <div id="three-js-container" phx-hook="ThreeJS" style="width: 100%; height: 100%;"></div>
       <div style="position: absolute; top: 1.5rem; right: 1.5rem; z-index: 10;">
-        <button phx-click="randomize_cube" style="padding: 0.5rem 1.25rem; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 0.5rem; cursor: pointer; backdrop-filter: blur(4px); font-size: 0.9rem;">
+        <button style="padding: 0.5rem 1.25rem; background: rgba(255,255,255,0.15); color: white; border: 1px solid rgba(255,255,255,0.4); border-radius: 0.5rem; cursor: pointer; backdrop-filter: blur(4px); font-size: 0.9rem;">
           Randomize Cube
         </button>
       </div>

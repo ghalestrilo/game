@@ -1,5 +1,6 @@
 import * as THREE from "three"
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
+import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js"
 
 const HEX_SIZE = 1.1
 
@@ -62,8 +63,8 @@ const ThreeJS = {
         t.traverse(o => { if (o.isMesh) hits.push(o) })
         return hits
       })
-      if (raycaster.intersectObjects(meshes).length > 0)
-        this.pushEvent("randomize_cube", {})
+      // if (raycaster.intersectObjects(meshes).length > 0)
+      //   this.pushEvent("randomize_cube", {})
     }
     this._renderer.domElement.addEventListener("click", this._onClick)
 
@@ -155,7 +156,9 @@ const ThreeJS = {
     this._clearCharacters()
     characters.forEach(({ id, q, r }) => {
       const { x, y } = hexToWorld(q, r)
-      const mage = this._mageTemplate.clone()
+      const mage = cloneSkeleton(this._mageTemplate)
+      mage.rotation.set(Math.PI / 2, 0, 0)
+      mage.scale.setScalar(1)
       mage.position.set(x, y, 1)
       mage.userData.characterId = id
       this._scene.add(mage)
