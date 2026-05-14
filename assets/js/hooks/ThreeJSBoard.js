@@ -1,6 +1,7 @@
 import * as THREE from "three"
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js"
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 
 const HEX_SIZE = 1.1
 const WALK_DURATION = 0.3
@@ -45,11 +46,26 @@ const ThreeJSBoard = {
     this._walkClip       = null
     this._pendingState   = null
 
+    this._camera.up.set(0, 0, 1)  // Z is up — matches the scene (board in XY plane, tiles rotated flat)
+
+    this._controls = new OrbitControls(this._camera, this._renderer.domElement)
+    this._controls.mouseButtons = {
+      LEFT:   THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.PAN,
+      RIGHT:  THREE.MOUSE.PAN,
+    }
+    this._controls.enableDamping = true
+    this._controls.dampingFactor = 0.1
+    this._controls.screenSpacePanning = true
+    this._controls.minPolarAngle = 0
+    this._controls.maxPolarAngle = Math.PI / 2 - 0.05  // stop just before flat
+
     const clock = new THREE.Clock()
     this._animFrameId = null
     const animate = () => {
       this._animFrameId = requestAnimationFrame(animate)
       const delta = clock.getDelta()
+      this._controls.update()
       for (const entry of this._characterMap.values()) {
         entry.mixer.update(delta)
         if (entry.moveProgress !== null) {
@@ -70,9 +86,22 @@ const ThreeJSBoard = {
     }
     window.addEventListener("resize", this._onResize)
 
+    // Distinguish a stationary click from a drag — only fire interact on pure clicks.
+    const DRAG_THRESHOLD_PX = 4
+    let pointerDownPos = null
     const raycaster = new THREE.Raycaster()
-    const pointer   = new THREE.Vector2()
-    this._onClick = (e) => {
+    const pointer    = new THREE.Vector2()
+
+    this._onPointerDown = (e) => {
+      pointerDownPos = { x: e.clientX, y: e.clientY }
+    }
+    this._onPointerUp = (e) => {
+      if (!pointerDownPos) return
+      const dx = e.clientX - pointerDownPos.x
+      const dy = e.clientY - pointerDownPos.y
+      pointerDownPos = null
+      if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD_PX) return  // was a drag
+
       const rect = this._renderer.domElement.getBoundingClientRect()
       pointer.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1
       pointer.y = -((e.clientY - rect.top)   / rect.height) * 2 + 1
@@ -102,7 +131,8 @@ const ThreeJSBoard = {
       else if (node.userData.coord)
         this.pushEvent("interact", { target_position: node.userData.coord })
     }
-    this._renderer.domElement.addEventListener("click", this._onClick)
+    this._renderer.domElement.addEventListener("pointerdown", this._onPointerDown)
+    this._renderer.domElement.addEventListener("pointerup",   this._onPointerUp)
 
     let loadedCount = 0
     const onModelLoaded = () => {
@@ -259,14 +289,18 @@ const ThreeJSBoard = {
     const size   = box.getSize(new THREE.Vector3())
     const maxDim = Math.max(size.x, size.y)
     const fov    = this._camera.fov * (Math.PI / 180)
-    this._camera.position.set(center.x, -maxDim, (maxDim / 4) / Math.tan(fov / 2) + 2)
-    this._camera.lookAt(center)
+    const dist   = (maxDim / 2) / Math.tan(fov / 2) + 2
+    this._camera.position.set(center.x, center.y - dist * 0.6, dist * 0.8)
+    this._controls.target.copy(center)
+    this._controls.update()
   },
 
   destroyed() {
     if (this._animFrameId !== null) cancelAnimationFrame(this._animFrameId)
     window.removeEventListener("resize", this._onResize)
-    this._renderer.domElement.removeEventListener("click", this._onClick)
+    this._renderer.domElement.removeEventListener("pointerdown", this._onPointerDown)
+    this._renderer.domElement.removeEventListener("pointerup",   this._onPointerUp)
+    this._controls.dispose()
     for (const { tileNode, objectNode } of this._tileMap.values()) {
       this._scene.remove(tileNode)
       if (objectNode) this._scene.remove(objectNode)
