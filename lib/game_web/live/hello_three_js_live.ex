@@ -7,10 +7,13 @@ defmodule GameWeb.HelloThreeJsLive do
       case Game.Maps.list_db() do
         [first | _] ->
           map = Game.Maps.from_db(first)
-          map.tiles |> Map.keys() |> Enum.map(fn {q, r, s} -> %{q: q, r: r, s: s} end)
+          map.tiles
+        |> Enum.map(fn {{q, r, s}, %{objects: objects}} ->
+          %{q: q, r: r, s: s, has_object: objects != []}
+        end)
 
         [] ->
-          [{0, 0, 0}] |> Enum.map(fn {q, r, s} -> %{q: q, r: r, s: s} end)
+          [%{q: 0, r: 0, s: 0, has_object: false}]
       end
 
     {:ok, push_event(socket, "load_map", %{tiles: tiles})}

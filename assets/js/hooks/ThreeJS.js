@@ -63,17 +63,28 @@ const ThreeJS = {
     }
     this._renderer.domElement.addEventListener("click", this._onClick)
 
-    const loader = new GLTFLoader()
-    loader.load("/3d/tiles/hex_forest_detail.gltf.glb", (gltf) => {
-      this._tileTemplate = gltf.scene
-      if (this._pendingTiles) {
+    this._objectTemplate = null
+    let loadedCount = 0
+    const onLoaded = () => {
+      loadedCount++
+      if (loadedCount === 2 && this._pendingTiles) {
         this._spawnTiles(this._pendingTiles)
         this._pendingTiles = null
       }
+    }
+
+    const loader = new GLTFLoader()
+    loader.load("/3d/tiles/hex_forest_detail.gltf.glb", (gltf) => {
+      this._tileTemplate = gltf.scene
+      onLoaded()
+    })
+    loader.load("/3d/tiles/detail_treeA.gltf.glb", (gltf) => {
+      this._objectTemplate = gltf.scene
+      onLoaded()
     })
 
     this.handleEvent("load_map", ({ tiles }) => {
-      if (this._tileTemplate) {
+      if (this._tileTemplate && this._objectTemplate) {
         this._spawnTiles(tiles)
       } else {
         this._pendingTiles = tiles
@@ -95,13 +106,23 @@ const ThreeJS = {
 
   _spawnTiles(tiles) {
     this._clearTiles()
-    tiles.forEach(({ q, r }) => {
+    tiles.forEach(({ q, r, has_object }) => {
       const { x, y } = hexToWorld(q, r)
-      const instance = this._tileTemplate.clone()
-      instance.position.set(x, y, 0)
-      instance.rotation.set(Math.PI / 2, Math.PI / 6, 0)
-      this._scene.add(instance)
-      this._tiles.push(instance)
+
+      const tile = this._tileTemplate.clone()
+      tile.position.set(x, y, 0)
+      tile.rotation.set(Math.PI / 2, Math.PI / 6, 0)
+      this._scene.add(tile)
+      this._tiles.push(tile)
+
+      if (has_object) {
+        const obj = this._objectTemplate.clone()
+        obj.scale.set(3,3,3)
+        obj.position.set(x, y, 0.9)
+        obj.rotation.set(Math.PI / 2, Math.PI / 6, 0)
+        this._scene.add(obj)
+        this._tiles.push(obj)
+      }
     })
     this._fitCamera()
   },
