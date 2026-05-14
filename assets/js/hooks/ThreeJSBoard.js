@@ -3,11 +3,12 @@ import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
 import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js"
 
 const HEX_SIZE = 1.1
+const WALK_DURATION = 0.3
 
 function hexToWorld(q, r) {
   return {
     x: HEX_SIZE * (3 / 2 * q),
-    y: HEX_SIZE * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r)
+    y: -HEX_SIZE * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r)
   }
 }
 
@@ -41,6 +42,7 @@ const ThreeJSBoard = {
     this._objectTemplate = null
     this._mageTemplate   = null
     this._idleClip       = null
+    this._walkClip       = null
     this._pendingState   = null
 
     const clock = new THREE.Clock()
@@ -48,7 +50,14 @@ const ThreeJSBoard = {
     const animate = () => {
       this._animFrameId = requestAnimationFrame(animate)
       const delta = clock.getDelta()
-      for (const { mixer } of this._characterMap.values()) mixer.update(delta)
+      for (const entry of this._characterMap.values()) {
+        entry.mixer.update(delta)
+        if (entry.moveProgress !== null) {
+          entry.moveProgress = Math.min(1, entry.moveProgress + delta / WALK_DURATION)
+          entry.node.position.lerpVectors(entry.moveFrom, entry.moveTo, entry.moveProgress)
+          if (entry.moveProgress >= 1) entry.moveProgress = null
+        }
+      }
       this._renderer.render(this._scene, this._camera)
     }
     animate()
@@ -97,7 +106,7 @@ const ThreeJSBoard = {
 
     let loadedCount = 0
     const onModelLoaded = () => {
-      if (++loadedCount < 4) return
+      if (++loadedCount < 5) return
       if (this._pendingState) {
         this._applyBoardState(this._pendingState)
         this._pendingState = null
@@ -105,15 +114,13 @@ const ThreeJSBoard = {
     }
 
     const loader = new GLTFLoader()
-    loader.load("/3d/tiles/hex_forest_detail.gltf.glb", gltf => { this._tileTemplate   = gltf.scene; onModelLoaded() })
-    loader.load("/3d/tiles/detail_treeA.gltf.glb",      gltf => { this._objectTemplate = gltf.scene; onModelLoaded() })
-    loader.load("/3d/characters/Mage.glb",               gltf => { this._mageTemplate   = gltf.scene; onModelLoaded() })
-    loader.load("/3d/characters/Rig_Medium_General.glb", gltf => {
-      this._idleClip = THREE.AnimationClip.findByName(gltf.animations, "Idle_A")
-      onModelLoaded()
-    })
+    loader.load("/3d/tiles/hex_forest_detail.gltf.glb",       gltf => { this._tileTemplate   = gltf.scene; onModelLoaded() })
+    loader.load("/3d/tiles/detail_treeA.gltf.glb",            gltf => { this._objectTemplate = gltf.scene; onModelLoaded() })
+    loader.load("/3d/characters/Mage.glb",                    gltf => { this._mageTemplate   = gltf.scene; onModelLoaded() })
+    loader.load("/3d/characters/Rig_Medium_General.glb",      gltf => { this._idleClip  = THREE.AnimationClip.findByName(gltf.animations, "Idle_A");   onModelLoaded() })
+    loader.load("/3d/characters/Rig_Medium_MovementBasic.glb",gltf => { this._walkClip  = THREE.AnimationClip.findByName(gltf.animations, "Walking_A"); onModelLoaded() })
 
-    const allLoaded = () => this._tileTemplate && this._objectTemplate && this._mageTemplate && this._idleClip
+    const allLoaded = () => this._tileTemplate && this._objectTemplate && this._mageTemplate && this._idleClip && this._walkClip
 
     this.handleEvent("board_state", (state) => {
       if (allLoaded()) this._applyBoardState(state)
@@ -184,8 +191,9 @@ const ThreeJSBoard = {
   _syncCharacters(characters) {
     const incoming = new Set(characters.map(c => String(c.id)))
 
-    for (const [id, { node, mixer }] of this._characterMap) {
+    for (const [id, { node, mixer, walkTimer }] of this._characterMap) {
       if (!incoming.has(String(id))) {
+        if (walkTimer) clearTimeout(walkTimer)
         mixer.stopAllAction()
         this._scene.remove(node)
         this._characterMap.delete(id)
@@ -195,23 +203,47 @@ const ThreeJSBoard = {
     characters.forEach(({ id, q, r }) => {
       const { x, y } = hexToWorld(q, r)
       let entry = this._characterMap.get(id)
-  
+
       if (!entry) {
         const node = cloneSkeleton(this._mageTemplate)
         node.userData.characterId = id
         node.rotation.set(Math.PI / 2, 0, 0)
         node.scale.setScalar(0.6)
-        
         this._scene.add(node)
 
         const mixer = new THREE.AnimationMixer(node)
-        mixer.clipAction(this._idleClip).play()
+        const idleAction = mixer.clipAction(this._idleClip)
+        const walkAction = mixer.clipAction(this._walkClip)
+        walkAction.enabled = true
+        idleAction.play()
 
-        entry = { node, mixer }
+        entry = { node, mixer, idleAction, walkAction, walkTimer: null, moveFrom: new THREE.Vector3(), moveTo: new THREE.Vector3(), moveProgress: null }
         this._characterMap.set(id, entry)
+        entry.node.position.set(x, y, 1)
+        return
       }
 
-      entry.node.position.set(x, y, 1)
+      const cur = entry.node.position
+      const moved = Math.abs(cur.x - x) > 0.001 || Math.abs(cur.y - y) > 0.001
+      if (moved) {
+        // Face direction of movement — rotation.y is yaw when the model is X-rotated 90°
+        entry.node.rotation.y = Math.atan2(y - cur.y, x - cur.x) + Math.PI / 2
+
+        // Start lerp from current position (which may itself be mid-tween)
+        entry.moveFrom.copy(cur)
+        entry.moveTo.set(x, y, 1)
+        entry.moveProgress = 0
+
+        // Crossfade to walk, then back to idle after walk duration
+        entry.walkAction.reset().play()
+        entry.idleAction.crossFadeTo(entry.walkAction, 0.15, true)
+        if (entry.walkTimer) clearTimeout(entry.walkTimer)
+        entry.walkTimer = setTimeout(() => {
+          entry.walkAction.crossFadeTo(entry.idleAction, 0.2, true)
+          entry.idleAction.play()
+          entry.walkTimer = null
+        }, 500)
+      }
     })
   },
 
@@ -239,7 +271,8 @@ const ThreeJSBoard = {
       this._scene.remove(tileNode)
       if (objectNode) this._scene.remove(objectNode)
     }
-    for (const { node, mixer } of this._characterMap.values()) {
+    for (const { node, mixer, walkTimer } of this._characterMap.values()) {
+      if (walkTimer) clearTimeout(walkTimer)
       mixer.stopAllAction()
       this._scene.remove(node)
     }

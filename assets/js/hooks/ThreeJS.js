@@ -7,7 +7,7 @@ const HEX_SIZE = 1.1
 function hexToWorld(q, r) {
   return {
     x: HEX_SIZE * (3 / 2 * q),
-    y: HEX_SIZE * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r)
+    y: -HEX_SIZE * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r)
   }
 }
 
