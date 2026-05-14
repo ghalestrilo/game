@@ -7,7 +7,7 @@ _.file = ".envrc"
 
 
 [tasks]
-dev = "iex -S mix phx.server"
+# dev = "iex -S mix phx.server"
 seed = "mix run priv/repo/seeds.exs"
 proxy = "fly proxy -a hexdecks-db 5433:5432"
 push_content_sync = "mix game.push_contents_sync"
@@ -18,3 +18,7 @@ run = """
 #!/usr/bin/env bash
 fly ssh console --app game -C "bin/game rpc 'import Ecto.Changeset; Game.Accounts.get_user_by_email(\\\"$1\\\") |> change(role: \\\"admin\\\") |> Game.Repo.update!()'"
 """
+
+[tasks.dev]
+run = "docker-compose up db & iex -S mix phx.server"
+raw = true

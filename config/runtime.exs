@@ -20,6 +20,10 @@ if System.get_env("PHX_SERVER") do
   config :game, GameWeb.Endpoint, server: true
 end
 
+if assets_base_url = System.get_env("ASSETS_BASE_URL") do
+  config :game, :assets_base_url, assets_base_url
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||

@@ -1,5 +1,8 @@
 import Config
 
+config :game, :assets_base_url, "https://small-leaf-9724.t3.tigrisfiles.io"
+
+
 # Configure your database
 config :game, Game.Repo,
   username: System.get_env("DATABASE_USERNAME") || "postgres",

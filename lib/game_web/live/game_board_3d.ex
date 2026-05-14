@@ -6,21 +6,28 @@ defmodule GameWeb.GameBoard3D do
     invalid: "invalid"
   }
 
-  @assets_for_testing %{
-    tiles: %{
-      default: "/3d/tiles/hex_forest_detail.gltf.glb"
-    },
-    game_objects: %{
-      default: "/3d/tiles/detail_treeA.gltf.glb"
-    },
-    characters: %{
-      default: "/3d/characters/Mage.glb"
-    },
-    animations: %{
-      idle: %{url: "/3d/characters/Rig_Medium_General.glb",      clip: "Idle_A"},
-      walk: %{url: "/3d/characters/Rig_Medium_MovementBasic.glb", clip: "Walking_A"}
+  @assets_subpath "/hexdecks/assets"
+
+  defp default_assets do
+    base = Application.get_env(:game, :assets_base_url, "") |> String.trim_trailing("/")
+    base = "#{base}#{@assets_subpath}"
+
+    %{
+      tiles: %{
+        default: "#{base}/tiles/hex_forest_detail.gltf.glb"
+      },
+      game_objects: %{
+        default: "#{base}/objects/detail_treeA.gltf.glb"
+      },
+      characters: %{
+        default: "#{base}/characters/Mage.glb"
+      },
+      animations: %{
+        idle: %{url: "#{base}/animation/Rig_Medium_General.glb",       clip: "Idle_A"},
+        walk: %{url: "#{base}/animation/Rig_Medium_MovementBasic.glb",  clip: "Walking_A"}
+      }
     }
-  }
+  end
 
   @movement_class "movement"
   @player_pos_class "player"
@@ -50,7 +57,7 @@ defmodule GameWeb.GameBoard3D do
       else
         socket
         |> assign(:assets_initialized, true)
-        |> push_event("init", %{assets: @assets_for_testing})
+        |> push_event("init", %{assets: default_assets()})
       end
 
     tiles = build_tiles(combat, overlay)
