@@ -13,11 +13,20 @@ function hexToWorld(q, r) {
   }
 }
 
+function matteify(scene) {
+  scene.traverse(o => {
+    if (!o.isMesh) return
+    o.material.roughness  = 1.0
+    o.material.metalness  = 0.0
+  })
+}
+
 const HIGHLIGHT_COLORS = {
   movement: new THREE.Color(0xf59e0b),
   player:   new THREE.Color(0x22c55e),
   valid:    new THREE.Color(0xef4444),
   invalid:  new THREE.Color(0x6b7280),
+  blast:    new THREE.Color(0x991b1b),  // darker red for AoE threat
 }
 
 const ThreeJSBoard = {
@@ -42,6 +51,8 @@ const ThreeJSBoard = {
     this._pendingState    = null
     this._currentTurnId   = null
     this._cameraTarget    = null  // Vector3 to pan toward, null when idle
+    this._blastMap        = {}    // coord key -> [coord key, ...]
+    this._hoveredCoord    = null  // currently hovered tile coord key
 
     this._camera.up.set(0, 0, 1)  // Z is up — matches the scene (board in XY plane, tiles rotated flat)
 
@@ -144,6 +155,36 @@ const ThreeJSBoard = {
     this._renderer.domElement.addEventListener("pointerdown", this._onPointerDown)
     this._renderer.domElement.addEventListener("pointerup",   this._onPointerUp)
 
+    const hoverRaycaster = new THREE.Raycaster()
+    const hoverPointer   = new THREE.Vector2()
+    this._onPointerMove = (e) => {
+      const rect = this._renderer.domElement.getBoundingClientRect()
+      hoverPointer.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1
+      hoverPointer.y = -((e.clientY - rect.top)   / rect.height) * 2 + 1
+      hoverRaycaster.setFromCamera(hoverPointer, this._camera)
+
+      const tileMeshes = [...this._tileMap.values()].flatMap(({ tileNode }) => {
+        const acc = []; tileNode.traverse(o => { if (o.isMesh) acc.push(o) }); return acc
+      })
+      const hits = hoverRaycaster.intersectObjects(tileMeshes)
+      let coord = null
+      if (hits.length > 0) {
+        let node = hits[0].object
+        while (node.parent && !node.userData.coord) node = node.parent
+        coord = node.userData.coord || null
+      }
+      if (coord !== this._hoveredCoord) {
+        this._hoveredCoord = coord
+        this._applyBlastHighlight()
+      }
+    }
+    this._onPointerLeave = () => {
+      this._hoveredCoord = null
+      this._applyBlastHighlight()
+    }
+    this._renderer.domElement.addEventListener("pointermove",  this._onPointerMove)
+    this._renderer.domElement.addEventListener("pointerleave", this._onPointerLeave)
+
     // Asset registries — populated by the `init` event
     this._tileTemplates      = {}  // key -> THREE.Group
     this._objectTemplates    = {}  // key -> THREE.Group
@@ -159,6 +200,7 @@ const ThreeJSBoard = {
       Object.entries(assets.tiles || {}).forEach(([key, url]) => {
         loads.push(new Promise(resolve => loader.load(url, gltf => {
           this._tileTemplates[key] = gltf.scene
+          matteify(gltf.scene)
           resolve()
         })))
       })
@@ -166,6 +208,7 @@ const ThreeJSBoard = {
       Object.entries(assets.game_objects || {}).forEach(([key, url]) => {
         loads.push(new Promise(resolve => loader.load(url, gltf => {
           this._objectTemplates[key] = gltf.scene
+          matteify(gltf.scene)
           resolve()
         })))
       })
@@ -199,8 +242,10 @@ const ThreeJSBoard = {
     })
   },
 
-  _applyBoardState({ tiles, characters, current_turn_id }) {
+  _applyBoardState({ tiles, characters, current_turn_id, blast_map }) {
+    this._blastMap = blast_map || {}
     this._syncTiles(tiles)
+    this._applyBlastHighlight()
     this._syncCharacters(characters)
 
     if (this._tileMap.size > 0 && !this._cameraFitted) {
@@ -256,18 +301,9 @@ const ThreeJSBoard = {
         this._tileMap.set(key, entry)
       }
 
+      entry.tileNode.userData.serverHighlight = highlight || null
       const color = highlight ? HIGHLIGHT_COLORS[highlight] : null
-      entry.tileNode.traverse(o => {
-        if (!o.isMesh) return
-        if (!o.userData.baseMaterial) o.userData.baseMaterial = o.material.clone()
-        if (color) {
-          o.material = o.userData.baseMaterial.clone()
-          o.material.emissive = color
-          o.material.emissiveIntensity = 0.5
-        } else {
-          o.material = o.userData.baseMaterial
-        }
-      })
+      this._tintNode(entry.tileNode, color, 0.5)
     })
   },
 
@@ -330,6 +366,38 @@ const ThreeJSBoard = {
     })
   },
 
+  _applyBlastHighlight() {
+    const blastCoords = this._hoveredCoord
+      ? new Set(this._blastMap[this._hoveredCoord] || [])
+      : new Set()
+
+    for (const [key, { tileNode }] of this._tileMap) {
+      if (key === this._hoveredCoord) {
+        this._tintNode(tileNode, HIGHLIGHT_COLORS.valid, 0.9)
+      } else if (blastCoords.has(key)) {
+        this._tintNode(tileNode, HIGHLIGHT_COLORS.valid, 0.9)
+      } else {
+        const serverColor = tileNode.userData.serverHighlight
+          ? HIGHLIGHT_COLORS[tileNode.userData.serverHighlight] : null
+        this._tintNode(tileNode, serverColor, 0.5)
+      }
+    }
+  },
+
+  _tintNode(node, color, intensity) {
+    node.traverse(o => {
+      if (!o.isMesh) return
+      if (!o.userData.baseMaterial) o.userData.baseMaterial = o.material.clone()
+      if (color) {
+        o.material = o.userData.baseMaterial.clone()
+        o.material.emissive = color
+        o.material.emissiveIntensity = intensity
+      } else {
+        o.material = o.userData.baseMaterial
+      }
+    })
+  },
+
   _fitCamera() {
     const allNodes = [
       ...[...this._tileMap.values()].map(e => e.tileNode),
@@ -351,8 +419,10 @@ const ThreeJSBoard = {
   destroyed() {
     if (this._animFrameId !== null) cancelAnimationFrame(this._animFrameId)
     window.removeEventListener("resize", this._onResize)
-    this._renderer.domElement.removeEventListener("pointerdown", this._onPointerDown)
-    this._renderer.domElement.removeEventListener("pointerup",   this._onPointerUp)
+    this._renderer.domElement.removeEventListener("pointerdown",  this._onPointerDown)
+    this._renderer.domElement.removeEventListener("pointerup",    this._onPointerUp)
+    this._renderer.domElement.removeEventListener("pointermove",  this._onPointerMove)
+    this._renderer.domElement.removeEventListener("pointerleave", this._onPointerLeave)
     this._controls.dispose()
     for (const { tileNode, objectNode } of this._tileMap.values()) {
       this._scene.remove(tileNode)
