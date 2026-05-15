@@ -5,8 +5,8 @@ Add a new 3D model (tile variant, map object, or animated character) to the 3D c
 ## What you need from the user
 
 1. **Model type** — tile variant, map object (placed on a tile), or character
-2. **GLB file path** — e.g. `assets/3d/tiles/hex_snow.glb` or `assets/3d/characters/Warrior.glb`
-3. **Animation GLB** (characters only) — separate animation GLB files if any; ask what animation to play by default
+2. **Asset path in the Tigris bucket** — e.g. `characters/Warrior.glb` (relative to the base URL)
+3. **Animation GLB** (characters only) — which animation file and clip name to use by default
 
 ## Key files
 
@@ -14,124 +14,108 @@ Add a new 3D model (tile variant, map object, or animated character) to the 3D c
 |---|---|
 | `assets/js/hooks/ThreeJSBoard.js` | Production 3D board hook — all scene logic lives here |
 | `assets/js/hooks/ThreeJS.js` | Prototype/sandbox hook — mirror changes here too |
-| `lib/game_web/live/game_board_3d.ex` | LiveComponent that pushes `board_state` to the hook |
-| `priv/static/3d/` | Served static assets — GLBs must be copied here |
-| `lib/game_web.ex` | `static_paths/0` — must include `"3d"` (already done) |
+| `lib/game_web/live/game_board_3d.ex` | LiveComponent — pushes `init` (assets) and `board_state` to the hook |
 
-## Serving the asset
+## Serving assets
 
-Always copy new GLBs from `assets/3d/` to `priv/static/3d/` before use — Phoenix serves `priv/static/` directly:
+Assets are served from Tigris object storage. The base URL is configured via `ASSETS_BASE_URL` env var (dev default in `config/dev.exs`). The subpath `/hexdecks/assets` is appended automatically by `default_assets/0` in `game_board_3d.ex`.
 
-```sh
-cp assets/3d/<path>/model.glb priv/static/3d/<path>/model.glb
+To add a new asset, upload it to the Tigris bucket under the appropriate subfolder (`tiles/`, `objects/`, `characters/`, `animations/`) and add its key to `default_assets/0`:
+
+```elixir
+defp default_assets do
+  base = Application.get_env(:game, :assets_base_url, "") |> String.trim_trailing("/")
+  base = "#{base}/hexdecks/assets"
+  %{
+    tiles:       %{default: "#{base}/tiles/hex_forest_detail.gltf.glb",
+                   snow:    "#{base}/tiles/hex_snow.glb"},       # ← new variant
+    game_objects: %{default: "#{base}/objects/detail_treeA.gltf.glb"},
+    characters:   %{default: "#{base}/characters/Mage.glb",
+                    warrior: "#{base}/characters/Warrior.glb"},  # ← new character
+    animations:   %{idle: %{url: "#{base}/animations/Rig_Medium_General.glb",      clip: "Idle_A"},
+                    walk: %{url: "#{base}/animations/Rig_Medium_MovementBasic.glb", clip: "Walking_A"}}
+  }
+end
 ```
 
-`priv/static/3d/` is already in `static_paths/0` in `lib/game_web.ex` — no change needed there.
+The hook receives this map via the `init` event and loads all URLs automatically — **no hook code changes needed** to add new keys to existing categories.
 
-## Model types and patterns
+## How the hook loads assets
+
+`handleEvent("init", ...)` iterates each category and loads all URLs with `GLTFLoader`, storing results in keyed registries:
+- `this._tileTemplates`      — key → `THREE.Group` (plain `.clone()`)
+- `this._objectTemplates`    — key → `THREE.Group` (plain `.clone()`)
+- `this._characterTemplates` — key → `THREE.Group` (**must use `cloneSkeleton()`**)
+- `this._animationClips`     — key → `THREE.AnimationClip`
+
+Tile and object templates have `matteify()` called on load (`roughness=1, metalness=0`) to remove reflections.
+
+`Promise.all(loads)` gates all rendering — `board_state` is buffered until every asset resolves.
+
+## Model type patterns
 
 ### Tile variant
 
-A tile is a flat hex surface placed at every `(q, r)` coordinate. Tiles use `.clone()` (no skeleton).
+Hook already handles multiple tile keys via `this._tileTemplates[tileKey]`. To use a non-default tile for specific terrain, pass a `tile` key in the tile payload from the server:
 
-**Hook changes** (`ThreeJSBoard.js`):
-1. Add a template field: `this._snowTileTemplate = null`
-2. Load it: `loader.load("/3d/tiles/hex_snow.glb", gltf => { this._snowTileTemplate = gltf.scene; onModelLoaded() })`
-3. Increment the `onModelLoaded` gate count
-4. In `_syncTiles`, choose which template based on tile data:
-   ```js
-   const template = tile.terrain === "snow" ? this._snowTileTemplate : this._tileTemplate
-   const tileNode = template.clone()
-   tileNode.position.set(x, y, 0)
-   tileNode.rotation.set(Math.PI / 2, Math.PI / 6, 0)
-   ```
-
-**Server changes** (`game_board_3d.ex`):
-Pass `terrain` in the tile payload so the hook can differentiate:
 ```elixir
-%{q: q, r: r, s: s, terrain: tile.terrain, has_object: wall?(tile), highlight: highlight}
+%{q: q, r: r, s: s, tile: "snow", has_object: wall?(tile), highlight: highlight}
+```
+
+Then in `_syncTiles`:
+```js
+const tileTemplate = this._tileTemplates[tile] || this._tileTemplates.default
 ```
 
 ### Map object
 
-A map object sits on top of a tile (tree, chest, wall decoration). Also uses `.clone()`.
-
-**Hook changes**:
-1. Add template + load it (same pattern as tile variant above)
-2. In `_syncTiles`, check `tile.has_object` (or a specific object type field) and clone:
-   ```js
-   if (has_object) {
-     const objNode = this._treeTemplate.clone()
-     objNode.scale.set(3, 3, 3)
-     objNode.position.set(x, y, 0.9)   // z lifts it above the tile surface
-     objNode.rotation.set(Math.PI / 2, Math.PI / 6, 0)
-     this._scene.add(objNode)
-   }
-   ```
-3. Store in `_tileMap` entry alongside `tileNode` so it gets removed when the tile does.
-
-**Server changes**: pass an `object_type` string in the tile payload if you need to distinguish multiple object types.
+Same pattern as tile variant — add the key to `game_objects` in `default_assets/0`, pass `object_type` from server, look up `this._objectTemplates[object_type]` in `_syncTiles`. Object nodes are stored alongside `tileNode` in `_tileMap` so they're removed together.
 
 ### Animated character
 
-Characters use `SkeletonUtils.clone()` (NOT `.clone()`) because they have `SkinnedMesh` nodes whose bones must be rewired per instance. Plain `.clone()` produces an invisible model — the bones remain pointing at the template's skeleton which isn't in the scene.
-
-**Hook changes**:
+Characters **must** use `cloneSkeleton()` (from `three/examples/jsm/utils/SkeletonUtils.js`), NOT `.clone()`. Plain `.clone()` leaves `SkinnedMesh` bones pointing at the template skeleton (not in the scene) → model is invisible.
 
 ```js
-import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js"
-```
-
-Load the mesh GLB and one or more animation GLBs separately:
-```js
-loader.load("/3d/characters/Warrior.glb", gltf => { this._warriorTemplate = gltf.scene; onModelLoaded() })
-loader.load("/3d/characters/Rig_Medium_General.glb", gltf => {
-  this._idleClip = THREE.AnimationClip.findByName(gltf.animations, "Idle_A")
-  onModelLoaded()
-})
-loader.load("/3d/characters/Rig_Medium_MovementBasic.glb", gltf => {
-  this._walkClip = THREE.AnimationClip.findByName(gltf.animations, "Walking_A")
-  onModelLoaded()
-})
-```
-
-Spawn with `cloneSkeleton`, attach a mixer, and play the default clip:
-```js
-const node = cloneSkeleton(this._warriorTemplate)
-node.rotation.set(Math.PI / 2, 0, 0)   // stand upright in this scene's coordinate system
-node.scale.setScalar(0.6)               // tune to match tile scale
+const node = cloneSkeleton(this._characterTemplates.default)
+node.rotation.set(Math.PI / 2, 0, 0)
+node.scale.setScalar(0.6)
 const mixer = new THREE.AnimationMixer(node)
-const idleAction = mixer.clipAction(this._idleClip)
-const walkAction = mixer.clipAction(this._walkClip)
+const idleAction = mixer.clipAction(this._animationClips.idle)
+const walkAction = mixer.clipAction(this._animationClips.walk)
 idleAction.play()
 ```
 
-Call `mixer.update(delta)` every frame in the render loop (already done in `ThreeJSBoard.js`).
-
-**Walking animation on move** — detect position change, face the target, crossfade, then return to idle:
+**Animation crossfade pattern** — use `crossFadeFrom` on the destination, not `crossFadeTo` on the source. The source-based API leaves the source in a disabled state that `.play()` alone can't fully recover:
 ```js
-const moved = Math.abs(cur.x - x) > 0.001 || Math.abs(cur.y - y) > 0.001
+// To walk:
+entry.walkAction.reset().play()
+entry.walkAction.crossFadeFrom(entry.idleAction, 0.15, true)
+
+// Back to idle:
+entry.idleAction.reset().play()
+entry.idleAction.crossFadeFrom(entry.walkAction, 0.2, true)
+```
+
+**Walking on move** — detect position change, face target, crossfade, lerp position over `WALK_DURATION` seconds:
+```js
 if (moved) {
-  node.rotation.y = Math.atan2(y - cur.y, x - cur.x) + Math.PI / 2
-
-  // Lerp position over WALK_DURATION seconds (defined at top of hook, default 0.5)
+  entry.node.rotation.y = Math.atan2(y - cur.y, x - cur.x) + Math.PI / 2
   entry.moveFrom.copy(cur)
-  entry.moveTo.set(x, y, zOffset)
+  entry.moveTo.set(x, y, 1)
   entry.moveProgress = 0
-
   entry.walkAction.reset().play()
-  entry.idleAction.crossFadeTo(entry.walkAction, 0.15, true)
+  entry.walkAction.crossFadeFrom(entry.idleAction, 0.15, true)
   clearTimeout(entry.walkTimer)
   entry.walkTimer = setTimeout(() => {
-    entry.walkAction.crossFadeTo(entry.idleAction, 0.2, true)
-    entry.idleAction.play()
+    entry.idleAction.reset().play()
+    entry.idleAction.crossFadeFrom(entry.walkAction, 0.2, true)
   }, WALK_DURATION * 1000)
 }
 ```
 
-The render loop advances `moveProgress` and calls `lerpVectors` — see existing implementation in `ThreeJSBoard.js`.
+The render loop advances `moveProgress` and calls `lerpVectors`.
 
-**Cleanup** — always stop the mixer and clear timers when removing a character:
+**Cleanup**:
 ```js
 if (entry.walkTimer) clearTimeout(entry.walkTimer)
 entry.mixer.stopAllAction()
@@ -144,13 +128,25 @@ this._scene.remove(entry.node)
 
 `Rig_Medium_MovementBasic.glb`: `Walking_A`, `Walking_B`, `Walking_C`, `Running_A`, `Running_B`, `Jump_Full_Long`, `Jump_Full_Short`, `Jump_Idle`, `Jump_Start`, `Jump_Land`
 
-These rigs are designed for the Medium humanoid skeleton (`Rig_Medium`). New character GLBs that share this skeleton can use the same animation files.
+These rigs target the Medium humanoid skeleton (`Rig_Medium`). New characters sharing this skeleton can reuse these animation files.
+
+## Tile highlight system
+
+Tiles are tinted via `_tintNode(node, color, intensity)` which clones the base material and sets `emissive`. Base materials are cached on `o.userData.baseMaterial` the first time.
+
+Server-assigned highlights are stored on `tileNode.userData.serverHighlight` (a string key). Hover and blast highlights are applied client-side in `_applyBlastHighlight()`, which runs on every `pointermove` and `board_state` update. Priority order:
+
+1. **Hovered tile** — bright red (`valid`, intensity 0.9)
+2. **Blast tiles** (from `blast_map` for hovered coord) — dark red (`blast` `0x991b1b`, intensity 0.7)
+3. **Server highlight** — movement (amber), player (green), valid (red), invalid (gray) at intensity 0.5
+4. **No highlight** — base material restored
+
+`blast_map` is sent in `board_state` as `%{"q_r_s" => ["q_r_s", ...]}` and stored in `this._blastMap`.
 
 ## Coordinate system
 
 The scene is **Z-up**: the hex board sits in the **XY plane**, Z is the vertical axis. `camera.up = (0,0,1)` and `OrbitControls` is configured accordingly.
 
-Hex axial coords map to world XY:
 ```js
 const HEX_SIZE = 1.1
 x = HEX_SIZE * (3/2 * q)
@@ -158,22 +154,25 @@ y = -HEX_SIZE * (√3/2 * q + √3 * r)   // negated: map r increases downward, 
 z = 0                                   // board surface; objects sit above this
 ```
 
-All GLB assets are authored Y-up. To place them in this Z-up scene:
-- **Tiles / map objects** — `rotation.set(Math.PI / 2, Math.PI / 6, 0)`: X-rotation lays the model flat in XY, Y-rotation aligns it to the hex grid.
-- **Characters** — `rotation.set(Math.PI / 2, 0, 0)`: X-rotation makes the model stand upright along Z. Yaw (facing direction) is then controlled via `rotation.y`.
+All GLB assets are authored Y-up:
+- **Tiles / map objects** — `rotation.set(Math.PI / 2, Math.PI / 6, 0)`: lays flat in XY, aligns to hex grid
+- **Characters** — `rotation.set(Math.PI / 2, 0, 0)`: stands upright along Z; yaw via `rotation.y`
 
-`OrbitControls` setup that matches this convention:
+`OrbitControls`:
 ```js
-camera.up.set(0, 0, 1)
+camera.up.set(0, 0, 1)          // must be set BEFORE constructing OrbitControls
 controls.minPolarAngle = 0
-controls.maxPolarAngle = Math.PI / 2 - 0.05  // prevent going below the board
+controls.maxPolarAngle = Math.PI / 2 - 0.05
 ```
+
+Camera pans to the active character on turn change: `_cameraTarget` is set in `_applyBoardState` when `current_turn_id` changes; the render loop lerps `controls.target` and shifts `camera.position` by the same delta to preserve zoom/angle.
 
 ## Common mistakes
 
-- **Invisible skinned mesh** — used `.clone()` instead of `cloneSkeleton()` on a GLB containing `SkinnedMesh` nodes. Symptom: model loads, all meshes report `visible: true` and `has texture`, but nothing appears.
-- **Model not served** — forgot to copy GLB to `priv/static/3d/`. Check browser network tab for 404.
-- **Gate count wrong** — added a new `loader.load()` call but forgot to increment the `onModelLoaded` counter threshold. Symptom: board never renders after adding the new model.
-- **Animation not found** — `AnimationClip.findByName` returns `null` silently if the name doesn't match. `mixer.clipAction(null)` will throw. Log `gltf.animations.map(a => a.name)` to verify.
-- **Character faces wrong direction after move** — yaw is `rotation.y` (not `rotation.z`) because the model is X-rotated 90°. The `+ Math.PI / 2` offset in `atan2` corrects for the model's local forward being +Y in its rotated frame. Adjust this offset if using a model with a different authored facing direction.
-- **Camera flips upside-down when tilting** — `OrbitControls` defaults to Y-up. If `camera.up` is not explicitly set to `(0,0,1)`, rotating past vertical will flip the view. Always set `camera.up.set(0, 0, 1)` before constructing `OrbitControls`.
+- **Invisible skinned mesh** — used `.clone()` instead of `cloneSkeleton()`. All meshes show `visible: true` and `has texture` in console but nothing renders.
+- **Animation snaps to T-pose on return** — used `crossFadeTo` on the source instead of `crossFadeFrom` on the destination. The source ends up disabled; `play()` alone can't recover it.
+- **Assets not loading** — `ASSETS_BASE_URL` not set or wrong. Check `Application.get_env(:game, :assets_base_url)` in iex, verify network requests in browser devtools.
+- **CORS error on GLB fetch** — Tigris bucket must allow the app's origin. `GLTFLoader` fetches via `fetch()` from the browser, subject to CORS.
+- **Camera flips when tilting** — `camera.up` must be set to `(0,0,1)` *before* constructing `OrbitControls`. Setting it after has no effect.
+- **Character faces wrong direction** — yaw is `rotation.y` (after X-rotation). `atan2(dy, dx) + Math.PI / 2` corrects for the model's +Y local forward.
+- **New asset key ignored** — adding a key to `default_assets/0` is enough for the hook to load it; no hook code changes needed. But the key must be referenced somewhere in `_syncTiles` or `_syncCharacters` to actually be used in the scene.

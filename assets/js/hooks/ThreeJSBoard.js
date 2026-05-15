@@ -1,38 +1,15 @@
 import * as THREE from "three"
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
-import { clone as cloneSkeleton } from "three/examples/jsm/utils/SkeletonUtils.js"
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
-
-const HEX_SIZE = 1.1
-const WALK_DURATION = 0.3
-
-function hexToWorld(q, r) {
-  return {
-    x: HEX_SIZE * (3 / 2 * q),
-    y: -HEX_SIZE * (Math.sqrt(3) / 2 * q + Math.sqrt(3) * r)
-  }
-}
-
-function matteify(scene) {
-  scene.traverse(o => {
-    if (!o.isMesh) return
-    o.material.roughness  = 1.0
-    o.material.metalness  = 0.0
-  })
-}
-
-const HIGHLIGHT_COLORS = {
-  movement: new THREE.Color(0xf59e0b),
-  player:   new THREE.Color(0x22c55e),
-  valid:    new THREE.Color(0xef4444),
-  invalid:  new THREE.Color(0x6b7280),
-  blast:    new THREE.Color(0x991b1b),  // darker red for AoE threat
-}
+import { AssetLoader }    from "../board/asset-loader.js"
+import { TileLayer }      from "../board/tile-layer.js"
+import { CharacterLayer } from "../board/character-layer.js"
+import { BoardCamera }    from "../board/board-camera.js"
+import { meshesOf }       from "../board/hex-utils.js"
 
 const ThreeJSBoard = {
   mounted() {
     const w = this.el.clientWidth, h = this.el.clientHeight
 
+    // --- Scene bootstrap ---
     this._scene    = new THREE.Scene()
     this._camera   = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000)
     this._renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
@@ -45,106 +22,61 @@ const ThreeJSBoard = {
     dirLight.position.set(5, 8, 10)
     this._scene.add(dirLight)
 
-    this._tileMap      = new Map()  // coord key -> { tileNode, objectNode | null }
-    this._characterMap = new Map()  // character id -> { node, mixer }
+    // --- Modules ---
+    this._assets    = new AssetLoader()
+    this._tiles     = new TileLayer(this._scene, this._assets)
+    this._characters = new CharacterLayer(this._scene, this._assets)
+    this._boardCamera = new BoardCamera(this._camera, this._renderer.domElement)
 
-    this._pendingState    = null
-    this._currentTurnId   = null
-    this._cameraTarget    = null  // Vector3 to pan toward, null when idle
-    this._blastMap        = {}    // coord key -> [coord key, ...]
-    this._hoveredCoord    = null  // currently hovered tile coord key
-
-    this._camera.up.set(0, 0, 1)  // Z is up — matches the scene (board in XY plane, tiles rotated flat)
-
-    this._controls = new OrbitControls(this._camera, this._renderer.domElement)
-    this._controls.mouseButtons = {
-      LEFT:   THREE.MOUSE.ROTATE,
-      MIDDLE: THREE.MOUSE.PAN,
-      RIGHT:  THREE.MOUSE.PAN,
-    }
-    this._controls.enableDamping = true
-    this._controls.dampingFactor = 0.1
-    this._controls.screenSpacePanning = true
-    this._controls.minPolarAngle = 0
-    this._controls.maxPolarAngle = Math.PI / 2 - 0.05  // stop just before flat
-
-    const CAMERA_PAN_SPEED = 4.0  // higher = snappier pan
+    // --- Render loop ---
     const clock = new THREE.Clock()
     this._animFrameId = null
     const animate = () => {
       this._animFrameId = requestAnimationFrame(animate)
       const delta = clock.getDelta()
-
-      // Smoothly pan camera toward active character (preserves zoom and angle)
-      if (this._cameraTarget) {
-        const t = Math.min(delta * CAMERA_PAN_SPEED, 1)
-        const prevTarget = this._controls.target.clone()
-        this._controls.target.lerp(this._cameraTarget, t)
-        const shift = this._controls.target.clone().sub(prevTarget)
-        this._camera.position.add(shift)
-        if (this._controls.target.distanceTo(this._cameraTarget) < 0.01)
-          this._cameraTarget = null
-      }
-
-      this._controls.update()
-      for (const entry of this._characterMap.values()) {
-        entry.mixer.update(delta)
-        if (entry.moveProgress !== null) {
-          entry.moveProgress = Math.min(1, entry.moveProgress + delta / WALK_DURATION)
-          entry.node.position.lerpVectors(entry.moveFrom, entry.moveTo, entry.moveProgress)
-          if (entry.moveProgress >= 1) entry.moveProgress = null
-        }
-      }
+      this._boardCamera.update(delta)
+      this._characters.update(delta)
       this._renderer.render(this._scene, this._camera)
     }
     animate()
 
+    // --- Resize ---
     this._onResize = () => {
       const w = this.el.clientWidth, h = this.el.clientHeight
-      this._camera.aspect = w / h
-      this._camera.updateProjectionMatrix()
+      this._boardCamera.onResize(w, h)
       this._renderer.setSize(w, h)
     }
     window.addEventListener("resize", this._onResize)
 
-    // Distinguish a stationary click from a drag — only fire interact on pure clicks.
+    // --- Click: interact ---
     const DRAG_THRESHOLD_PX = 4
     let pointerDownPos = null
-    const raycaster = new THREE.Raycaster()
-    const pointer    = new THREE.Vector2()
+    const clickRaycaster = new THREE.Raycaster()
+    const clickPointer   = new THREE.Vector2()
 
-    this._onPointerDown = (e) => {
-      pointerDownPos = { x: e.clientX, y: e.clientY }
-    }
-    this._onPointerUp = (e) => {
+    this._onPointerDown = (e) => { pointerDownPos = { x: e.clientX, y: e.clientY } }
+    this._onPointerUp   = (e) => {
       if (!pointerDownPos) return
       const dx = e.clientX - pointerDownPos.x
       const dy = e.clientY - pointerDownPos.y
       pointerDownPos = null
-      if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD_PX) return  // was a drag
+      if (Math.sqrt(dx * dx + dy * dy) > DRAG_THRESHOLD_PX) return
 
       const rect = this._renderer.domElement.getBoundingClientRect()
-      pointer.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1
-      pointer.y = -((e.clientY - rect.top)   / rect.height) * 2 + 1
-      raycaster.setFromCamera(pointer, this._camera)
+      clickPointer.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1
+      clickPointer.y = -((e.clientY - rect.top)   / rect.height) * 2 + 1
+      clickRaycaster.setFromCamera(clickPointer, this._camera)
 
-      const allNodes = [
-        ...[...this._tileMap.values()].flatMap(({ tileNode, objectNode }) =>
-          objectNode ? [tileNode, objectNode] : [tileNode]
-        ),
-        ...[...this._characterMap.values()].map(e => e.node)
-      ]
-      const meshes = allNodes.flatMap(n => {
-        const acc = []
-        n.traverse(o => { if (o.isMesh || o.isSkinnedMesh) acc.push(o) })
-        return acc
-      })
+      const meshes = [
+        ...this._tiles.allNodes(),
+        ...this._characters.allNodes()
+      ].flatMap(n => meshesOf(n, { skinned: true }))
 
-      const hits = raycaster.intersectObjects(meshes)
+      const hits = clickRaycaster.intersectObjects(meshes)
       if (hits.length === 0) return
 
       let node = hits[0].object
-      while (node.parent && !node.userData.coord && !node.userData.characterId)
+      while (node.parent && node.userData.coord === undefined && node.userData.characterId === undefined)
         node = node.parent
 
       if (node.userData.characterId !== undefined)
@@ -152,21 +84,20 @@ const ThreeJSBoard = {
       else if (node.userData.coord)
         this.pushEvent("interact", { target_position: node.userData.coord })
     }
-    this._renderer.domElement.addEventListener("pointerdown", this._onPointerDown)
-    this._renderer.domElement.addEventListener("pointerup",   this._onPointerUp)
 
+    // --- Hover: blast highlight ---
     const hoverRaycaster = new THREE.Raycaster()
     const hoverPointer   = new THREE.Vector2()
-    this._onPointerMove = (e) => {
+    this._hoveredCoord = null
+    this._blastMap     = {}
+
+    this._onPointerMove  = (e) => {
       const rect = this._renderer.domElement.getBoundingClientRect()
       hoverPointer.x =  ((e.clientX - rect.left)  / rect.width)  * 2 - 1
       hoverPointer.y = -((e.clientY - rect.top)   / rect.height) * 2 + 1
       hoverRaycaster.setFromCamera(hoverPointer, this._camera)
 
-      const tileMeshes = [...this._tileMap.values()].flatMap(({ tileNode }) => {
-        const acc = []; tileNode.traverse(o => { if (o.isMesh) acc.push(o) }); return acc
-      })
-      const hits = hoverRaycaster.intersectObjects(tileMeshes)
+      const hits = hoverRaycaster.intersectObjects(this._tiles.tileMeshes())
       let coord = null
       if (hits.length > 0) {
         let node = hits[0].object
@@ -175,60 +106,25 @@ const ThreeJSBoard = {
       }
       if (coord !== this._hoveredCoord) {
         this._hoveredCoord = coord
-        this._applyBlastHighlight()
+        this._tiles.applyHighlights(this._hoveredCoord, this._blastMap)
       }
     }
     this._onPointerLeave = () => {
       this._hoveredCoord = null
-      this._applyBlastHighlight()
+      this._tiles.applyHighlights(null, this._blastMap)
     }
+
+    this._renderer.domElement.addEventListener("pointerdown",  this._onPointerDown)
+    this._renderer.domElement.addEventListener("pointerup",    this._onPointerUp)
     this._renderer.domElement.addEventListener("pointermove",  this._onPointerMove)
     this._renderer.domElement.addEventListener("pointerleave", this._onPointerLeave)
 
-    // Asset registries — populated by the `init` event
-    this._tileTemplates      = {}  // key -> THREE.Group
-    this._objectTemplates    = {}  // key -> THREE.Group
-    this._characterTemplates = {}  // key -> THREE.Group
-    this._animationClips     = {}  // key -> THREE.AnimationClip
-    this._assetsReady        = false
-
-    const loader = new GLTFLoader()
+    // --- LiveView events ---
+    this._cameraFitted  = false
+    this._currentTurnId = null
 
     this.handleEvent("init", ({ assets }) => {
-      const loads = []
-
-      Object.entries(assets.tiles || {}).forEach(([key, url]) => {
-        loads.push(new Promise(resolve => loader.load(url, gltf => {
-          this._tileTemplates[key] = gltf.scene
-          matteify(gltf.scene)
-          resolve()
-        })))
-      })
-
-      Object.entries(assets.game_objects || {}).forEach(([key, url]) => {
-        loads.push(new Promise(resolve => loader.load(url, gltf => {
-          this._objectTemplates[key] = gltf.scene
-          matteify(gltf.scene)
-          resolve()
-        })))
-      })
-
-      Object.entries(assets.characters || {}).forEach(([key, url]) => {
-        loads.push(new Promise(resolve => loader.load(url, gltf => {
-          this._characterTemplates[key] = gltf.scene
-          resolve()
-        })))
-      })
-
-      Object.entries(assets.animations || {}).forEach(([key, { url, clip }]) => {
-        loads.push(new Promise(resolve => loader.load(url, gltf => {
-          this._animationClips[key] = THREE.AnimationClip.findByName(gltf.animations, clip)
-          resolve()
-        })))
-      })
-
-      Promise.all(loads).then(() => {
-        this._assetsReady = true
+      this._assets.load(assets).then(() => {
         if (this._pendingState) {
           this._applyBoardState(this._pendingState)
           this._pendingState = null
@@ -237,183 +133,30 @@ const ThreeJSBoard = {
     })
 
     this.handleEvent("board_state", (state) => {
-      if (this._assetsReady) this._applyBoardState(state)
+      if (this._assets.tiles.default) this._applyBoardState(state)
       else this._pendingState = state
     })
   },
 
   _applyBoardState({ tiles, characters, current_turn_id, blast_map }) {
     this._blastMap = blast_map || {}
-    this._syncTiles(tiles)
-    this._applyBlastHighlight()
-    this._syncCharacters(characters)
+    this._tiles.sync(tiles)
+    this._tiles.applyHighlights(this._hoveredCoord, this._blastMap)
+    this._characters.sync(characters)
 
-    if (this._tileMap.size > 0 && !this._cameraFitted) {
-      this._fitCamera()
+    if (!this._cameraFitted && this._tiles.allNodes().length > 0) {
+      this._boardCamera.fitToNodes([
+        ...this._tiles.allNodes(),
+        ...this._characters.allNodes()
+      ])
       this._cameraFitted = true
     }
 
-    // Pan camera when the active character changes
     if (current_turn_id !== undefined && current_turn_id !== this._currentTurnId) {
       this._currentTurnId = current_turn_id
-      const entry = this._characterMap.get(current_turn_id)
-      if (entry) {
-        const p = entry.node.position
-        this._cameraTarget = new THREE.Vector3(p.x, p.y, p.z)
-      }
+      const entry = this._characters.get(current_turn_id)
+      if (entry) this._boardCamera.panTo(entry.node.position)
     }
-  },
-
-  _syncTiles(tiles) {
-    const incoming = new Set(tiles.map(t => `${t.q}_${t.r}_${t.s}`))
-
-    for (const [key, { tileNode, objectNode }] of this._tileMap) {
-      if (!incoming.has(key)) {
-        this._scene.remove(tileNode)
-        if (objectNode) this._scene.remove(objectNode)
-        this._tileMap.delete(key)
-      }
-    }
-
-    tiles.forEach(({ q, r, s, has_object, highlight }) => {
-      const key = `${q}_${r}_${s}`
-      const { x, y } = hexToWorld(q, r)
-      let entry = this._tileMap.get(key)
-
-      if (!entry) {
-        const tileTemplate = this._tileTemplates.default
-        const tileNode = tileTemplate.clone()
-        tileNode.position.set(x, y, 0)
-        tileNode.rotation.set(Math.PI / 2, Math.PI / 6, 0)
-        tileNode.userData.coord = key
-        this._scene.add(tileNode)
-
-        let objectNode = null
-        if (has_object && this._objectTemplates.default) {
-          objectNode = this._objectTemplates.default.clone()
-          objectNode.scale.set(3, 3, 3)
-          objectNode.position.set(x, y, 0.9)
-          objectNode.rotation.set(Math.PI / 2, Math.PI / 6, 0)
-          this._scene.add(objectNode)
-        }
-
-        entry = { tileNode, objectNode }
-        this._tileMap.set(key, entry)
-      }
-
-      entry.tileNode.userData.serverHighlight = highlight || null
-      const color = highlight ? HIGHLIGHT_COLORS[highlight] : null
-      this._tintNode(entry.tileNode, color, 0.5)
-    })
-  },
-
-  _syncCharacters(characters) {
-    const incoming = new Set(characters.map(c => String(c.id)))
-
-    for (const [id, { node, mixer, walkTimer }] of this._characterMap) {
-      if (!incoming.has(String(id))) {
-        if (walkTimer) clearTimeout(walkTimer)
-        mixer.stopAllAction()
-        this._scene.remove(node)
-        this._characterMap.delete(id)
-      }
-    }
-
-    characters.forEach(({ id, q, r }) => {
-      const { x, y } = hexToWorld(q, r)
-      let entry = this._characterMap.get(id)
-
-      if (!entry) {
-        const node = cloneSkeleton(this._characterTemplates.default)
-        node.userData.characterId = id
-        node.rotation.set(Math.PI / 2, 0, 0)
-        node.scale.setScalar(0.6)
-        this._scene.add(node)
-
-        const mixer = new THREE.AnimationMixer(node)
-        const idleAction = mixer.clipAction(this._animationClips.idle)
-        const walkAction = mixer.clipAction(this._animationClips.walk)
-        walkAction.enabled = true
-        idleAction.play()
-
-        entry = { node, mixer, idleAction, walkAction, walkTimer: null, moveFrom: new THREE.Vector3(), moveTo: new THREE.Vector3(), moveProgress: null }
-        this._characterMap.set(id, entry)
-        entry.node.position.set(x, y, 1)
-        return
-      }
-
-      const cur = entry.node.position
-      const moved = Math.abs(cur.x - x) > 0.001 || Math.abs(cur.y - y) > 0.001
-      if (moved) {
-        // Face direction of movement — rotation.y is yaw when the model is X-rotated 90°
-        entry.node.rotation.y = Math.atan2(y - cur.y, x - cur.x) + Math.PI / 2
-
-        // Start lerp from current position (which may itself be mid-tween)
-        entry.moveFrom.copy(cur)
-        entry.moveTo.set(x, y, 1)
-        entry.moveProgress = 0
-
-        // Crossfade to walk, then back to idle after walk duration
-        entry.walkAction.reset().play()
-        entry.walkAction.crossFadeFrom(entry.idleAction, 0.15, true)
-        if (entry.walkTimer) clearTimeout(entry.walkTimer)
-        entry.walkTimer = setTimeout(() => {
-          entry.idleAction.reset().play()
-          entry.idleAction.crossFadeFrom(entry.walkAction, 0.2, true)
-          entry.walkTimer = null
-        }, 500)
-      }
-    })
-  },
-
-  _applyBlastHighlight() {
-    const blastCoords = this._hoveredCoord
-      ? new Set(this._blastMap[this._hoveredCoord] || [])
-      : new Set()
-
-    for (const [key, { tileNode }] of this._tileMap) {
-      if (key === this._hoveredCoord) {
-        this._tintNode(tileNode, HIGHLIGHT_COLORS.valid, 0.9)
-      } else if (blastCoords.has(key)) {
-        this._tintNode(tileNode, HIGHLIGHT_COLORS.valid, 0.9)
-      } else {
-        const serverColor = tileNode.userData.serverHighlight
-          ? HIGHLIGHT_COLORS[tileNode.userData.serverHighlight] : null
-        this._tintNode(tileNode, serverColor, 0.5)
-      }
-    }
-  },
-
-  _tintNode(node, color, intensity) {
-    node.traverse(o => {
-      if (!o.isMesh) return
-      if (!o.userData.baseMaterial) o.userData.baseMaterial = o.material.clone()
-      if (color) {
-        o.material = o.userData.baseMaterial.clone()
-        o.material.emissive = color
-        o.material.emissiveIntensity = intensity
-      } else {
-        o.material = o.userData.baseMaterial
-      }
-    })
-  },
-
-  _fitCamera() {
-    const allNodes = [
-      ...[...this._tileMap.values()].map(e => e.tileNode),
-      ...[...this._characterMap.values()].map(e => e.node)
-    ]
-    if (allNodes.length === 0) return
-    const box = new THREE.Box3()
-    allNodes.forEach(n => box.expandByObject(n))
-    const center = box.getCenter(new THREE.Vector3())
-    const size   = box.getSize(new THREE.Vector3())
-    const maxDim = Math.max(size.x, size.y)
-    const fov    = this._camera.fov * (Math.PI / 180)
-    const dist   = (maxDim / 2) / Math.tan(fov / 2) + 2
-    this._camera.position.set(center.x, center.y - dist * 0.6, dist * 0.8)
-    this._controls.target.copy(center)
-    this._controls.update()
   },
 
   destroyed() {
@@ -423,16 +166,9 @@ const ThreeJSBoard = {
     this._renderer.domElement.removeEventListener("pointerup",    this._onPointerUp)
     this._renderer.domElement.removeEventListener("pointermove",  this._onPointerMove)
     this._renderer.domElement.removeEventListener("pointerleave", this._onPointerLeave)
-    this._controls.dispose()
-    for (const { tileNode, objectNode } of this._tileMap.values()) {
-      this._scene.remove(tileNode)
-      if (objectNode) this._scene.remove(objectNode)
-    }
-    for (const { node, mixer, walkTimer } of this._characterMap.values()) {
-      if (walkTimer) clearTimeout(walkTimer)
-      mixer.stopAllAction()
-      this._scene.remove(node)
-    }
+    this._tiles.destroy()
+    this._characters.destroy()
+    this._boardCamera.destroy()
     this._renderer.dispose()
   }
 }
