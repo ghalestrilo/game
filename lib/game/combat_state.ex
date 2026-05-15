@@ -216,7 +216,9 @@ defmodule Game.CombatState do
 
     case length(alive_teams) do
       n when n <= 1 ->
-        %{combat | state: :game_over, queue: alive_queue, current_turn: updated_current_turn}
+        result = %{combat | state: :game_over, queue: alive_queue, current_turn: updated_current_turn}
+        Task.start(fn -> Game.Events.Publisher.publish_game_over(result) end)
+        result
 
       _ ->
         %{combat | state: :running, queue: alive_queue, current_turn: updated_current_turn}

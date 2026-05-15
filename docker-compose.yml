@@ -15,6 +15,16 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_USER: postgres
 
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    container_name: game-rabbitmq
+    hostname: game-rabbitmq
+    networks:
+      - network1
+
   api:
     build:
       context: .

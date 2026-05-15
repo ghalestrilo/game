@@ -39,7 +39,9 @@ const ThreeJSBoard = {
     this._tileMap      = new Map()  // coord key -> { tileNode, objectNode | null }
     this._characterMap = new Map()  // character id -> { node, mixer }
 
-    this._pendingState   = null
+    this._pendingState    = null
+    this._currentTurnId   = null
+    this._cameraTarget    = null  // Vector3 to pan toward, null when idle
 
     this._camera.up.set(0, 0, 1)  // Z is up — matches the scene (board in XY plane, tiles rotated flat)
 
@@ -55,11 +57,24 @@ const ThreeJSBoard = {
     this._controls.minPolarAngle = 0
     this._controls.maxPolarAngle = Math.PI / 2 - 0.05  // stop just before flat
 
+    const CAMERA_PAN_SPEED = 4.0  // higher = snappier pan
     const clock = new THREE.Clock()
     this._animFrameId = null
     const animate = () => {
       this._animFrameId = requestAnimationFrame(animate)
       const delta = clock.getDelta()
+
+      // Smoothly pan camera toward active character (preserves zoom and angle)
+      if (this._cameraTarget) {
+        const t = Math.min(delta * CAMERA_PAN_SPEED, 1)
+        const prevTarget = this._controls.target.clone()
+        this._controls.target.lerp(this._cameraTarget, t)
+        const shift = this._controls.target.clone().sub(prevTarget)
+        this._camera.position.add(shift)
+        if (this._controls.target.distanceTo(this._cameraTarget) < 0.01)
+          this._cameraTarget = null
+      }
+
       this._controls.update()
       for (const entry of this._characterMap.values()) {
         entry.mixer.update(delta)
@@ -184,12 +199,23 @@ const ThreeJSBoard = {
     })
   },
 
-  _applyBoardState({ tiles, characters }) {
+  _applyBoardState({ tiles, characters, current_turn_id }) {
     this._syncTiles(tiles)
     this._syncCharacters(characters)
+
     if (this._tileMap.size > 0 && !this._cameraFitted) {
       this._fitCamera()
       this._cameraFitted = true
+    }
+
+    // Pan camera when the active character changes
+    if (current_turn_id !== undefined && current_turn_id !== this._currentTurnId) {
+      this._currentTurnId = current_turn_id
+      const entry = this._characterMap.get(current_turn_id)
+      if (entry) {
+        const p = entry.node.position
+        this._cameraTarget = new THREE.Vector3(p.x, p.y, p.z)
+      }
     }
   },
 
@@ -293,11 +319,11 @@ const ThreeJSBoard = {
 
         // Crossfade to walk, then back to idle after walk duration
         entry.walkAction.reset().play()
-        entry.idleAction.crossFadeTo(entry.walkAction, 0.15, true)
+        entry.walkAction.crossFadeFrom(entry.idleAction, 0.15, true)
         if (entry.walkTimer) clearTimeout(entry.walkTimer)
         entry.walkTimer = setTimeout(() => {
-          entry.walkAction.crossFadeTo(entry.idleAction, 0.2, true)
-          entry.idleAction.play()
+          entry.idleAction.reset().play()
+          entry.idleAction.crossFadeFrom(entry.walkAction, 0.2, true)
           entry.walkTimer = null
         }, 500)
       }
