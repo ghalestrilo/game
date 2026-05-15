@@ -80,7 +80,10 @@ defmodule GameWeb.GameBoard3D do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="flex-1 relative overflow-hidden">
+    <div
+      class="flex-1 relative overflow-hidden"
+      style="background: url('/images/low-poly-blue-sky.svg') center center / cover no-repeat;"
+    >
       <div
         id="game-board-3d"
         phx-hook="ThreeJSBoard"

@@ -26,7 +26,7 @@ const ThreeJSBoard = {
 
     this._scene    = new THREE.Scene()
     this._camera   = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000)
-    this._renderer = new THREE.WebGLRenderer({ antialias: true })
+    this._renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
     this._renderer.setSize(w, h)
     this._renderer.setPixelRatio(window.devicePixelRatio)
     this.el.appendChild(this._renderer.domElement)
