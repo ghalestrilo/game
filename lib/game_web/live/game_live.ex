@@ -35,7 +35,7 @@ defmodule GameWeb.GameLive do
     end
   end
 
-  defp mount_connected(:pvp, %{"id" => lobby_id}, socket) do
+  defp mount_connected(:pvp, %{"id" => lobby_id} = params, socket) do
     user = socket.assigns.current_scope.user
 
     case Lobby.get(lobby_id) do
@@ -61,7 +61,7 @@ defmodule GameWeb.GameLive do
            action_log: [],
            modal: nil,
            mode: :pvp,
-           render_3d: false,
+           render_3d: params["3d"] == "true",
            keyboard_target_index: 0
          )}
     end

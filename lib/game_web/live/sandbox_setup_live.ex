@@ -18,7 +18,8 @@ defmodule GameWeb.SandboxSetupLive do
        map_options: map_options,
        selected_map: "",
        selected_class: "",
-       characters: []
+       characters: [],
+       render_3d: true
      )}
   end
 
@@ -43,6 +44,11 @@ defmodule GameWeb.SandboxSetupLive do
   end
 
   @impl true
+  def handle_event("toggle_3d", _params, socket) do
+    {:noreply, assign(socket, render_3d: !socket.assigns.render_3d)}
+  end
+
+  @impl true
   def handle_event("start_sandbox", _params, socket) do
     if length(socket.assigns.characters) < 2 do
       {:noreply, put_flash(socket, :error, "Add at least 2 characters")}
@@ -53,6 +59,9 @@ defmodule GameWeb.SandboxSetupLive do
           if socket.assigns.selected_map != "",
             do: Map.put(p, :map, socket.assigns.selected_map),
             else: p
+        end)
+        |> then(fn p ->
+          if socket.assigns.render_3d, do: Map.put(p, "3d", "true"), else: p
         end)
 
       {:noreply, push_navigate(socket, to: ~p"/sandbox?#{params}")}
@@ -121,6 +130,17 @@ defmodule GameWeb.SandboxSetupLive do
             <% end %>
           </select>
         </form>
+
+        <!-- 3D toggle -->
+        <div class="flex items-center justify-between">
+          <label class="font-semibold">3D renderer</label>
+          <input
+            type="checkbox"
+            class="checkbox"
+            checked={@render_3d}
+            phx-click="toggle_3d"
+          />
+        </div>
 
         <!-- Start button -->
         <button

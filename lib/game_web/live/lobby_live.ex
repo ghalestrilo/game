@@ -90,6 +90,16 @@ defmodule GameWeb.LobbyLive do
   end
 
   @impl true
+  def handle_event("set_render_3d", params, socket) do
+    render_3d = Map.has_key?(params, "render_3d")
+
+    case Lobby.set_setting(socket.assigns.lobby_id, :render_3d, render_3d) do
+      {:ok, lobby_state} -> {:noreply, assign(socket, lobby: lobby_state)}
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_event("set_map", %{"map" => slug}, socket) do
     map_slug = if slug == "", do: nil, else: slug
 
@@ -112,10 +122,13 @@ defmodule GameWeb.LobbyLive do
   @impl true
   def handle_info({:lobby_updated, %{game_pid: game_pid, id: id} = lobby_state}, socket)
       when not is_nil(game_pid) do
+    render_3d = Map.get(lobby_state.settings || %{}, :render_3d, true)
+    play_path = if render_3d, do: ~p"/multiplayer/#{id}/play?3d=true", else: ~p"/multiplayer/#{id}/play"
+
     {:noreply,
      socket
      |> assign(lobby: lobby_state)
-     |> push_navigate(to: ~p"/multiplayer/#{id}/play")}
+     |> push_navigate(to: play_path)}
   end
 
   def handle_info({:lobby_updated, lobby_state}, socket) do
@@ -202,6 +215,17 @@ defmodule GameWeb.LobbyLive do
                   <span class="badge badge-lg">
                     {if selected_map == "", do: "None", else: selected_map}
                   </span>
+                <% end %>
+              </span>
+              <% render_3d = Map.get(@lobby.settings || %{}, :render_3d, true) %>
+              <span class="flex w-full items-center justify-between">
+                <label class="text-lg">3D renderer:</label>
+                <%= if is_host do %>
+                  <form phx-change="set_render_3d">
+                    <input type="checkbox" name="render_3d" class="checkbox" checked={render_3d} />
+                  </form>
+                <% else %>
+                  <span class="badge badge-lg">{if render_3d, do: "On", else: "Off"}</span>
                 <% end %>
               </span>
               <button

@@ -67,7 +67,9 @@ defmodule Game.MixProject do
       {:struct_access, "~> 1.1.2"},
       {:hexgrid, "~> 2.1"},
       {:git_hooks, "~> 0.8.1", only: :dev},
-      {:json_logic, "~> 1.0"}
+      {:json_logic, "~> 1.0"},
+      {:broadway, "~> 1.1"},
+      {:broadway_rabbitmq, "~> 0.8"}
     ]
   end
 

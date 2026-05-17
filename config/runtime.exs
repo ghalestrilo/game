@@ -16,6 +16,13 @@ import Config
 #
 # Alternatively, you can use `mix phx.gen.release` to generate a `bin/server`
 # script that automatically sets the env var above.
+if rabbitmq_url = System.get_env("RABBITMQ_URL") do
+  config :game, :rabbitmq,
+    url: rabbitmq_url,
+    exchange: System.get_env("RABBITMQ_EXCHANGE", "game_events"),
+    queue: "game_over"
+end
+
 if System.get_env("PHX_SERVER") do
   config :game, GameWeb.Endpoint, server: true
 end

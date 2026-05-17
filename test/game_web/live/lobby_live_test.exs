@@ -620,6 +620,74 @@ defmodule GameWeb.LobbyLiveTest do
     })
   end
 
+  describe "LobbyLive - 3D renderer setting" do
+    setup :two_players_in_lobby
+
+    test "host sees 3D renderer checkbox, non-host sees read-only badge", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      assert lobby_view1 |> element("form[phx-change='set_render_3d'] input[type='checkbox']") |> has_element?()
+      assert lobby_view2 |> element("span.badge", "On") |> has_element?()
+    end
+
+    test "host toggling 3D renderer updates the non-host badge", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      # Default state: non-host sees "On"
+      assert render(lobby_view2) =~ "On"
+
+      # Host enables 3D explicitly (already on by default, but confirms the round-trip)
+      assert lobby_view1
+             |> element("form[phx-change='set_render_3d']")
+             |> render_change(%{"render_3d" => "true"}) =~ "3D renderer"
+
+      assert render(lobby_view2) =~ "On"
+    end
+
+    test "game redirects to ?3d=true when 3D renderer is enabled", %{
+      conn1: conn1,
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      lobby_view1
+      |> element("form[phx-change='set_render_3d']")
+      |> render_change(%{"render_3d" => "true"})
+
+      select_class(lobby_view1, "fighter")
+      select_class(lobby_view2, "fighter")
+
+      lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()
+      lobby_view2 |> element("button[phx-click='toggle_ready']") |> render_click()
+
+      {path, _} = assert_redirect(lobby_view1)
+      assert path =~ "?3d=true"
+
+      {:ok, game_view, _} = live(conn1, path)
+      assert game_view |> element("#game-board-3d") |> has_element?()
+      refute game_view |> element(".game-board") |> has_element?()
+    end
+
+    test "game redirects to ?3d=true by default", %{
+      conn1: conn1,
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      select_class(lobby_view1, "fighter")
+      select_class(lobby_view2, "fighter")
+
+      lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()
+      lobby_view2 |> element("button[phx-click='toggle_ready']") |> render_click()
+
+      {path, _} = assert_redirect(lobby_view1)
+      assert path =~ "?3d=true"
+
+      {:ok, game_view, _} = live(conn1, path)
+      assert game_view |> element("#game-board-3d") |> has_element?()
+    end
+  end
+
   defp two_players_in_lobby(context) do
     user1 = Game.AccountsFixtures.user_fixture()
     user2 = Game.AccountsFixtures.user_fixture()
