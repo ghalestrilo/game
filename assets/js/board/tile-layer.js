@@ -68,6 +68,11 @@ export class TileLayer {
     return [...this._map.values()].flatMap(({ tileNode }) => meshesOf(tileNode))
   }
 
+  positionOf(coord) {
+    const entry = this._map.get(coord)
+    return entry ? entry.tileNode.position.clone() : null
+  }
+
   allNodes() {
     return [...this._map.values()].map(e => e.tileNode)
   }

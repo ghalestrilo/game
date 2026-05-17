@@ -8,9 +8,28 @@ defmodule GameWeb.GameBoard3D do
 
   @assets_subpath "/hexdecks/assets"
 
+  @class_models %{
+    "barbarian" => "characters/Barbarian.glb",
+    "fighter"   => "characters/Knight.glb",
+    "rogue"     => "characters/Rogue_Hooded.glb",
+    "ranger"    => "characters/Ranger.glb"
+  }
+  @default_model "characters/Mage.glb"
+
+  defp base_url do
+    Application.get_env(:game, :assets_base_url, "")
+    |> String.trim_trailing("/")
+    |> then(&"#{&1}#{@assets_subpath}")
+  end
+
+  defp model_url(class, base) do
+    classname = class |> to_string() |> String.downcase()
+    path = Map.get(@class_models, classname, @default_model)
+    "#{base}/#{path}"
+  end
+
   defp default_assets do
-    base = Application.get_env(:game, :assets_base_url, "") |> String.trim_trailing("/")
-    base = "#{base}#{@assets_subpath}"
+    base = base_url()
 
     %{
       tiles: %{
@@ -19,12 +38,9 @@ defmodule GameWeb.GameBoard3D do
       game_objects: %{
         default: "#{base}/objects/detail_treeA.gltf.glb"
       },
-      characters: %{
-        default: "#{base}/characters/Mage.glb"
-      },
       animations: %{
-        idle: %{url: "#{base}/animation/Rig_Medium_General.glb",       clip: "Idle_A"},
-        walk: %{url: "#{base}/animation/Rig_Medium_MovementBasic.glb",  clip: "Walking_A"}
+        idle: %{url: "#{base}/animation/Rig_Medium_General.glb",      clip: "Idle_A"},
+        walk: %{url: "#{base}/animation/Rig_Medium_MovementBasic.glb", clip: "Walking_A"}
       }
     }
   end
@@ -150,6 +166,7 @@ defmodule GameWeb.GameBoard3D do
         q: q,
         r: r,
         s: s,
+        model_url: model_url(character.class, base_url()),
         team: to_string(character.team)
       }
     end)

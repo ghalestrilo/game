@@ -136,6 +136,13 @@ const ThreeJSBoard = {
       if (this._assets.tiles.default) this._applyBoardState(state)
       else this._pendingState = state
     })
+
+    this.handleEvent("highlight-tile", ({ coord }) => {
+      this._hoveredCoord = coord
+      this._tiles.applyHighlights(this._hoveredCoord, this._blastMap)
+      const pos = this._tiles.positionOf(coord)
+      if (pos) this._boardCamera.panTo(pos)
+    })
   },
 
   _applyBoardState({ tiles, characters, current_turn_id, blast_map }) {
