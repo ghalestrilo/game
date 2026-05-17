@@ -264,7 +264,7 @@ defmodule Game.Character do
     base = Map.get(character, String.to_existing_atom(attr))
 
     Enum.reduce(character.status_effects, base, fn
-      %{type: :modify_attribute, attribute: ^attr, value: v}, acc -> acc + v
+      %{type: :modify_attribute, attribute: ^attr, value: v}, acc -> acc + to_number(v)
       _, acc -> acc
     end)
   end
@@ -307,4 +307,7 @@ defmodule Game.Character do
   def shuffle_deck(character) do
     update_in(character.cards.draw, &Enum.shuffle(&1))
   end
+
+  defp to_number(%Decimal{} = d), do: Decimal.to_float(d)
+  defp to_number(n), do: n
 end

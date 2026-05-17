@@ -58,6 +58,18 @@ defmodule Game.Combat.CardEffects.ModifyAttributeTest do
       assert Character.effective_attribute(fighter, "max_hp") == fighter.max_hp
     end
 
+    test "handles Decimal modifier values without crashing", %{fighter: fighter} do
+      fighter_with_decimal =
+        Character.add_status_effect(fighter, %{
+          type: :modify_attribute,
+          attribute: "damage_multiplier",
+          value: Decimal.new("0.0"),
+          duration: nil
+        })
+
+      assert Character.effective_attribute(fighter_with_decimal, "damage_multiplier") == 1.0
+    end
+
     test "stacks additive modifiers" do
       fighter = %Character{
         id: 1,
