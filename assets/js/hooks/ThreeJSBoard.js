@@ -144,6 +144,9 @@ const ThreeJSBoard = {
     this._tiles.applyHighlights(this._hoveredCoord, this._blastMap)
     this._characters.sync(characters)
 
+    const center = this._characters.centerOfMass()
+    if (this._characters.allNodes().length > 0) this._characters.faceToward(center)
+
     if (!this._cameraFitted && this._tiles.allNodes().length > 0) {
       this._boardCamera.fitToNodes([
         ...this._tiles.allNodes(),
@@ -155,7 +158,8 @@ const ThreeJSBoard = {
     if (current_turn_id !== undefined && current_turn_id !== this._currentTurnId) {
       this._currentTurnId = current_turn_id
       const entry = this._characters.get(current_turn_id)
-      if (entry) this._boardCamera.panTo(entry.node.position)
+      if (entry && !entry.pending)
+        this._boardCamera.panTo(center.clone().lerp(entry.node.position, 0.5))
     }
   },
 

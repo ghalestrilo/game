@@ -46,6 +46,12 @@ export class AssetLoader {
     return Promise.all(loads)
   }
 
+  loadCharacter(url) {
+    if (this.characters[url]) return Promise.resolve(this.characters[url])
+    return this._loadScene(url, scene => { this.characters[url] = scene })
+      .then(() => this.characters[url])
+  }
+
   _loadScene(url, onLoad) {
     return new Promise(resolve => {
       this._loader.load(url, gltf => {
