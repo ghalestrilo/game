@@ -97,13 +97,13 @@ defmodule GameWeb.GameBoard3D do
   def render(assigns) do
     ~H"""
     <div
-      class="flex-1 relative"
+      class="flex-1 relative overflow-hidden"
       style="background: url('/images/low-poly-blue-sky.svg') center center / cover no-repeat;"
     >
       <div
         id="game-board-3d"
         phx-hook="ThreeJSBoard"
-        style="width: 100%; height: 100%; position: relative;"
+        style="width: 100%; height: 100%; position: absolute !important"
       >
       </div>
     </div>
@@ -194,7 +194,10 @@ defmodule GameWeb.GameBoard3D do
         turn[:movement_remaining] ||
           Game.Character.effective_attribute(player, "movement_range")
 
-      Game.Grid.distance(combat.grid, coord, player.position) <= movement_remaining
+      case Game.Grid.astar_path_length(combat.grid, player.position, coord) do
+        {:ok, len} -> len <= movement_remaining
+        :unreachable -> false
+      end
     end
   end
 
