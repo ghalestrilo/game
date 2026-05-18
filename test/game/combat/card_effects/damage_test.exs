@@ -260,6 +260,154 @@ defmodule Game.Combat.CardEffects.DamageTest do
     end
   end
 
+  describe "outgoing and incoming damage multipliers" do
+    setup do
+      warrior = Fixtures.fighter()
+      mage = %{Fixtures.mage() | hp: 20, max_hp: 20, position: {1, 0, -1}}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: warrior},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: mage}
+        }
+      }
+
+      base_combat = %CombatState{
+        state: :running,
+        __constants__: %{players: [warrior, mage]},
+        queue: [mage],
+        grid: grid,
+        current_turn: %{
+          starting_position: warrior.position,
+          player: warrior,
+          card: nil
+        }
+      }
+
+      {:ok, combat: base_combat, warrior: warrior, mage: mage}
+    end
+
+    # Berserk: boosts caster's outgoing AND incoming damage multiplier
+    test "Berserk - caster with outgoing_damage_multiplier buff deals amplified damage", %{
+      combat: combat,
+      warrior: warrior,
+      mage: mage
+    } do
+      berserk_warrior =
+        Character.add_status_effect(warrior, %{
+          type: :modify_attribute,
+          attribute: "outgoing_damage_multiplier",
+          value: 0.5,
+          duration: 2
+        })
+
+      combat = put_in(combat, [:current_turn, :player], berserk_warrior)
+      updated = CardEffect.process(%Damage{value: 10}, mage, combat)
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      # 10 * 1.5 outgoing = 15 damage
+      assert updated_mage.hp == mage.hp - 15
+    end
+
+    test "Berserk - caster with incoming_damage_multiplier debuff takes amplified damage", %{
+      combat: combat,
+      mage: mage
+    } do
+      berserk_mage =
+        Character.add_status_effect(mage, %{
+          type: :modify_attribute,
+          attribute: "damage_multiplier",
+          value: 0.5,
+          duration: 2
+        })
+
+      combat = %{combat | queue: [berserk_mage]}
+      updated = CardEffect.process(%Damage{value: 10}, berserk_mage, combat)
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      # 10 * 1.5 incoming = 15 damage
+      assert updated_mage.hp == mage.hp - 15
+    end
+
+    # Weaken: reduces only the target's outgoing damage
+    test "Weaken - target with outgoing_damage_multiplier debuff deals reduced damage", %{
+      combat: combat,
+      warrior: warrior,
+      mage: mage
+    } do
+      weakened_warrior =
+        Character.add_status_effect(warrior, %{
+          type: :modify_attribute,
+          attribute: "outgoing_damage_multiplier",
+          value: -0.5,
+          duration: 2
+        })
+
+      combat = put_in(combat, [:current_turn, :player], weakened_warrior)
+      updated = CardEffect.process(%Damage{value: 10}, mage, combat)
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      # 10 * 0.5 outgoing = 5 damage
+      assert updated_mage.hp == mage.hp - 5
+    end
+
+    test "Weaken - incoming multiplier unaffected when only outgoing is debuffed", %{
+      combat: combat,
+      mage: mage
+    } do
+      weakened_mage =
+        Character.add_status_effect(mage, %{
+          type: :modify_attribute,
+          attribute: "outgoing_damage_multiplier",
+          value: -0.5,
+          duration: 2
+        })
+
+      combat = %{combat | queue: [weakened_mage]}
+      updated = CardEffect.process(%Damage{value: 10}, weakened_mage, combat)
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      # target's incoming multiplier is still 1.0, caster has no outgoing buff → 10 damage
+      assert updated_mage.hp == mage.hp - 10
+    end
+
+    # Tough Skin: reduces only the caster's incoming damage
+    test "Tough Skin - target with incoming_damage_multiplier buff takes reduced damage", %{
+      combat: combat,
+      mage: mage
+    } do
+      tough_mage =
+        Character.add_status_effect(mage, %{
+          type: :modify_attribute,
+          attribute: "damage_multiplier",
+          value: -0.5,
+          duration: 2
+        })
+
+      combat = %{combat | queue: [tough_mage]}
+      updated = CardEffect.process(%Damage{value: 10}, tough_mage, combat)
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      # 10 * 0.5 incoming = 5 damage
+      assert updated_mage.hp == mage.hp - 5
+    end
+
+    test "Tough Skin - outgoing damage unaffected when only incoming is buffed", %{
+      combat: combat,
+      warrior: warrior,
+      mage: mage
+    } do
+      tough_warrior =
+        Character.add_status_effect(warrior, %{
+          type: :modify_attribute,
+          attribute: "damage_multiplier",
+          value: -0.5,
+          duration: 2
+        })
+
+      combat = put_in(combat, [:current_turn, :player], tough_warrior)
+      updated = CardEffect.process(%Damage{value: 10}, mage, combat)
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      # caster's incoming buff doesn't affect outgoing; target has no incoming debuff → 10 damage
+      assert updated_mage.hp == mage.hp - 10
+    end
+  end
+
   describe "False Life + Exsanguinate combo" do
     # False Life: ModifyAttribute{max_hp, +4, permanent} cast on self while at full HP.
     # Exsanguinate: damage = caster.max_hp - caster.hp  (missing HP formula).

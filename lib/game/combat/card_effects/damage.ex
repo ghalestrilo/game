@@ -19,7 +19,9 @@ defmodule Game.Combat.CardEffects.Damage do
 
     @impl Game.Combat.CardEffect
     def process(%Damage{value: amount} = _effect, target, %CombatState{} = combat_state) do
-      CombatState.update_target(combat_state, target, Character.apply_damage(target, amount))
+      caster = combat_state.current_turn.player
+      outgoing = Character.effective_attribute(caster, "outgoing_damage_multiplier")
+      CombatState.update_target(combat_state, target, Character.apply_damage(target, amount * outgoing))
     end
 
     @impl Game.Combat.CardEffect

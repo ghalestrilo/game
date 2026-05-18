@@ -25,6 +25,8 @@ defmodule Game.Character do
             hand_size: 5,
             # Multiplier applied to incoming damage (>1.0 = takes more; <1.0 = takes less)
             damage_multiplier: 1.0,
+            # Multiplier applied to outgoing damage (>1.0 = deals more; <1.0 = deals less)
+            outgoing_damage_multiplier: 1.0,
             # Team identifier
             team: nil,
             dead: false,

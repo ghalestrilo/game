@@ -10,6 +10,8 @@ defmodule GameWeb.Admin.Fields.EffectField do
   """
   use Backpex.Field
 
+  @modifiable_attributes ~w(max_hp max_ap movement_range hand_size damage_multiplier outgoing_damage_multiplier)
+
   @impl Backpex.Field
   def render_value(assigns) do
     label =
@@ -88,7 +90,7 @@ defmodule GameWeb.Admin.Fields.EffectField do
               </select>
             <% param == "attribute" -> %>
               <select name={"#{@field_base}[attribute][value]"} class="select select-sm w-full">
-                <%= for attr <- ~w(max_hp max_ap movement_range hand_size damage_multiplier) do %>
+                <%= for attr <- @modifiable_attributes do %>
                   <option
                     value={attr}
                     selected={attr == to_string(Map.get(@value_map, "attribute", "max_hp"))}
