@@ -110,23 +110,27 @@ defmodule Game.Combat do
     movement_remaining =
       current_turn[:movement_remaining] || effective_movement_range(current_player)
 
-    step_distance = Grid.distance(grid, current_player.position, target_position)
+    path_result = Grid.astar_path_length(grid, current_player.position, target_position)
 
     cond do
       not CombatState.is_players_turn?(combat, player) ->
         {:error, "Not player's turn"}
 
-      step_distance > movement_remaining ->
-        {:error, "Not enough movement"}
-
       Grid.tile_blocked?(grid, target_position) ->
         {:error, "Tile is blocked"}
 
+      (case path_result do
+         {:ok, len} -> len > movement_remaining
+         :unreachable -> true
+       end) ->
+        {:error, "Not enough movement"}
+
       true ->
+        {:ok, path_length} = path_result
         combat = put_in(combat, [:current_turn, :movement_remaining], movement_remaining)
         updated_combat = CombatState.update_player_position(combat, player, target_position)
         updated_combat = CombatState.update_grid_position(updated_combat, player, target_position)
-        updated_combat = CombatState.deduct_movement(updated_combat, step_distance)
+        updated_combat = CombatState.deduct_movement(updated_combat, path_length)
         updated_combat = apply_entry_effects(updated_combat, player, target_position)
         result = CombatState.update_players_and_queue(updated_combat)
 
@@ -150,7 +154,7 @@ defmodule Game.Combat do
       not Character.has_enough_ap?(player, card.cost) ->
         {:error, "Not enough AP"}
 
-      Grid.distance(grid, player.position, target_position) > card.range ->
+      not Card.card_in_range?(card, player.position, target_position, grid) ->
         {:error, "Out of range"}
 
       character.id != player.id and
@@ -200,7 +204,7 @@ defmodule Game.Combat do
       not Character.has_enough_ap?(player, card.cost) ->
         {:error, "Not enough AP"}
 
-      Grid.distance(grid, player.position, target_position) > card.range ->
+      not Card.card_in_range?(card, player.position, target_position, grid) ->
         {:error, "Out of range"}
 
       (case Grid.get_object(grid, target_position) do

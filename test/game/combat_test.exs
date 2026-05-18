@@ -39,7 +39,10 @@ defmodule Game.CombatTest do
         {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
         {1, 0, -1} => %{terrain: :plain, occupied_by: mage},
         {2, 0, -2} => %{terrain: :plain, occupied_by: nil},
-        {3, 0, -3} => %{terrain: :plain, occupied_by: nil}
+        {3, 0, -3} => %{terrain: :plain, occupied_by: nil},
+        {0, -1, 1} => %{terrain: :plain, occupied_by: nil},
+        {1, -1, 0} => %{terrain: :plain, occupied_by: nil},
+        {2, -1, -1} => %{terrain: :plain, occupied_by: nil}
       }
     }
 
@@ -280,8 +283,8 @@ defmodule Game.CombatTest do
 
   describe "move within range" do
     setup %{combat_state: combat_state, fighter: fighter} do
-      # Adjacent empty tile
-      target_position = {2, 0, -2}
+      # Adjacent empty tile with a clear path
+      target_position = {0, -1, 1}
       result = Combat.process_action(combat_state, {:move, fighter, target_position})
 
       {:ok, result: result, target_position: target_position}
@@ -379,7 +382,8 @@ defmodule Game.CombatTest do
   describe "move back and forth between tiles" do
     setup %{combat_state: combat_state, fighter: fighter} do
       start_position = fighter.position
-      target_position = {2, 0, -2}
+      # distance 1 — fighter can reach it and has 1 movement left to come back
+      target_position = {0, -1, 1}
 
       {:ok, first_move_result} =
         Combat.process_action(combat_state, {:move, fighter, target_position})
@@ -408,24 +412,20 @@ defmodule Game.CombatTest do
       assert first_move_result.current_turn.player.position == target_position
     end
 
-    test "first move exhausts movement budget (range 2, moved 2 tiles)", %{
+    test "first move deducts 1 from movement budget (range 2, moved 1 tile)", %{
       first_move_result: first_move_result
     } do
-      assert first_move_result.current_turn.movement_remaining == 0
+      assert first_move_result.current_turn.movement_remaining == 1
     end
 
-    test "second move back is blocked by exhausted movement budget", %{result: result} do
-      assert {:error, "Not enough movement"} = result
+    test "second move back succeeds with remaining budget", %{result: result} do
+      assert {:ok, _} = result
     end
   end
 
   describe "multi-step movement within budget" do
     setup %{combat_state: combat_state, fighter: fighter} do
-      # Fighter has movement_range 2; move 1 tile then 1 more tile
-      first_target = {1, 0, -1}
-
-      # The mage is at {1, 0, -1}, so use a different first step — use {2, 0, -2} then skip
-      # Actually fighter is at {0,0,0}, mage at {1,0,-1}: use a fighter with range 3 for multi-step
+      # Fighter with range 3: step 1 to {0,-1,1}, step 2 to {1,-1,0}
       fighter_3 = %{fighter | movement_range: 3, position: {0, 0, 0}}
 
       combat_with_fighter3 = %{
@@ -433,12 +433,12 @@ defmodule Game.CombatTest do
         | current_turn: %{combat_state.current_turn | player: fighter_3}
       }
 
-      step1_target = {2, 0, -2}
+      step1_target = {0, -1, 1}
 
       {:ok, after_step1} =
         Combat.process_action(combat_with_fighter3, {:move, fighter_3, step1_target})
 
-      step2_target = {3, 0, -3}
+      step2_target = {1, -1, 0}
 
       result =
         Combat.process_action(
@@ -454,15 +454,15 @@ defmodule Game.CombatTest do
     end
 
     test "first step succeeds and deducts budget", %{after_step1: after_step1} do
-      assert after_step1.current_turn.movement_remaining == 1
+      assert after_step1.current_turn.movement_remaining == 2
     end
 
     test "second step succeeds with remaining budget", %{result: result} do
       assert {:ok, _} = result
     end
 
-    test "second step exhausts remaining budget", %{result: {:ok, updated_combat}} do
-      assert updated_combat.current_turn.movement_remaining == 0
+    test "second step deducts from remaining budget", %{result: {:ok, updated_combat}} do
+      assert updated_combat.current_turn.movement_remaining == 1
     end
 
     test "player ends at second target position", %{
@@ -692,6 +692,101 @@ defmodule Game.CombatTest do
 
       # Card should not be in hand
       refute Enum.any?(updated_fighter.cards.hand, fn c -> c.id == mixed_card.id end)
+    end
+  end
+
+  describe "movement cannot pass through walls" do
+    # Fighter at {0,0,0}. A 5-tile wall spans the diagonal strip:
+    #   {-2,1,1}, {-1,1,0}, {0,1,-1}, {1,0,-1}, {2,-1,-1}
+    # Target {0,2,-2} sits behind the wall; the only walkable detour goes:
+    #   {0,0,0} → {1,0,-1}... wait, that's walled.
+    # Detour: {0,0,0} → {1,-1,0} → {2,-1,-1}... also walled.
+    # Actually detour goes the other way:
+    #   {0,0,0} → {-1,0,1} → {-2,1,1}... walled.
+    # The wall fully severs the grid — {0,2,-2} is unreachable regardless of movement.
+    # For the "enough movement via detour" test, we use a partial wall (4 tiles)
+    # leaving one gap, with a target that needs exactly 4 steps to reach.
+    setup do
+      fighter = %{Fixtures.fighter() | position: {0, 0, 0}}
+      # Use a radius-4 grid so there's room for detours
+      grid = Game.Grid.new({4, 4, 4})
+
+      # 5-tile wall that fully severs the grid between fighter and {0,2,-2}
+      full_wall = [{-2, 1, 1}, {-1, 1, 0}, {0, 1, -1}, {1, 0, -1}, {2, -1, -1}]
+
+      grid_full_wall =
+        Enum.reduce(full_wall, grid, fn pos, g ->
+          put_in(g.tiles[pos].terrain, :wall)
+        end)
+
+      grid_full_wall = Game.Grid.update_character(grid_full_wall, fighter)
+
+      # Partial wall (4 tiles) — gap at {-2,1,1} — detour path to {0,2,-2} is 4 steps:
+      #   {0,0,0}→{-1,0,1}→{-2,1,1}→{-1,2,-1}→{0,2,-2}
+      partial_wall = [{-1, 1, 0}, {0, 1, -1}, {1, 0, -1}, {2, -1, -1}]
+
+      grid_partial_wall =
+        Enum.reduce(partial_wall, grid, fn pos, g ->
+          put_in(g.tiles[pos].terrain, :wall)
+        end)
+
+      grid_partial_wall = Game.Grid.update_character(grid_partial_wall, fighter)
+
+      make_combat = fn g ->
+        %CombatState{
+          state: :running,
+          __constants__: %{players: [fighter]},
+          queue: [fighter],
+          grid: g,
+          current_turn: %{
+            player: fighter,
+            starting_position: fighter.position,
+            movement_remaining: nil,
+            card: nil
+          }
+        }
+      end
+
+      {:ok,
+       fighter: fighter,
+       combat_full_wall: make_combat.(grid_full_wall),
+       combat_partial_wall: make_combat.(grid_partial_wall)}
+    end
+
+    test "rejects move to tile behind full wall even when within hex distance", %{
+      combat_full_wall: combat,
+      fighter: fighter
+    } do
+      target = {0, 2, -2}
+      # hex distance is 2 — within default movement range — but no path exists
+      assert Grid.distance(combat.grid, fighter.position, target) == 2
+      assert {:error, _} = Combat.process_action(combat, {:move, fighter, target})
+    end
+
+    test "rejects move via detour when movement budget is insufficient", %{
+      combat_partial_wall: combat,
+      fighter: fighter
+    } do
+      # detour path is 5 steps; fighter movement_range is 2
+      target = {0, 2, -2}
+      assert fighter.movement_range < 5
+      assert {:error, _} = Combat.process_action(combat, {:move, fighter, target})
+    end
+
+    test "allows move via detour when movement budget is sufficient", %{
+      combat_partial_wall: combat,
+      fighter: fighter
+    } do
+      # same target, give the fighter enough movement to take the 5-step detour
+      fighter_5 = %{fighter | movement_range: 5}
+
+      combat =
+        put_in(combat, [:current_turn, :player], fighter_5)
+        |> put_in([:__constants__, :players], [fighter_5])
+
+      target = {0, 2, -2}
+      assert {:ok, result} = Combat.process_action(combat, {:move, fighter_5, target})
+      assert result.current_turn.player.position == target
     end
   end
 end

@@ -464,6 +464,25 @@ defmodule Game.Card do
 
   def get_targeting_type(%__MODULE__{}), do: :character
 
+  def get_targeting_mode(%__MODULE__{targeting: %{"mode" => mode}}) when is_binary(mode),
+    do: String.to_atom(mode)
+
+  def get_targeting_mode(%__MODULE__{}), do: :null
+
+  @doc "Returns true if `target_pos` is within the card's effective range from `caster_pos`."
+  def card_in_range?(%__MODULE__{range: range} = card, caster_pos, target_pos, grid) do
+    case get_targeting_mode(card) do
+      :guided ->
+        case Grid.astar_path_length(grid, caster_pos, target_pos) do
+          {:ok, len} -> len <= range
+          :unreachable -> false
+        end
+
+      _ ->
+        Grid.distance(grid, caster_pos, target_pos) <= range
+    end
+  end
+
   def is_target_cell_valid?(
         %__MODULE__{targeting: targeting} = card,
         target_position,
@@ -472,15 +491,34 @@ defmodule Game.Card do
     targeting_type = get_targeting_type(card)
     position_result = Game.Grid.get_object(combat_state.grid, target_position)
 
-    case targeting do
-      %{"rule" => targeting_rule} ->
-        data_context = build_data_context(position_result, combat_state)
-        result = JsonLogic.resolve(targeting_rule, data_context)
+    base_result =
+      case targeting do
+        %{"rule" => targeting_rule} ->
+          data_context = build_data_context(position_result, combat_state)
+          result = JsonLogic.resolve(targeting_rule, data_context)
 
-        if result do
+          if result do
+            case targeting_type do
+              :tile ->
+                {:ok, nil}
+
+              :character ->
+                case position_result do
+                  {:ok, character} when not is_nil(character) -> {:ok, character}
+                  _ -> {:error, "No character at this position"}
+                end
+            end
+          else
+            {:error, "Target does not match targeting rule"}
+          end
+
+        _ ->
           case targeting_type do
             :tile ->
-              {:ok, nil}
+              case position_result do
+                {:ok, _} -> {:ok, nil}
+                _ -> {:error, "Invalid tile position"}
+              end
 
             :character ->
               case position_result do
@@ -488,47 +526,76 @@ defmodule Game.Card do
                 _ -> {:error, "No character at this position"}
               end
           end
+      end
+
+    case base_result do
+      {:ok, _} = ok ->
+        caster = CombatState.get_current_player(combat_state)
+
+        if is_nil(caster) or is_nil(caster.position) do
+          ok
         else
-          {:error, "Target does not match targeting rule"}
+          case validate_mode_constraint(
+                 get_targeting_mode(card),
+                 caster.position,
+                 target_position,
+                 card.range,
+                 combat_state.grid
+               ) do
+            :ok -> ok
+            err -> err
+          end
         end
 
-      _ ->
-        case targeting_type do
-          :tile ->
-            case position_result do
-              {:ok, _} -> {:ok, nil}
-              _ -> {:error, "Invalid tile position"}
-            end
-
-          :character ->
-            case position_result do
-              {:ok, character} when not is_nil(character) -> {:ok, character}
-              _ -> {:error, "No character at this position"}
-            end
-        end
+      err ->
+        err
     end
   end
 
   def is_target_valid_for_character?(
-        %__MODULE__{targeting: targeting} = _card,
+        %__MODULE__{targeting: targeting} = card,
         character,
         combat_state
       ) do
     position_result = {:ok, character}
 
-    case targeting do
-      %{"rule" => targeting_rule} ->
-        data_context = build_data_context(position_result, combat_state)
-        result = JsonLogic.resolve(targeting_rule, data_context)
+    base_result =
+      case targeting do
+        %{"rule" => targeting_rule} ->
+          data_context = build_data_context(position_result, combat_state)
+          result = JsonLogic.resolve(targeting_rule, data_context)
 
-        if result do
+          if result do
+            {:ok, character}
+          else
+            {:error, "Target does not match targeting rule"}
+          end
+
+        _ ->
           {:ok, character}
+      end
+
+    case base_result do
+      {:ok, _} = ok ->
+        caster = CombatState.get_current_player(combat_state)
+
+        if is_nil(caster) or is_nil(caster.position) do
+          ok
         else
-          {:error, "Target does not match targeting rule"}
+          case validate_mode_constraint(
+                 get_targeting_mode(card),
+                 caster.position,
+                 character.position,
+                 card.range,
+                 combat_state.grid
+               ) do
+            :ok -> ok
+            err -> err
+          end
         end
 
-      _ ->
-        {:ok, character}
+      err ->
+        err
     end
   end
 
@@ -548,9 +615,37 @@ defmodule Game.Card do
     }
   end
 
+  defp validate_mode_constraint(:null, _caster_pos, _target_pos, _range, _grid), do: :ok
+  defp validate_mode_constraint(:area, _caster_pos, _target_pos, _range, _grid), do: :ok
+
+  defp validate_mode_constraint(:linear, caster_pos, target_pos, _range, grid) do
+    if Grid.has_linear_path?(grid, caster_pos, target_pos) do
+      :ok
+    else
+      {:error, "No clear line of sight to target"}
+    end
+  end
+
+  defp validate_mode_constraint(:emanation, caster_pos, target_pos, _range, grid) do
+    if Grid.has_linear_path?(grid, caster_pos, target_pos) do
+      :ok
+    else
+      {:error, "No clear line of sight to target"}
+    end
+  end
+
+  defp validate_mode_constraint(:guided, caster_pos, target_pos, range, grid) do
+    case Grid.astar_path_length(grid, caster_pos, target_pos) do
+      {:ok, len} when len <= range -> :ok
+      {:ok, _} -> {:error, "Target is out of guided range"}
+      :unreachable -> {:error, "No walkable path to target"}
+    end
+  end
+
   def build_tile_overlay(%__MODULE__{range: range} = card, combat) when is_integer(range) do
     player = CombatState.get_current_player(combat)
-    in_range = Game.Grid.tiles_in_range(combat.grid, player.position, range)
+    mode = get_targeting_mode(card)
+    in_range = filter_by_mode(mode, combat.grid, player.position, range)
 
     {:ok, state_json} = Jason.encode(combat)
     {:ok, state_map} = Jason.decode(state_json)
@@ -592,6 +687,29 @@ defmodule Game.Card do
   end
 
   def build_tile_overlay(_card, _combat), do: {%{}, %{}}
+
+  defp filter_by_mode(mode, grid, origin, range) when mode in [:null, :area] do
+    Game.Grid.tiles_in_range(grid, origin, range)
+  end
+
+  defp filter_by_mode(mode, grid, origin, range) when mode in [:linear, :emanation] do
+    Game.Grid.tiles_in_range(grid, origin, range)
+    |> Enum.filter(&Game.Grid.has_linear_path?(grid, origin, &1))
+  end
+
+  defp filter_by_mode(:guided, grid, origin, range) do
+    Game.Grid.tiles_in_range(grid, origin, range)
+    |> Enum.filter(fn pos ->
+      case Game.Grid.astar_path_length(grid, origin, pos) do
+        {:ok, len} -> len <= range
+        :unreachable -> false
+      end
+    end)
+  end
+
+  defp filter_by_mode(_mode, grid, origin, range) do
+    Game.Grid.tiles_in_range(grid, origin, range)
+  end
 
   def aoe_radius(%__MODULE__{effects: effects}) when is_list(effects) do
     effects

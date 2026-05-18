@@ -8,12 +8,23 @@ Add a new 3D model (tile variant, map object, or animated character) to the 3D c
 2. **Asset path in the Tigris bucket** — e.g. `characters/Warrior.glb` (relative to the base URL)
 3. **Animation GLB** (characters only) — which animation file and clip name to use by default
 
+## Module structure
+
+The hook delegates to four modules under `assets/js/board/`:
+
+| Module | File | Responsibility |
+|---|---|---|
+| `AssetLoader` | `asset-loader.js` | Loads GLTF tiles, objects, characters, animation clips |
+| `TileLayer` | `tile-layer.js` | Syncs tile/object meshes and emissive highlights |
+| `CharacterLayer` | `character-layer.js` | Syncs character models, drives animation and lerp movement |
+| `BoardCamera` | `board-camera.js` | Orbit/pan/zoom camera controls |
+| *(utils)* | `hex-utils.js` | `hexToWorld`, `meshesOf`, `matteify`, `HIGHLIGHT_COLORS` |
+
 ## Key files
 
 | File | Role |
 |---|---|
-| `assets/js/hooks/ThreeJSBoard.js` | Production 3D board hook — all scene logic lives here |
-| `assets/js/hooks/ThreeJS.js` | Prototype/sandbox hook — mirror changes here too |
+| `assets/js/hooks/ThreeJSBoard.js` | Hook entry point — render loop, hit flash, floating labels, click/hover raycasting |
 | `lib/game_web/live/game_board_3d.ex` | LiveComponent — pushes `init` (assets) and `board_state` to the hook |
 
 ## Serving assets

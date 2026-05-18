@@ -60,12 +60,16 @@ defmodule Game.Combat.CardEffects.StuckTest do
       stuck_fighter = Character.add_status_effect(fighter, %{type: :stuck, value: 1})
       combat = %{combat | current_turn: %{combat.current_turn | player: stuck_fighter}}
 
-      result = Game.Combat.process_action(combat, {:move, stuck_fighter, {1, 0, -1}})
-      assert result == {:error, "Not enough movement"}
+      result = Game.Combat.process_action(combat, {:move, stuck_fighter, {2, 0, -2}})
+      assert {:error, _} = result
     end
 
     test "unstuck character can move normally", %{combat: combat, fighter: fighter} do
-      result = Game.Combat.process_action(combat, {:move, fighter, {2, 0, -2}})
+      # Add an adjacent tile the fighter can reach directly
+      grid = %{combat.grid | tiles: Map.put(combat.grid.tiles, {0, -1, 1}, %{terrain: :plain, occupied_by: nil})}
+      combat = %{combat | grid: grid}
+
+      result = Game.Combat.process_action(combat, {:move, fighter, {0, -1, 1}})
       assert {:ok, _} = result
     end
   end

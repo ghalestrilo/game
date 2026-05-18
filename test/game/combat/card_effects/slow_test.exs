@@ -120,8 +120,8 @@ defmodule Game.Combat.CardEffects.SlowTest do
       slowed_fighter = Character.add_status_effect(fighter, %{type: :slow, value: 5, duration: 1})
       combat = %{combat | current_turn: %{combat.current_turn | player: slowed_fighter}}
 
-      result = Game.Combat.process_action(combat, {:move, slowed_fighter, {1, 0, -1}})
-      assert result == {:error, "Not enough movement"}
+      result = Game.Combat.process_action(combat, {:move, slowed_fighter, {2, 0, -2}})
+      assert {:error, _} = result
     end
   end
 

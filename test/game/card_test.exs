@@ -410,4 +410,275 @@ defmodule Game.CardTest do
       assert updated_target.hp == target.hp - caster.hp
     end
   end
+
+  # Shared helpers for targeting mode tests
+  defp make_card(attrs) do
+    %Card{
+      id: 1,
+      name: "Test Card",
+      cost: 1,
+      range: 3,
+      effects: [%Damage{type: "damage", value: 5}]
+    }
+    |> Map.merge(attrs)
+  end
+
+  defp make_combat(grid, caster) do
+    %CombatState{
+      state: :card_selected,
+      __constants__: %{players: [caster]},
+      queue: [caster],
+      grid: grid,
+      current_turn: %{player: caster, starting_position: caster.position, card: nil}
+    }
+  end
+
+  defp caster_at(pos), do: %Character{id: 0, name: "Caster", team: :ally, position: pos, hp: 10}
+
+  describe "get_targeting_mode/1" do
+    test "returns :null by default when no mode key" do
+      card = make_card(%{targeting: %{"type" => "character"}})
+      assert Card.get_targeting_mode(card) == :null
+    end
+
+    test "returns :null when targeting is nil" do
+      card = make_card(%{targeting: nil})
+      assert Card.get_targeting_mode(card) == :null
+    end
+
+    test "returns :linear" do
+      card = make_card(%{targeting: %{"type" => "tile", "mode" => "linear"}})
+      assert Card.get_targeting_mode(card) == :linear
+    end
+
+    test "returns :guided" do
+      card = make_card(%{targeting: %{"type" => "tile", "mode" => "guided"}})
+      assert Card.get_targeting_mode(card) == :guided
+    end
+
+    test "returns :area" do
+      card = make_card(%{targeting: %{"type" => "tile", "mode" => "area"}})
+      assert Card.get_targeting_mode(card) == :area
+    end
+
+    test "returns :emanation" do
+      card = make_card(%{targeting: %{"type" => "tile", "mode" => "emanation"}})
+      assert Card.get_targeting_mode(card) == :emanation
+    end
+  end
+
+  describe "card_in_range?/4" do
+    test "null mode: true when target within hex distance" do
+      grid = Grid.new({3, 3, 3})
+      card = make_card(%{range: 3, targeting: %{"type" => "tile"}})
+      assert Card.card_in_range?(card, {0, 0, 0}, {2, 0, -2}, grid)
+    end
+
+    test "null mode: false when target beyond hex distance" do
+      grid = Grid.new({4, 4, 4})
+      card = make_card(%{range: 1, targeting: %{"type" => "tile"}})
+      refute Card.card_in_range?(card, {0, 0, 0}, {3, 0, -3}, grid)
+    end
+
+    test "guided mode: true when walkable path fits in range" do
+      grid = Grid.new({3, 3, 3})
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "guided"}})
+      assert Card.card_in_range?(card, {0, 0, 0}, {2, 0, -2}, grid)
+    end
+
+    test "guided mode: false when path length exceeds range" do
+      # Block direct path; detour > range=2
+      grid = Grid.new({3, 3, 3})
+      grid = put_in(grid.tiles[{1, 0, -1}].terrain, :wall)
+      card = make_card(%{range: 2, targeting: %{"type" => "tile", "mode" => "guided"}})
+      refute Card.card_in_range?(card, {0, 0, 0}, {2, 0, -2}, grid)
+    end
+
+    test "guided mode: false when target is unreachable" do
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: nil},
+          {1, 0, -1} => %{terrain: :wall, occupied_by: nil},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
+        }
+      }
+      card = make_card(%{range: 5, targeting: %{"type" => "tile", "mode" => "guided"}})
+      refute Card.card_in_range?(card, {0, 0, 0}, {2, 0, -2}, grid)
+    end
+  end
+
+  describe "is_target_cell_valid? with targeting modes" do
+    test "null mode: any tile in range is valid" do
+      grid = Grid.new({3, 3, 3})
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "tile"}})
+      assert {:ok, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+
+    test "area mode: any tile in range is valid" do
+      grid = Grid.new({3, 3, 3})
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "area"}})
+      assert {:ok, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+
+    test "linear mode: succeeds on clear line" do
+      grid = Grid.new({3, 3, 3})
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "linear"}})
+      assert {:ok, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+
+    test "linear mode: fails when intermediate tile is a wall" do
+      grid = Grid.new({3, 3, 3})
+      grid = put_in(grid.tiles[{1, 0, -1}].terrain, :wall)
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "linear"}})
+      assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+
+    test "linear mode: succeeds when only the target tile has a character" do
+      grid = Grid.new({3, 3, 3})
+      caster = caster_at({0, 0, 0})
+      enemy = %Character{id: 2, name: "Enemy", team: :enemy, position: {2, 0, -2}, hp: 10}
+      grid = Grid.update_character(grid, caster)
+      grid = Grid.update_character(grid, enemy)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "character", "mode" => "linear"}})
+      assert {:ok, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+
+    test "linear mode: fails when intermediate tile has a character" do
+      grid = Grid.new({3, 3, 3})
+      caster = caster_at({0, 0, 0})
+      blocker = %Character{id: 2, name: "Blocker", team: :enemy, position: {1, 0, -1}, hp: 10}
+      enemy = %Character{id: 3, name: "Enemy", team: :enemy, position: {2, 0, -2}, hp: 10}
+      grid = Grid.update_character(grid, caster)
+      grid = Grid.update_character(grid, blocker)
+      grid = Grid.update_character(grid, enemy)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "character", "mode" => "linear"}})
+      assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+
+    test "guided mode: succeeds when walkable path exists within range" do
+      grid = Grid.new({3, 3, 3})
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "guided"}})
+      assert {:ok, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+
+    test "guided mode: fails when path length exceeds range" do
+      grid = Grid.new({3, 3, 3})
+      grid = put_in(grid.tiles[{1, 0, -1}].terrain, :wall)
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 2, targeting: %{"type" => "tile", "mode" => "guided"}})
+      assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+
+    test "guided mode: fails when no path exists" do
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: nil},
+          {1, 0, -1} => %{terrain: :wall, occupied_by: nil},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
+        }
+      }
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 5, targeting: %{"type" => "tile", "mode" => "guided"}})
+      assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+
+    test "guided mode: fails when forced detour exceeds range" do
+      grid = Grid.new({3, 3, 3})
+      grid = put_in(grid.tiles[{1, 0, -1}].terrain, :wall)
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      # hex distance is 2 but detour path is longer than range=2
+      card = make_card(%{range: 2, targeting: %{"type" => "tile", "mode" => "guided"}})
+      assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+
+    test "emanation mode: succeeds when LOS is clear" do
+      grid = Grid.new({3, 3, 3})
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "emanation"}})
+      assert {:ok, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+
+    test "emanation mode: fails when intermediate tile is blocked" do
+      grid = Grid.new({3, 3, 3})
+      grid = put_in(grid.tiles[{1, 0, -1}].terrain, :wall)
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "emanation"}})
+      assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
+    end
+  end
+
+  describe "build_tile_overlay with targeting modes" do
+    test "linear mode excludes tile behind wall from overlay" do
+      grid = Grid.new({3, 3, 3})
+      grid = put_in(grid.tiles[{1, 0, -1}].terrain, :wall)
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      card = make_card(%{
+        range: 3,
+        targeting: %{"type" => "tile", "mode" => "linear", "rule" => %{"!!" => true}}
+      })
+      {overlay, _} = Card.build_tile_overlay(card, combat)
+      # tile behind wall is not included in overlay (filtered out by LOS)
+      refute Map.has_key?(overlay, {2, 0, -2})
+      # unobstructed adjacent tile is in overlay and valid
+      assert Map.get(overlay, {1, -1, 0}) == :valid
+    end
+
+    test "emanation mode excludes wall-shadowed tiles from overlay" do
+      grid = Grid.new({3, 3, 3})
+      grid = put_in(grid.tiles[{1, 0, -1}].terrain, :wall)
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      card = make_card(%{
+        range: 3,
+        targeting: %{"type" => "tile", "mode" => "emanation", "rule" => %{"!!" => true}}
+      })
+      {overlay, _} = Card.build_tile_overlay(card, combat)
+      refute Map.has_key?(overlay, {2, 0, -2})
+    end
+
+    test "guided mode excludes tile beyond path-range from overlay" do
+      grid = Grid.new({3, 3, 3})
+      grid = put_in(grid.tiles[{1, 0, -1}].terrain, :wall)
+      caster = caster_at({0, 0, 0})
+      grid = Grid.update_character(grid, caster)
+      combat = make_combat(grid, caster)
+      # range=2, but detour to {2,0,-2} requires >2 steps
+      card = make_card(%{
+        range: 2,
+        targeting: %{"type" => "tile", "mode" => "guided", "rule" => %{"!!" => true}}
+      })
+      {overlay, _} = Card.build_tile_overlay(card, combat)
+      refute Map.has_key?(overlay, {2, 0, -2})
+    end
+  end
 end

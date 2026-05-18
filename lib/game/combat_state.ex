@@ -357,6 +357,7 @@ defmodule Game.CombatState do
   end
 
   def get_current_player(%{current_turn: %{player: player}}), do: player
+  def get_current_player(_), do: nil
   def get_current_turn(%{current_turn: turn}), do: turn
 
   def get_current_queue(%CombatState{current_turn: %{player: player}, queue: queue}) do

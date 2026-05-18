@@ -165,6 +165,108 @@ defmodule Game.Grid do
     end)
   end
 
+  @doc """
+  Returns true if there is an unobstructed straight-line hex ray from `from_pos` to `to_pos`.
+  Intermediate tiles must not be blocked; the target tile itself is not checked
+  (a character may occupy it). Returns true when from_pos == to_pos.
+  """
+  @spec has_linear_path?(Grid.t(), {integer, integer, integer}, {integer, integer, integer}) ::
+          boolean()
+  def has_linear_path?(%Grid{} = grid, from_pos, to_pos) do
+    n = distance(grid, from_pos, to_pos)
+
+    if n == 0 do
+      true
+    else
+      {q1, r1, s1} = from_pos
+      {q2, r2, s2} = to_pos
+
+      # Start at 1 to skip the caster's own tile (always passable)
+      Enum.all?(1..(n - 1)//1, fn i ->
+        t = i / n
+        fq = q1 + (q2 - q1) * t
+        fr = r1 + (r2 - r1) * t
+        fs = s1 + (s2 - s1) * t
+        pos = cube_round(fq, fr, fs)
+        not tile_blocked?(grid, pos)
+      end)
+    end
+  end
+
+  @doc """
+  Returns `{:ok, length}` where length is the number of steps in the shortest walkable
+  A* path from `from_pos` to `to_pos`. Blocked tiles are impassable except the target tile
+  itself (a character may occupy it). Returns `:unreachable` if no path exists.
+  """
+  @spec astar_path_length(Grid.t(), {integer, integer, integer}, {integer, integer, integer}) ::
+          {:ok, non_neg_integer()} | :unreachable
+  def astar_path_length(%Grid{} = grid, from_pos, to_pos) do
+    if from_pos == to_pos do
+      {:ok, 0}
+    else
+      h = fn pos -> distance(grid, pos, to_pos) end
+      open = :gb_sets.singleton({h.(from_pos), 0, from_pos})
+      g_score = %{from_pos => 0}
+      do_astar(grid, to_pos, open, g_score, h)
+    end
+  end
+
+  defp do_astar(grid, to_pos, open, g_score, h) do
+    if :gb_sets.is_empty(open) do
+      :unreachable
+    else
+      {{_f, g, current}, open} = :gb_sets.take_smallest(open)
+
+      if current == to_pos do
+        {:ok, g}
+      else
+        {q, r, s} = current
+
+        {open, g_score} =
+          Enum.reduce(@hex_directions, {open, g_score}, fn {dq, dr, ds}, {open_acc, gs_acc} ->
+            neighbor = {q + dq, r + dr, s + ds}
+
+            passable =
+              Map.has_key?(grid.tiles, neighbor) and
+                (neighbor == to_pos or not tile_blocked?(grid, neighbor))
+
+            if passable do
+              tentative_g = g + 1
+
+              if tentative_g < Map.get(gs_acc, neighbor, :infinity) do
+                gs_acc = Map.put(gs_acc, neighbor, tentative_g)
+                f = tentative_g + h.(neighbor)
+                open_acc = :gb_sets.add({f, tentative_g, neighbor}, open_acc)
+                {open_acc, gs_acc}
+              else
+                {open_acc, gs_acc}
+              end
+            else
+              {open_acc, gs_acc}
+            end
+          end)
+
+        do_astar(grid, to_pos, open, g_score, h)
+      end
+    end
+  end
+
+  defp cube_round(fq, fr, fs) do
+    rq = round(fq)
+    rr = round(fr)
+    rs = round(fs)
+
+    dq = abs(rq - fq)
+    dr = abs(rr - fr)
+    ds = abs(rs - fs)
+
+    cond do
+      dq > dr and dq > ds -> {-rr - rs, rr, rs}
+      dr > ds -> {rq, -rq - rs, rs}
+      true -> {rq, rr, -rq - rr}
+    end
+  end
+
   defimpl Jason.Encoder, for: Game.Grid do
     def encode(%{tiles: tiles}, opts) do
       tiles_with_string_keys =
