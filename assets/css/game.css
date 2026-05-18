@@ -1,5 +1,25 @@
 @source inline("hero-{wifi,sparkles,trash,gift,arrow-path-rounded-square,adjustments-horizontal,arrows-pointing-out,heart,fire,no-symbol,bolt-slash,arrow-down,arrow-up,rectangle-stack,shield-check,eye-slash,user-plus,cube-transparent}-solid");
 
+@keyframes float-up-3d {
+  0%   { opacity: 1;   transform: translateY(0); }
+  30%  { opacity: 1;   transform: translateY(-24px); }
+  100% { opacity: 0;   transform: translateY(-48px); }
+}
+
+.float-label-3d {
+  font-size: 1rem;
+  font-weight: 800;
+  pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  animation: float-up-3d 0.9s ease-out forwards;
+  white-space: nowrap;
+  user-select: none;
+}
+.float-label-3d.red    { color: #ef4444; }
+.float-label-3d.green  { color: #22c55e; }
+.float-label-3d.blue   { color: #60a5fa; }
+.float-label-3d.yellow { color: #fbbf24; }
+
 @keyframes float-up {
   0%   { opacity: 1; translate: -50% 0; }
   25%   { opacity: 1; translate: -50% -1.6rem; }

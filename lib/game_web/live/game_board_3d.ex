@@ -97,13 +97,13 @@ defmodule GameWeb.GameBoard3D do
   def render(assigns) do
     ~H"""
     <div
-      class="flex-1 relative overflow-hidden"
+      class="flex-1 relative"
       style="background: url('/images/low-poly-blue-sky.svg') center center / cover no-repeat;"
     >
       <div
         id="game-board-3d"
         phx-hook="ThreeJSBoard"
-        style="width: 100%; height: 100%;"
+        style="width: 100%; height: 100%; position: relative;"
       >
       </div>
     </div>

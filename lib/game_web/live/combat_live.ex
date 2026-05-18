@@ -23,7 +23,7 @@ defmodule GameWeb.CombatLive do
       />
 
       <!-- Game area -->
-      <div class="flex-1 flex flex-col overflow-hidden">
+      <div class="flex-1 flex flex-col">
         <%= if @game_state do %>
           <.live_component
             module={if(@render_3d, do: GameWeb.GameBoard3D, else: GameWeb.GameBoard)}
