@@ -208,6 +208,8 @@ defmodule Game.LobbyServer do
       combat = Game.CombatBuilder.build(specs, settings: state.settings)
       {:ok, game_pid} = Game.start_link()
       boosters = get_in(state, [:settings, :boosters]) || 0
+      booster_size = get_in(state, [:settings, :booster_size]) || 5
+      deck_picks = get_in(state, [:settings, :deck_picks]) || 1
       initial_view = if boosters > 0, do: :booster, else: :combat
 
       # Per-player booster state: each player gets their own independent pack countdown and card list.
@@ -215,8 +217,8 @@ defmodule Game.LobbyServer do
 
       booster_state =
         Map.new(player_ids, fn id ->
-          cards = if boosters > 0, do: Game.generate_booster_cards(5), else: []
-          {id, %{remaining: boosters, cards: cards}}
+          cards = if boosters > 0, do: Game.generate_booster_cards(booster_size), else: []
+          {id, %{remaining: boosters, picks_remaining: deck_picks, cards: cards}}
         end)
 
       :ok =

@@ -116,6 +116,7 @@ defmodule GameWeb.CombatHUD do
             id="discard-pile-modal"
             title="Discard Pile"
             cards={@game_state.combat.current_turn.player.cards.discard}
+            ordered={true}
             on_cancel={hide_modal("discard-pile-modal")}
           />
         </div>

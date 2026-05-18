@@ -295,6 +295,32 @@ defmodule GameWeb.LobbyLiveTest do
       set_boosters(lobby_view1, 3)
       assert render(lobby_view2) =~ "3"
     end
+
+    test "host sees booster_size and deck_picks inputs, non-host sees read-only badges", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      assert lobby_view1 |> element("form[phx-change='set_booster_size']") |> has_element?()
+      assert lobby_view1 |> element("form[phx-change='set_deck_picks']") |> has_element?()
+      refute lobby_view2 |> element("form[phx-change='set_booster_size']") |> has_element?()
+      refute lobby_view2 |> element("form[phx-change='set_deck_picks']") |> has_element?()
+    end
+
+    test "setting booster_size broadcasts to all players", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      set_booster_size(lobby_view1, 3)
+      assert render(lobby_view2) =~ "3"
+    end
+
+    test "setting deck_picks broadcasts to all players", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2
+    } do
+      set_deck_picks(lobby_view1, 2)
+      assert render(lobby_view2) =~ "2"
+    end
   end
 
   describe "LobbyLive - booster packs in-game" do
@@ -392,6 +418,48 @@ defmodule GameWeb.LobbyLiveTest do
 
       assert cards_after == cards_before + 2,
              "Expected #{cards_before + 2} cards after 2 boosters, got #{cards_after}"
+    end
+  end
+
+  describe "LobbyLive - deck_picks parameterization" do
+    setup :two_players_in_lobby_with_deck_picks
+
+    test "pack stays open until deck_picks cards have been selected", %{
+      game_view1: game_view1,
+      game_pid: game_pid,
+      user1: user1
+    } do
+      state_before = Game.get_state(game_pid)
+
+      player1_id =
+        Enum.find(Map.keys(state_before.booster_state), &(to_string(&1) == to_string(user1.id)))
+
+      # First pick — remaining should still be 1 (pack not yet closed)
+      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
+
+      state_after_first = Game.get_state(game_pid)
+      assert state_after_first.booster_state[player1_id].remaining == 1
+
+      # Second pick — pack closes, remaining decrements to 0
+      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
+
+      state_after_second = Game.get_state(game_pid)
+      assert state_after_second.booster_state[player1_id].remaining == 0
+    end
+
+    test "booster_size setting is passed through to the initial pack", %{
+      game_pid: game_pid,
+      user1: user1
+    } do
+      state = Game.get_state(game_pid)
+
+      player1_id =
+        Enum.find(Map.keys(state.booster_state), &(to_string(&1) == to_string(user1.id)))
+
+      # booster_size: 3 was set; pack should contain at most 3 cards (may be fewer if
+      # fewer base cards exist in the test DB, but never more than the configured size)
+      assert length(state.booster_state[player1_id].cards) <= 3
+      assert state.settings.booster_size == 3
     end
   end
 
@@ -516,6 +584,18 @@ defmodule GameWeb.LobbyLiveTest do
     view
     |> element("form[phx-change='set_boosters']")
     |> render_change(%{"boosters" => to_string(count)})
+  end
+
+  defp set_booster_size(view, size) do
+    view
+    |> element("form[phx-change='set_booster_size']")
+    |> render_change(%{"booster_size" => to_string(size)})
+  end
+
+  defp set_deck_picks(view, picks) do
+    view
+    |> element("form[phx-change='set_deck_picks']")
+    |> render_change(%{"deck_picks" => to_string(picks)})
   end
 
   defp set_map(view, slug) do
@@ -686,6 +766,41 @@ defmodule GameWeb.LobbyLiveTest do
       {:ok, game_view, _} = live(conn1, path)
       assert game_view |> element("#game-board-3d") |> has_element?()
     end
+  end
+
+  defp two_players_in_lobby_with_deck_picks(context) do
+    base = two_players_in_lobby(context)
+    %{lobby_view1: lobby_view1, lobby_view2: lobby_view2, conn1: conn1, conn2: conn2} = base
+
+    set_boosters(lobby_view1, 1)
+    set_booster_size(lobby_view1, 3)
+    set_deck_picks(lobby_view1, 2)
+
+    lobby_view1
+    |> element("form[phx-change='select_class']")
+    |> render_change(%{"class" => "fighter"})
+
+    lobby_view2
+    |> element("form[phx-change='select_class']")
+    |> render_change(%{"class" => "fighter"})
+
+    lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()
+    lobby_view2 |> element("button[phx-click='toggle_ready']") |> render_click()
+
+    {play_path1, _} = assert_redirect(lobby_view1)
+    {play_path2, _} = assert_redirect(lobby_view2)
+
+    {:ok, game_view1, _} = live(conn1, play_path1)
+    {:ok, game_view2, _} = live(conn2, play_path2)
+
+    lobby_id = play_path1 |> String.split("/") |> Enum.at(-2)
+    {:ok, %{game_pid: game_pid}} = Game.Lobby.get(lobby_id)
+
+    Map.merge(base, %{
+      game_view1: game_view1,
+      game_view2: game_view2,
+      game_pid: game_pid
+    })
   end
 
   defp two_players_in_lobby(context) do

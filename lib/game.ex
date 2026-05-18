@@ -254,14 +254,24 @@ defmodule Game do
     }
 
     # Update this player's per-player booster countdown.
-    player_booster = Map.get(state.booster_state, player_id, %{remaining: 1, cards: []})
-    remaining = player_booster.remaining - 1
+    booster_size = get_in(state, [:settings, :booster_size]) || 5
+    deck_picks = get_in(state, [:settings, :deck_picks]) || 1
+    player_booster = Map.get(state.booster_state, player_id, %{remaining: 1, picks_remaining: deck_picks, cards: []})
+    picks_remaining = (player_booster[:picks_remaining] || deck_picks) - 1
 
     next_player_booster =
-      if remaining > 0 do
-        %{remaining: remaining, cards: generate_booster_cards(5)}
+      if picks_remaining > 0 do
+        # Still picks left in this pack — keep the same pack open
+        %{player_booster | picks_remaining: picks_remaining}
       else
-        %{remaining: 0, cards: []}
+        # Pack exhausted — open next pack or close out
+        remaining = player_booster.remaining - 1
+
+        if remaining > 0 do
+          %{remaining: remaining, picks_remaining: deck_picks, cards: generate_booster_cards(booster_size)}
+        else
+          %{remaining: 0, picks_remaining: 0, cards: []}
+        end
       end
 
     new_booster_state = Map.put(state.booster_state, player_id, next_player_booster)

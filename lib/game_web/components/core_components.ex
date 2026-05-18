@@ -733,6 +733,7 @@ defmodule GameWeb.CoreComponents do
   attr :title, :string, default: "Cards"
   attr :subtitle, :string, default: nil
   attr :cards, :list, required: true
+  attr :ordered, :boolean, default: false
   attr :selectable, :boolean, default: false
   attr :on_select, :string, default: "select_card"
   attr :on_cancel, JS, default: %JS{}
@@ -741,6 +742,8 @@ defmodule GameWeb.CoreComponents do
   slot :inner_block, required: false
 
   def card_modal(assigns) do
+    assigns = assign(assigns, :displayed_cards, if(assigns.ordered, do: assigns.cards, else: Enum.shuffle(assigns.cards)))
+
     ~H"""
     <.modal id={@id} show={@show} on_cancel={@on_cancel} class="!max-w-none">
       <div class="flex flex-col gap-4">
@@ -752,7 +755,7 @@ defmodule GameWeb.CoreComponents do
         <div class="overflow-y-auto max-h-[65vh]">
           <div class="flex flex-wrap gap-4 justify-center py-4">
             <.card
-              :for={{card, index} <- Enum.with_index(@cards)}
+              :for={{card, index} <- Enum.with_index(@displayed_cards)}
               card={card}
               index={index}
               selected={@selected_index == index}

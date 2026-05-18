@@ -90,6 +90,26 @@ defmodule GameWeb.LobbyLive do
   end
 
   @impl true
+  def handle_event("set_booster_size", %{"booster_size" => value}, socket) do
+    size = value |> String.to_integer() |> max(1)
+
+    case Lobby.set_setting(socket.assigns.lobby_id, :booster_size, size) do
+      {:ok, lobby_state} -> {:noreply, assign(socket, lobby: lobby_state)}
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("set_deck_picks", %{"deck_picks" => value}, socket) do
+    picks = value |> String.to_integer() |> max(1)
+
+    case Lobby.set_setting(socket.assigns.lobby_id, :deck_picks, picks) do
+      {:ok, lobby_state} -> {:noreply, assign(socket, lobby: lobby_state)}
+      _ -> {:noreply, socket}
+    end
+  end
+
+  @impl true
   def handle_event("set_render_3d", params, socket) do
     render_3d = Map.has_key?(params, "render_3d")
 
@@ -181,6 +201,8 @@ defmodule GameWeb.LobbyLive do
             </div>
             <% is_host = hd(@lobby.players).id == @current_user_id %>
             <% boosters = get_in(@lobby, [:settings, :boosters]) || 0 %>
+            <% booster_size = get_in(@lobby, [:settings, :booster_size]) || 5 %>
+            <% deck_picks = get_in(@lobby, [:settings, :deck_picks]) || 1 %>
             <ul class="flex flex-col items-start gap-2">
               <h2 class="text-xl font-semibold">Lobby Settings</h2>
               <span class="flex w-full items-center justify-between">
@@ -198,6 +220,40 @@ defmodule GameWeb.LobbyLive do
                   </form>
                 <% else %>
                   <span class="badge badge-lg">{boosters}</span>
+                <% end %>
+              </span>
+              <span class="flex w-full items-center justify-between">
+                <label class="text-lg">Cards per booster:</label>
+                <%= if is_host do %>
+                  <form phx-change="set_booster_size">
+                    <input
+                      type="number"
+                      name="booster_size"
+                      value={booster_size}
+                      min="1"
+                      max="20"
+                      class="input input-lg input-bordered w-20"
+                    />
+                  </form>
+                <% else %>
+                  <span class="badge badge-lg">{booster_size}</span>
+                <% end %>
+              </span>
+              <span class="flex w-full items-center justify-between">
+                <label class="text-lg">Picks per booster:</label>
+                <%= if is_host do %>
+                  <form phx-change="set_deck_picks">
+                    <input
+                      type="number"
+                      name="deck_picks"
+                      value={deck_picks}
+                      min="1"
+                      max="20"
+                      class="input input-lg input-bordered w-20"
+                    />
+                  </form>
+                <% else %>
+                  <span class="badge badge-lg">{deck_picks}</span>
                 <% end %>
               </span>
               <% selected_map = get_in(@lobby, [:settings, :map]) || "" %>
