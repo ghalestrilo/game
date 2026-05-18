@@ -29,6 +29,14 @@ defmodule Game.Card do
 
   def effect_types, do: @effect_types
 
+  @rarity_order %{common: 0, uncommon: 1, rare: 2, legendary: 3}
+
+  def sort_by_rarity(cards) do
+    Enum.sort_by(cards, fn card ->
+      {Map.get(@rarity_order, card.rarity, 99), card.name}
+    end, :desc)
+  end
+
   defstruct [
     :id,
     :base_card_id,

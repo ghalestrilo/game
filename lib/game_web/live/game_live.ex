@@ -454,7 +454,8 @@ defmodule GameWeb.GameLive do
             show={true}
             title="Booster Pack"
             subtitle={"Pick a card to add to your deck — #{my_booster && my_booster.remaining || 0} pack(s) remaining"}
-            cards={(my_booster && my_booster.cards) || []}
+            cards={Game.Card.sort_by_rarity((my_booster && my_booster.cards) || [])}
+            ordered={true}
             selectable={true}
             on_select="pick_booster_card"
           >
