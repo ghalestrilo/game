@@ -367,7 +367,7 @@ defmodule GameWeb.GameLive do
         else: socket.assigns.game_state.combat.current_turn.player.id
 
     my_booster = get_in(socket.assigns.game_state, [:booster_state, player_id])
-    card = my_booster && Enum.at(my_booster.cards, String.to_integer(idx))
+    card = my_booster && Enum.at(Game.Card.sort_by_rarity(my_booster.cards), String.to_integer(idx))
 
     if card do
       {:ok, new_state} = Game.pick_booster_card(socket.assigns.game_pid, player_id, card)
@@ -453,7 +453,7 @@ defmodule GameWeb.GameLive do
             id="booster-modal"
             show={true}
             title="Booster Pack"
-            subtitle={"Pick a card to add to your deck — #{my_booster && my_booster.remaining || 0} pack(s) remaining"}
+            subtitle={"Pick a card — #{my_booster && length(my_booster.cards) || 0} cards left in this pack"}
             cards={Game.Card.sort_by_rarity((my_booster && my_booster.cards) || [])}
             ordered={true}
             selectable={true}

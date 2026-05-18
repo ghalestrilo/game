@@ -259,10 +259,12 @@ defmodule Game do
     player_booster = Map.get(state.booster_state, player_id, %{remaining: 1, picks_remaining: deck_picks, cards: []})
     picks_remaining = (player_booster[:picks_remaining] || deck_picks) - 1
 
+    remaining_cards = List.delete(player_booster.cards, card)
+
     next_player_booster =
       if picks_remaining > 0 do
-        # Still picks left in this pack — keep the same pack open
-        %{player_booster | picks_remaining: picks_remaining}
+        # Still picks left in this pack — remove picked card, keep pack open
+        %{player_booster | picks_remaining: picks_remaining, cards: remaining_cards}
       else
         # Pack exhausted — open next pack or close out
         remaining = player_booster.remaining - 1

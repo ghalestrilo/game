@@ -336,14 +336,25 @@ defmodule GameWeb.LobbyLiveTest do
 
     test "picking a booster card does not advance the other player's booster", %{
       game_view1: game_view1,
-      game_view2: game_view2
+      game_view2: game_view2,
+      game_pid: game_pid,
+      user1: user1,
+      user2: user2
     } do
-      # Player 1 picks from their booster (2 packs configured, so 1 remaining after pick)
-      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
-      assert render(game_view1) =~ "1 pack(s) remaining"
+      state_before = Game.get_state(game_pid)
+      p2_id = Enum.find(Map.keys(state_before.booster_state), &(to_string(&1) == to_string(user2.id)))
+      p2_remaining_before = state_before.booster_state[p2_id].remaining
 
-      # Player 2's booster is unaffected — still on their first pack (2 remaining)
-      assert render(game_view2) =~ "2 pack(s) remaining"
+      # Player 1 picks — pack closes (deck_picks default 1), remaining goes from 2 to 1
+      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
+
+      state_after = Game.get_state(game_pid)
+      p1_id = Enum.find(Map.keys(state_after.booster_state), &(to_string(&1) == to_string(user1.id)))
+      assert state_after.booster_state[p1_id].remaining == 1
+
+      # Player 2's remaining is untouched
+      assert state_after.booster_state[p2_id].remaining == p2_remaining_before
+      assert render(game_view2) =~ "Booster Pack"
     end
 
     @tag booster_count: 1
@@ -418,6 +429,79 @@ defmodule GameWeb.LobbyLiveTest do
 
       assert cards_after == cards_before + 2,
              "Expected #{cards_before + 2} cards after 2 boosters, got #{cards_after}"
+    end
+  end
+
+  describe "LobbyLive - correct card identity and pack display" do
+    setup :two_players_in_lobby_with_large_booster
+
+    test "the exact card at the clicked index is added to the deck", %{
+      game_view1: game_view1,
+      game_pid: game_pid,
+      user1: user1
+    } do
+      state = Game.get_state(game_pid)
+
+      player1_id =
+        Enum.find(Map.keys(state.booster_state), &(to_string(&1) == to_string(user1.id)))
+
+      # The booster modal renders cards sorted by rarity; pick index 0 (first displayed card)
+      displayed_cards = Game.Card.sort_by_rarity(state.booster_state[player1_id].cards)
+      expected_card_name = hd(displayed_cards).name
+
+      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
+
+      state_after = Game.get_state(game_pid)
+
+      player1_after =
+        Enum.find(state_after.combat.__constants__.players, &(to_string(&1.id) == to_string(player1_id)))
+
+      added = List.last(player1_after.cards.draw)
+      assert added.name == expected_card_name,
+             "Expected #{expected_card_name} to be added but got #{added && added.name}"
+    end
+
+    test "picked card is removed from the booster pack", %{
+      game_view1: game_view1,
+      game_pid: game_pid,
+      user1: user1
+    } do
+      state = Game.get_state(game_pid)
+
+      player1_id =
+        Enum.find(Map.keys(state.booster_state), &(to_string(&1) == to_string(user1.id)))
+
+      cards_before = state.booster_state[player1_id].cards
+      displayed_before = Game.Card.sort_by_rarity(cards_before)
+      picked_name = hd(displayed_before).name
+
+      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
+
+      state_after = Game.get_state(game_pid)
+
+      # Still in booster phase (deck_picks: 2, only 1 pick done)
+      remaining_cards = state_after.booster_state[player1_id].cards
+      refute Enum.any?(remaining_cards, &(&1.name == picked_name)),
+             "Picked card #{picked_name} should have been removed from the pack"
+      assert length(remaining_cards) == length(cards_before) - 1
+    end
+
+    test "booster subtitle reflects cards remaining in the current pack", %{
+      game_view1: game_view1,
+      game_pid: game_pid,
+      user1: user1
+    } do
+      state = Game.get_state(game_pid)
+
+      player1_id =
+        Enum.find(Map.keys(state.booster_state), &(to_string(&1) == to_string(user1.id)))
+
+      initial_count = length(state.booster_state[player1_id].cards)
+      assert render(game_view1) =~ "#{initial_count} cards left"
+
+      game_view1 |> element("[phx-value-card_index='0']") |> render_click()
+
+      assert render(game_view1) =~ "#{initial_count - 1} cards left"
     end
   end
 
@@ -766,6 +850,54 @@ defmodule GameWeb.LobbyLiveTest do
       {:ok, game_view, _} = live(conn1, path)
       assert game_view |> element("#game-board-3d") |> has_element?()
     end
+  end
+
+  defp two_players_in_lobby_with_large_booster(context) do
+    base = two_players_in_lobby(context)
+    %{lobby_view1: lobby_view1, lobby_view2: lobby_view2, conn1: conn1, conn2: conn2} = base
+
+    # Seed 10 uniquely-named cards with varied rarities so sorting is exercised
+    rarities = [:common, :uncommon, :rare, :legendary]
+
+    for i <- 1..10 do
+      Game.BaseCards.create_base_card(%{
+        name: "BoosterCard#{i}",
+        headline: "Test card #{i}",
+        ap: 1,
+        effects: [%{type: "damage", value: "#{i}"}],
+        rarity: Enum.at(rarities, rem(i - 1, 4))
+      })
+    end
+
+    set_boosters(lobby_view1, 1)
+    set_booster_size(lobby_view1, 10)
+    set_deck_picks(lobby_view1, 2)
+
+    lobby_view1
+    |> element("form[phx-change='select_class']")
+    |> render_change(%{"class" => "fighter"})
+
+    lobby_view2
+    |> element("form[phx-change='select_class']")
+    |> render_change(%{"class" => "fighter"})
+
+    lobby_view1 |> element("button[phx-click='toggle_ready']") |> render_click()
+    lobby_view2 |> element("button[phx-click='toggle_ready']") |> render_click()
+
+    {play_path1, _} = assert_redirect(lobby_view1)
+    {play_path2, _} = assert_redirect(lobby_view2)
+
+    {:ok, game_view1, _} = live(conn1, play_path1)
+    {:ok, game_view2, _} = live(conn2, play_path2)
+
+    lobby_id = play_path1 |> String.split("/") |> Enum.at(-2)
+    {:ok, %{game_pid: game_pid}} = Game.Lobby.get(lobby_id)
+
+    Map.merge(base, %{
+      game_view1: game_view1,
+      game_view2: game_view2,
+      game_pid: game_pid
+    })
   end
 
   defp two_players_in_lobby_with_deck_picks(context) do
