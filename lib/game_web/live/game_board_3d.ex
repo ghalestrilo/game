@@ -194,10 +194,11 @@ defmodule GameWeb.GameBoard3D do
         turn[:movement_remaining] ||
           Game.Character.effective_attribute(player, "movement_range")
 
-      case Game.Grid.astar_path_length(combat.grid, player.position, coord) do
-        {:ok, len} -> len <= movement_remaining
-        :unreachable -> false
-      end
+      not Game.Grid.tile_blocked?(combat.grid, coord) and
+        case Game.Grid.astar_path_length(combat.grid, player.position, coord) do
+          {:ok, len} -> len <= movement_remaining
+          :unreachable -> false
+        end
     end
   end
 
