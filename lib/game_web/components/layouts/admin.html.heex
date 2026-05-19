@@ -37,6 +37,9 @@
     <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/strategies"}>
       <Backpex.HTML.CoreComponents.icon name="hero-squares-2x2" class="size-5" /> Strategies
     </Backpex.HTML.Layout.sidebar_item>
+    <Backpex.HTML.Layout.sidebar_item current_url={@current_url} navigate={~p"/admin/maps"}>
+      <Backpex.HTML.CoreComponents.icon name="hero-squares-2x2" class="size-5" /> Maps
+    </Backpex.HTML.Layout.sidebar_item>
   </:sidebar>
   <Backpex.HTML.Layout.flash_messages flash={@flash} />
   {render_slot(@inner_block)}

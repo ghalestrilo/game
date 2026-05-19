@@ -58,6 +58,7 @@ defmodule GameWeb.Admin.Fields.EffectField do
       |> assign(:params, params)
       |> assign(:value_map, value_map)
       |> assign(:field_base, "#{assigns.form[assigns.name].name}")
+      |> assign(:modifiable_attributes, @modifiable_attributes)
 
     ~H"""
     <div class="flex flex-col gap-2">
@@ -85,6 +86,17 @@ defmodule GameWeb.Admin.Fields.EffectField do
                     selected={pile == to_string(Map.get(@value_map, "pile", "hand"))}
                   >
                     {pile}
+                  </option>
+                <% end %>
+              </select>
+            <% param == "trajectory" -> %>
+              <select name={"#{@field_base}[trajectory][value]"} class="select select-sm w-full">
+                <%= for trajectory <- ["slide", "linear", "null"] do %>
+                  <option
+                    value={trajectory}
+                    selected={trajectory == to_string(Map.get(@value_map, "trajectory", "slide"))}
+                  >
+                    {trajectory}
                   </option>
                 <% end %>
               </select>

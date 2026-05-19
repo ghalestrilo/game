@@ -3,7 +3,7 @@ defmodule Game.Combat.CardEffects.Move do
   alias Game.{Character, Grid}
 
   @derive Jason.Encoder
-  defstruct type: :move, angle: 0, distance: 1, value_label: nil
+  defstruct type: :move, angle: 0, distance: 1, value_label: nil, trajectory: nil
 
   @type t() :: %__MODULE__{
           type: atom(),
@@ -14,6 +14,44 @@ defmodule Game.Combat.CardEffects.Move do
 
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Move
+
+    def process(%Move{angle: angle, distance: distance, trajectory: trajectory}, target, %CombatState{} = combat_state)
+        when not is_nil(angle) and is_integer(angle) and trajectory in [:linear, "linear"] do
+      grid = combat_state.grid
+      {dq, dr, ds} = Grid.direction_from_angle(angle)
+      {tq, tr, ts} = target.position
+      dest = {tq + dq * distance, tr + dr * distance, ts + ds * distance}
+
+      if Grid.has_linear_path?(grid, target.position, dest) and
+           Map.has_key?(grid.tiles, dest) and
+           not Grid.tile_blocked?(grid, dest) do
+        new_grid = Grid.update_position(grid, target, target.position, dest)
+        new_target = Character.move(target, dest)
+        combat_state
+        |> CombatState.update_target(target, new_target)
+        |> Map.put(:grid, new_grid)
+      else
+        combat_state
+      end
+    end
+
+    def process(%Move{angle: angle, distance: distance, trajectory: trajectory}, target, %CombatState{} = combat_state)
+        when not is_nil(angle) and is_integer(angle) and trajectory in [:null, "null"] do
+      grid = combat_state.grid
+      {dq, dr, ds} = Grid.direction_from_angle(angle)
+      {tq, tr, ts} = target.position
+      dest = {tq + dq * distance, tr + dr * distance, ts + ds * distance}
+
+      if Map.has_key?(grid.tiles, dest) do
+        new_grid = Grid.update_position(grid, target, target.position, dest)
+        new_target = Character.move(target, dest)
+        combat_state
+        |> CombatState.update_target(target, new_target)
+        |> Map.put(:grid, new_grid)
+      else
+        combat_state
+      end
+    end
 
     def process(%Move{angle: angle, distance: distance}, target, %CombatState{} = combat_state)
         when not is_nil(angle) and is_integer(angle) do
@@ -84,6 +122,6 @@ defmodule Game.Combat.CardEffects.Move do
 
     def animate(%Move{}), do: %{label: "MOVE", color: :blue}
 
-    def params(_), do: ["angle", "distance"]
+    def params(_), do: ["angle", "distance", "trajectory"]
   end
 end
