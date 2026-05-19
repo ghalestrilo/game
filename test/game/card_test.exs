@@ -569,6 +569,42 @@ defmodule Game.CardTest do
       assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
 
+    test "linear mode: is_target_valid_for_character? succeeds on clear line" do
+      grid = Grid.new({3, 3, 3})
+      caster = caster_at({0, 0, 0})
+      enemy = %Character{id: 2, name: "Enemy", team: :enemy, position: {2, 0, -2}, hp: 10}
+      grid = Grid.update_character(grid, caster)
+      grid = Grid.update_character(grid, enemy)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "character", "mode" => "linear"}})
+      assert {:ok, _} = Card.is_target_valid_for_character?(card, enemy, combat)
+    end
+
+    test "linear mode: is_target_valid_for_character? fails when a wall blocks the path" do
+      grid = Grid.new({3, 3, 3})
+      grid = put_in(grid.tiles[{1, 0, -1}].terrain, :wall)
+      caster = caster_at({0, 0, 0})
+      enemy = %Character{id: 2, name: "Enemy", team: :enemy, position: {2, 0, -2}, hp: 10}
+      grid = Grid.update_character(grid, caster)
+      grid = Grid.update_character(grid, enemy)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "character", "mode" => "linear"}})
+      assert {:error, _} = Card.is_target_valid_for_character?(card, enemy, combat)
+    end
+
+    test "linear mode: is_target_valid_for_character? fails when a character blocks the path" do
+      grid = Grid.new({3, 3, 3})
+      caster = caster_at({0, 0, 0})
+      blocker = %Character{id: 2, name: "Blocker", team: :ally, position: {1, 0, -1}, hp: 10}
+      enemy = %Character{id: 3, name: "Enemy", team: :enemy, position: {2, 0, -2}, hp: 10}
+      grid = Grid.update_character(grid, caster)
+      grid = Grid.update_character(grid, blocker)
+      grid = Grid.update_character(grid, enemy)
+      combat = make_combat(grid, caster)
+      card = make_card(%{range: 3, targeting: %{"type" => "character", "mode" => "linear"}})
+      assert {:error, _} = Card.is_target_valid_for_character?(card, enemy, combat)
+    end
+
     test "guided mode: succeeds when walkable path exists within range" do
       grid = Grid.new({3, 3, 3})
       caster = caster_at({0, 0, 0})
