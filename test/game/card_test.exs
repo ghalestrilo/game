@@ -435,35 +435,35 @@ defmodule Game.CardTest do
 
   defp caster_at(pos), do: %Character{id: 0, name: "Caster", team: :ally, position: pos, hp: 10}
 
-  describe "get_targeting_mode/1" do
+  describe "get_trajectory_type/1" do
     test "returns :null by default when no mode key" do
       card = make_card(%{targeting: %{"type" => "character"}})
-      assert Card.get_targeting_mode(card) == :null
+      assert Card.get_trajectory_type(card) == :null
     end
 
     test "returns :null when targeting is nil" do
       card = make_card(%{targeting: nil})
-      assert Card.get_targeting_mode(card) == :null
+      assert Card.get_trajectory_type(card) == :null
     end
 
     test "returns :linear" do
-      card = make_card(%{targeting: %{"type" => "tile", "mode" => "linear"}})
-      assert Card.get_targeting_mode(card) == :linear
+      card = make_card(%{targeting: %{"type" => "tile", "trajectory_type" => "linear"}})
+      assert Card.get_trajectory_type(card) == :linear
     end
 
     test "returns :guided" do
-      card = make_card(%{targeting: %{"type" => "tile", "mode" => "guided"}})
-      assert Card.get_targeting_mode(card) == :guided
+      card = make_card(%{targeting: %{"type" => "tile", "trajectory_type" => "guided"}})
+      assert Card.get_trajectory_type(card) == :guided
     end
 
     test "returns :area" do
-      card = make_card(%{targeting: %{"type" => "tile", "mode" => "area"}})
-      assert Card.get_targeting_mode(card) == :area
+      card = make_card(%{targeting: %{"type" => "tile", "trajectory_type" => "area"}})
+      assert Card.get_trajectory_type(card) == :area
     end
 
     test "returns :emanation" do
-      card = make_card(%{targeting: %{"type" => "tile", "mode" => "emanation"}})
-      assert Card.get_targeting_mode(card) == :emanation
+      card = make_card(%{targeting: %{"type" => "tile", "trajectory_type" => "emanation"}})
+      assert Card.get_trajectory_type(card) == :emanation
     end
   end
 
@@ -482,7 +482,7 @@ defmodule Game.CardTest do
 
     test "guided mode: true when walkable path fits in range" do
       grid = Grid.new({3, 3, 3})
-      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "guided"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "trajectory_type" => "guided"}})
       assert Card.card_in_range?(card, {0, 0, 0}, {2, 0, -2}, grid)
     end
 
@@ -490,7 +490,7 @@ defmodule Game.CardTest do
       # Block direct path; detour > range=2
       grid = Grid.new({3, 3, 3})
       grid = put_in(grid.tiles[{1, 0, -1}].terrain, :wall)
-      card = make_card(%{range: 2, targeting: %{"type" => "tile", "mode" => "guided"}})
+      card = make_card(%{range: 2, targeting: %{"type" => "tile", "trajectory_type" => "guided"}})
       refute Card.card_in_range?(card, {0, 0, 0}, {2, 0, -2}, grid)
     end
 
@@ -502,7 +502,7 @@ defmodule Game.CardTest do
           {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
         }
       }
-      card = make_card(%{range: 5, targeting: %{"type" => "tile", "mode" => "guided"}})
+      card = make_card(%{range: 5, targeting: %{"type" => "tile", "trajectory_type" => "guided"}})
       refute Card.card_in_range?(card, {0, 0, 0}, {2, 0, -2}, grid)
     end
   end
@@ -522,7 +522,7 @@ defmodule Game.CardTest do
       caster = caster_at({0, 0, 0})
       grid = Grid.update_character(grid, caster)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "area"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "trajectory_type" => "area"}})
       assert {:ok, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
 
@@ -531,7 +531,7 @@ defmodule Game.CardTest do
       caster = caster_at({0, 0, 0})
       grid = Grid.update_character(grid, caster)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "linear"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "trajectory_type" => "linear"}})
       assert {:ok, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
 
@@ -541,7 +541,7 @@ defmodule Game.CardTest do
       caster = caster_at({0, 0, 0})
       grid = Grid.update_character(grid, caster)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "linear"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "trajectory_type" => "linear"}})
       assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
 
@@ -552,7 +552,7 @@ defmodule Game.CardTest do
       grid = Grid.update_character(grid, caster)
       grid = Grid.update_character(grid, enemy)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 3, targeting: %{"type" => "character", "mode" => "linear"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "character", "trajectory_type" => "linear"}})
       assert {:ok, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
 
@@ -565,7 +565,7 @@ defmodule Game.CardTest do
       grid = Grid.update_character(grid, blocker)
       grid = Grid.update_character(grid, enemy)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 3, targeting: %{"type" => "character", "mode" => "linear"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "character", "trajectory_type" => "linear"}})
       assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
 
@@ -576,7 +576,7 @@ defmodule Game.CardTest do
       grid = Grid.update_character(grid, caster)
       grid = Grid.update_character(grid, enemy)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 3, targeting: %{"type" => "character", "mode" => "linear"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "character", "trajectory_type" => "linear"}})
       assert {:ok, _} = Card.is_target_valid_for_character?(card, enemy, combat)
     end
 
@@ -588,7 +588,7 @@ defmodule Game.CardTest do
       grid = Grid.update_character(grid, caster)
       grid = Grid.update_character(grid, enemy)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 3, targeting: %{"type" => "character", "mode" => "linear"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "character", "trajectory_type" => "linear"}})
       assert {:error, _} = Card.is_target_valid_for_character?(card, enemy, combat)
     end
 
@@ -601,7 +601,7 @@ defmodule Game.CardTest do
       grid = Grid.update_character(grid, blocker)
       grid = Grid.update_character(grid, enemy)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 3, targeting: %{"type" => "character", "mode" => "linear"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "character", "trajectory_type" => "linear"}})
       assert {:error, _} = Card.is_target_valid_for_character?(card, enemy, combat)
     end
 
@@ -610,7 +610,7 @@ defmodule Game.CardTest do
       caster = caster_at({0, 0, 0})
       grid = Grid.update_character(grid, caster)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "guided"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "trajectory_type" => "guided"}})
       assert {:ok, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
 
@@ -620,7 +620,7 @@ defmodule Game.CardTest do
       caster = caster_at({0, 0, 0})
       grid = Grid.update_character(grid, caster)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 2, targeting: %{"type" => "tile", "mode" => "guided"}})
+      card = make_card(%{range: 2, targeting: %{"type" => "tile", "trajectory_type" => "guided"}})
       assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
 
@@ -635,7 +635,7 @@ defmodule Game.CardTest do
       caster = caster_at({0, 0, 0})
       grid = Grid.update_character(grid, caster)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 5, targeting: %{"type" => "tile", "mode" => "guided"}})
+      card = make_card(%{range: 5, targeting: %{"type" => "tile", "trajectory_type" => "guided"}})
       assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
 
@@ -646,7 +646,7 @@ defmodule Game.CardTest do
       grid = Grid.update_character(grid, caster)
       combat = make_combat(grid, caster)
       # hex distance is 2 but detour path is longer than range=2
-      card = make_card(%{range: 2, targeting: %{"type" => "tile", "mode" => "guided"}})
+      card = make_card(%{range: 2, targeting: %{"type" => "tile", "trajectory_type" => "guided"}})
       assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
 
@@ -655,7 +655,7 @@ defmodule Game.CardTest do
       caster = caster_at({0, 0, 0})
       grid = Grid.update_character(grid, caster)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "emanation"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "trajectory_type" => "emanation"}})
       assert {:ok, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
 
@@ -665,7 +665,7 @@ defmodule Game.CardTest do
       caster = caster_at({0, 0, 0})
       grid = Grid.update_character(grid, caster)
       combat = make_combat(grid, caster)
-      card = make_card(%{range: 3, targeting: %{"type" => "tile", "mode" => "emanation"}})
+      card = make_card(%{range: 3, targeting: %{"type" => "tile", "trajectory_type" => "emanation"}})
       assert {:error, _} = Card.is_target_cell_valid?(card, {2, 0, -2}, combat)
     end
   end
@@ -679,7 +679,7 @@ defmodule Game.CardTest do
       combat = make_combat(grid, caster)
       card = make_card(%{
         range: 3,
-        targeting: %{"type" => "tile", "mode" => "linear", "rule" => %{"!!" => true}}
+        targeting: %{"type" => "tile", "trajectory_type" => "linear", "rule" => %{"!!" => true}}
       })
       {overlay, _} = Card.build_tile_overlay(card, combat)
       # tile behind wall is not included in overlay (filtered out by LOS)
@@ -696,7 +696,7 @@ defmodule Game.CardTest do
       combat = make_combat(grid, caster)
       card = make_card(%{
         range: 3,
-        targeting: %{"type" => "tile", "mode" => "emanation", "rule" => %{"!!" => true}}
+        targeting: %{"type" => "tile", "trajectory_type" => "emanation", "rule" => %{"!!" => true}}
       })
       {overlay, _} = Card.build_tile_overlay(card, combat)
       refute Map.has_key?(overlay, {2, 0, -2})
@@ -711,7 +711,7 @@ defmodule Game.CardTest do
       # range=2, but detour to {2,0,-2} requires >2 steps
       card = make_card(%{
         range: 2,
-        targeting: %{"type" => "tile", "mode" => "guided", "rule" => %{"!!" => true}}
+        targeting: %{"type" => "tile", "trajectory_type" => "guided", "rule" => %{"!!" => true}}
       })
       {overlay, _} = Card.build_tile_overlay(card, combat)
       refute Map.has_key?(overlay, {2, 0, -2})

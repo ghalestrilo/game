@@ -20,7 +20,7 @@ defmodule GameWeb.Admin.Fields.TargetingField do
     assigns =
       assign(assigns,
         targeting_type: Map.get(targeting, "type", "character"),
-        targeting_mode: Map.get(targeting, "mode", "null"),
+        trajectory_type: Map.get(targeting, "trajectory_type", "null"),
         targeting_rule: Map.get(targeting, "rule", %{})
       )
 
@@ -36,12 +36,12 @@ defmodule GameWeb.Admin.Fields.TargetingField do
               <option value="character" selected={@targeting_type == "character"}>Character</option>
               <option value="tile" selected={@targeting_type == "tile"}>Tile</option>
             </select>
-            <select name={"#{@form[@name].name}[mode]"} class="select select-sm w-40">
-              <option value="null" selected={@targeting_mode == "null"}>Null (any)</option>
-              <option value="linear" selected={@targeting_mode == "linear"}>Linear (LOS)</option>
-              <option value="guided" selected={@targeting_mode == "guided"}>Guided (A*)</option>
-              <option value="area" selected={@targeting_mode == "area"}>Area</option>
-              <option value="emanation" selected={@targeting_mode == "emanation"}>Emanation</option>
+            <select name={"#{@form[@name].name}[trajectory_type]"} class="select select-sm w-40">
+              <option value="null" selected={@trajectory_type == "null"}>Null (any)</option>
+              <option value="linear" selected={@trajectory_type == "linear"}>Linear (LOS)</option>
+              <option value="guided" selected={@trajectory_type == "guided"}>Guided (A*)</option>
+              <option value="area" selected={@trajectory_type == "area"}>Area</option>
+              <option value="emanation" selected={@trajectory_type == "emanation"}>Emanation</option>
             </select>
           </div>
           <p class="text-xs font-medium text-base-content/50 uppercase tracking-wide">Rule</p>

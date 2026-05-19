@@ -464,14 +464,14 @@ defmodule Game.Card do
 
   def get_targeting_type(%__MODULE__{}), do: :character
 
-  def get_targeting_mode(%__MODULE__{targeting: %{"mode" => mode}}) when is_binary(mode),
-    do: String.to_atom(mode)
+  def get_trajectory_type(%__MODULE__{targeting: %{"trajectory_type" => trajectory_type}}) when is_binary(trajectory_type),
+    do: String.to_atom(trajectory_type)
 
-  def get_targeting_mode(%__MODULE__{}), do: :null
+  def get_trajectory_type(%__MODULE__{}), do: :null
 
   @doc "Returns true if `target_pos` is within the card's effective range from `caster_pos`."
   def card_in_range?(%__MODULE__{range: range} = card, caster_pos, target_pos, grid) do
-    case get_targeting_mode(card) do
+    case get_trajectory_type(card) do
       :guided ->
         case Grid.astar_path_length(grid, caster_pos, target_pos) do
           {:ok, len} -> len <= range
@@ -535,8 +535,8 @@ defmodule Game.Card do
         if is_nil(caster) or is_nil(caster.position) do
           ok
         else
-          case validate_mode_constraint(
-                 get_targeting_mode(card),
+          case validate_trajectory_constraint(
+                 get_trajectory_type(card),
                  caster.position,
                  target_position,
                  card.range,
@@ -582,8 +582,8 @@ defmodule Game.Card do
         if is_nil(caster) or is_nil(caster.position) do
           ok
         else
-          case validate_mode_constraint(
-                 get_targeting_mode(card),
+          case validate_trajectory_constraint(
+                 get_trajectory_type(card),
                  caster.position,
                  character.position,
                  card.range,
@@ -615,10 +615,10 @@ defmodule Game.Card do
     }
   end
 
-  defp validate_mode_constraint(:null, _caster_pos, _target_pos, _range, _grid), do: :ok
-  defp validate_mode_constraint(:area, _caster_pos, _target_pos, _range, _grid), do: :ok
+  defp validate_trajectory_constraint(:null, _caster_pos, _target_pos, _range, _grid), do: :ok
+  defp validate_trajectory_constraint(:area, _caster_pos, _target_pos, _range, _grid), do: :ok
 
-  defp validate_mode_constraint(:linear, caster_pos, target_pos, _range, grid) do
+  defp validate_trajectory_constraint(:linear, caster_pos, target_pos, _range, grid) do
     if Grid.has_linear_path?(grid, caster_pos, target_pos) do
       :ok
     else
@@ -626,7 +626,7 @@ defmodule Game.Card do
     end
   end
 
-  defp validate_mode_constraint(:emanation, caster_pos, target_pos, _range, grid) do
+  defp validate_trajectory_constraint(:emanation, caster_pos, target_pos, _range, grid) do
     if Grid.has_linear_path?(grid, caster_pos, target_pos) do
       :ok
     else
@@ -634,7 +634,7 @@ defmodule Game.Card do
     end
   end
 
-  defp validate_mode_constraint(:guided, caster_pos, target_pos, range, grid) do
+  defp validate_trajectory_constraint(:guided, caster_pos, target_pos, range, grid) do
     case Grid.astar_path_length(grid, caster_pos, target_pos) do
       {:ok, len} when len <= range -> :ok
       {:ok, _} -> {:error, "Target is out of guided range"}
@@ -644,8 +644,8 @@ defmodule Game.Card do
 
   def build_tile_overlay(%__MODULE__{range: range} = card, combat) when is_integer(range) do
     player = CombatState.get_current_player(combat)
-    mode = get_targeting_mode(card)
-    in_range = filter_by_mode(mode, combat.grid, player.position, range)
+    trajectory_type = get_trajectory_type(card)
+    in_range = filter_by_trajectory(trajectory_type, combat.grid, player.position, range)
 
     {:ok, state_json} = Jason.encode(combat)
     {:ok, state_map} = Jason.decode(state_json)
@@ -688,16 +688,16 @@ defmodule Game.Card do
 
   def build_tile_overlay(_card, _combat), do: {%{}, %{}}
 
-  defp filter_by_mode(mode, grid, origin, range) when mode in [:null, :area] do
+  defp filter_by_trajectory(trajectory_type, grid, origin, range) when trajectory_type in [:null, :area] do
     Game.Grid.tiles_in_range(grid, origin, range)
   end
 
-  defp filter_by_mode(mode, grid, origin, range) when mode in [:linear, :emanation] do
+  defp filter_by_trajectory(trajectory_type, grid, origin, range) when trajectory_type in [:linear, :emanation] do
     Game.Grid.tiles_in_range(grid, origin, range)
     |> Enum.filter(&Game.Grid.has_linear_path?(grid, origin, &1))
   end
 
-  defp filter_by_mode(:guided, grid, origin, range) do
+  defp filter_by_trajectory(:guided, grid, origin, range) do
     Game.Grid.tiles_in_range(grid, origin, range)
     |> Enum.filter(fn pos ->
       case Game.Grid.astar_path_length(grid, origin, pos) do
@@ -707,7 +707,7 @@ defmodule Game.Card do
     end)
   end
 
-  defp filter_by_mode(_mode, grid, origin, range) do
+  defp filter_by_trajectory(_type, grid, origin, range) do
     Game.Grid.tiles_in_range(grid, origin, range)
   end
 

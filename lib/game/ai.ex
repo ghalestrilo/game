@@ -54,7 +54,7 @@ defmodule Game.AI do
         {:ok, combat}
 
       %{"action" => "skip_turn"} ->
-        {:ok, elem(Combat.process_action(combat, {:skip_turn, caster}), 1)}
+        apply_intent(combat, %{type: :skip_turn})
 
       gambit ->
         case execute(gambit, caster, combat) do
@@ -78,29 +78,15 @@ defmodule Game.AI do
 
   defp execute(%{"action" => "move_closer"}, caster, combat) do
     case best_move(caster, combat, :closer) do
-      nil ->
-        {:error, "no reachable tile closer to enemy"}
-
-      pos ->
-        elem(Combat.process_action(combat, {:move, caster, pos}), 0)
-        |> case do
-          :ok -> Combat.process_action(combat, {:move, caster, pos})
-          _ -> {:error, "move rejected"}
-        end
+      nil -> {:error, "no reachable tile closer to enemy"}
+      pos -> apply_intent(combat, %{type: :move, position: pos})
     end
   end
 
   defp execute(%{"action" => "move_away"}, caster, combat) do
     case best_move(caster, combat, :away) do
-      nil ->
-        {:error, "no reachable tile further from enemy"}
-
-      pos ->
-        Combat.process_action(combat, {:move, caster, pos})
-        |> case do
-          {:ok, updated} -> {:ok, updated}
-          _ -> {:error, "move rejected"}
-        end
+      nil -> {:error, "no reachable tile further from enemy"}
+      pos -> apply_intent(combat, %{type: :move, position: pos})
     end
   end
 
@@ -110,15 +96,32 @@ defmodule Game.AI do
 
     with {:ok, card} <- pick_card(caster, filter),
          {:ok, target_pos} <- find_target(card, caster, combat),
-         {:ok, combat_after_pick} <- Combat.process_action(combat, {:pick_card, caster, card}),
-         {:ok, result, _anims} <-
-           Combat.process_action(combat_after_pick, {:play_card, target_pos}) do
+         {:ok, combat_after_pick} <- apply_intent(combat, %{type: :pick_card, card: card}),
+         {:ok, result, _anims} <- apply_intent(combat_after_pick, %{type: :play_card, position: target_pos}) do
       {:ok, result}
     end
   end
 
   defp execute(%{"action" => action} = gambit, caster, combat) do
     execute(Map.put(gambit, "card_filter", action), caster, combat)
+  end
+
+  defp apply_intent(combat, intent) do
+    caster = CombatState.get_current_player(combat)
+
+    case intent do
+      %{type: :move, position: pos} ->
+        Combat.process_action(combat, {:move, caster, pos})
+
+      %{type: :pick_card, card: card} ->
+        Combat.process_action(combat, {:pick_card, caster, card})
+
+      %{type: :play_card, position: pos} ->
+        Combat.process_action(combat, {:play_card, pos})
+
+      %{type: :skip_turn} ->
+        {:ok, elem(Combat.process_action(combat, {:skip_turn, caster}), 1)}
+    end
   end
 
   # --- helpers ---

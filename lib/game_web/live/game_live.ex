@@ -3,15 +3,7 @@ defmodule GameWeb.GameLive do
   import GameWeb.CombatActionHelpers
 
   alias Game.{Lobby, Character, Content}
-
-  @move_directions %{
-    "d" => {1, 0, -1},
-    "a" => {-1, 0, 1},
-    "z" => {-1, 1, 0},
-    "e" => {1, -1, 0},
-    "q" => {0, -1, 1},
-    "c" => {0, 1, -1}
-  }
+  alias GameWeb.CombatController
 
   @impl true
   def mount(params, _session, socket) do
@@ -158,46 +150,23 @@ defmodule GameWeb.GameLive do
   # ---- handle_event ----
 
   @impl true
-  def handle_event("pick_card", params, socket) do
-    if not my_turn?(socket) do
-      {:noreply, put_flash(socket, :error, "It's not your turn")}
-    else
-      combat = socket.assigns.game_state.combat
-      player = combat.current_turn.player
-      card = Enum.at(player.cards.hand, String.to_integer(params["card_index"]))
-      action = "#{player.name} selected card: #{card.name}"
+  def handle_event("pick_card", %{"card_index" => idx}, socket) do
+    card = Enum.at(socket.assigns.game_state.combat.current_turn.player.cards.hand, String.to_integer(idx))
+    if card,
+      do: CombatController.dispatch(socket, %{type: :pick_card, card: card}),
+      else: {:noreply, socket}
+  end
 
-      Game.process_action(socket.assigns.game_pid, {:pick_card, player, card})
+  def handle_event("handle_keys", %{"key" => " "}, %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket) do
+    targets = keyboard_targets(combat)
 
-      {:noreply, socket |> assign(keyboard_target_index: 0)}
+    case Enum.at(targets, socket.assigns.keyboard_target_index) do
+      nil -> {:noreply, socket}
+      {_, target} -> CombatController.dispatch(socket, %{type: :play_card, character: target})
     end
   end
 
-  # In your LiveView module
-  def handle_event("handle_keys", %{"key" => number}, socket)
-      when number in ~w(1 2 3 4 5 6 7 8 9) do
-    current_player_hand_size =
-      Enum.count(socket.assigns.game_state.combat.current_turn.player.cards.hand)
-
-    handle_event(
-      "pick_card",
-      %{"card_index" => to_string(min(String.to_integer(number), current_player_hand_size) - 1)},
-      socket
-    )
-
-    {:noreply, socket |> assign(keyboard_index_target: 0)}
-  end
-
-  def handle_event("handle_keys", %{"key" => "Enter"}, socket) do
-    handle_event("skip_turn", %{}, socket)
-    {:noreply, socket}
-  end
-
-  def handle_event(
-        "handle_keys",
-        %{"key" => key},
-        %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket
-      )
+  def handle_event("handle_keys", %{"key" => key}, %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket)
       when key in ["s", "w"] do
     targets = keyboard_targets(combat)
     count = length(targets)
@@ -207,131 +176,37 @@ defmodule GameWeb.GameLive do
     else
       delta = if key == "s", do: 1, else: -1
       new_index = rem(socket.assigns.keyboard_target_index + delta + count, count)
-      {_queue_index, target} = Enum.at(targets, new_index)
+      {_, target} = Enum.at(targets, new_index)
 
-      socket =
-        socket
-        |> assign(keyboard_target_index: new_index)
-        |> push_event("highlight-tile", %{coord: encode_coord(target.position)})
-
-      {:noreply, socket}
+      {:noreply,
+       socket
+       |> assign(keyboard_target_index: new_index)
+       |> push_event("highlight-tile", %{coord: encode_coord(target.position)})}
     end
-  end
-
-  def handle_event(
-        "handle_keys",
-        %{"key" => " "},
-        %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket
-      ) do
-    targets = keyboard_targets(combat)
-    result = Enum.at(targets, socket.assigns.keyboard_target_index)
-
-    if result do
-      {_queue_index, target} = result
-      handle_event("interact", %{"target_character_id" => to_string(target.id)}, socket)
-    else
-      {:noreply, socket}
-    end
-  end
-
-  def handle_event(
-        "handle_keys",
-        %{"key" => key},
-        %{assigns: %{game_state: %{combat: %{state: :running} = combat}}} = socket
-      )
-      when is_map_key(@move_directions, key) do
-    {dq, dr, ds} = @move_directions[key]
-    {q, r, s} = combat.current_turn.player.position
-    target = "#{q + dq}_#{r + dr}_#{s + ds}"
-    handle_event("interact", %{"target_position" => target}, socket)
   end
 
   def handle_event("handle_keys", %{"key" => key}, socket) do
-    # IO.inspect(key <> " pressed")
-    # Ignore other keys
-    {:noreply, socket}
-  end
+    combat = socket.assigns.game_state.combat
 
-  @impl true
-  def handle_event(
-        "interact",
-        %{"target_character_id" => character_id},
-        %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket
-      ) do
-    if not my_turn?(socket) do
-      {:noreply, put_flash(socket, :error, "It's not your turn")}
-    else
-      character =
-        Game.CombatState.get_current_queue(combat)
-        |> Enum.find(&(to_string(&1.id) == character_id))
-
-      if character do
-        card = combat.current_turn.card
-        action = "#{combat.current_turn.player.name} played card: #{card.name}"
-        Game.process_action(socket.assigns.game_pid, {:play_card_on_character, character}, action)
-        {:noreply, socket}
-      else
-        {:noreply, put_flash(socket, :error, "Target not found")}
-      end
+    case CombatController.key_to_intent(key, combat) do
+      nil -> {:noreply, socket}
+      intent -> CombatController.dispatch(socket, intent)
     end
   end
 
   @impl true
-  def handle_event(
-        "interact",
-        %{"target_position" => target_position},
-        %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket
-      ) do
-    if not my_turn?(socket) do
-      {:noreply, put_flash(socket, :error, "It's not your turn")}
-    else
-      with {:ok, position} <- parse_hex_position(target_position) do
-        card = combat.current_turn.card
-        action = "#{combat.current_turn.player.name} played card: #{card.name}"
-        Game.process_action(socket.assigns.game_pid, {:play_card, position}, action)
-        {:noreply, socket}
-      else
-        {:error, reason} -> {:noreply, put_flash(socket, :error, reason)}
-      end
+  def handle_event("interact", params, socket) do
+    combat = socket.assigns.game_state.combat
+
+    case CombatController.event_to_intent("interact", params, combat) do
+      nil -> {:noreply, socket}
+      intent -> CombatController.dispatch(socket, intent)
     end
   end
 
   @impl true
-  def handle_event(
-        "interact",
-        %{"target_position" => target_position},
-        %{assigns: %{game_state: %{combat: %{state: :running} = combat}}} = socket
-      ) do
-    if not my_turn?(socket) do
-      {:noreply, put_flash(socket, :error, "It's not your turn")}
-    else
-      with {:ok, position} <- parse_hex_position(target_position) do
-        player = combat.current_turn.player
-        action = "#{player.name} moved to position #{inspect(position)}"
-        Game.process_action(socket.assigns.game_pid, {:move, player, position}, action)
-        {:noreply, socket}
-      else
-        {:error, reason} -> {:noreply, put_flash(socket, :error, reason)}
-      end
-    end
-  end
-
-  @impl true
-  def handle_event("interact", _params, socket), do: {:noreply, socket}
-
-  @impl true
-  def handle_event(
-        "skip_turn",
-        _params,
-        %{assigns: %{game_state: %{combat: %{current_turn: %{player: player}}}}} = socket
-      ) do
-    if not my_turn?(socket) do
-      {:noreply, put_flash(socket, :error, "It's not your turn")}
-    else
-      action = "#{player.name} skipped their turn"
-      Game.process_action(socket.assigns.game_pid, {:skip_turn, player}, action)
-      {:noreply, socket}
-    end
+  def handle_event("skip_turn", _params, socket) do
+    CombatController.dispatch(socket, %{type: :skip_turn})
   end
 
   @impl true
