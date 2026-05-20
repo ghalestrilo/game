@@ -57,73 +57,73 @@ defmodule GameWeb.Admin.Fields.EffectField do
       assigns
       |> assign(:params, params)
       |> assign(:value_map, value_map)
+      |> assign(:effect_type, effect_type)
       |> assign(:field_base, "#{assigns.form[assigns.name].name}")
       |> assign(:modifiable_attributes, @modifiable_attributes)
 
     ~H"""
-    <div class="flex flex-col gap-2">
+    <fieldset class="fieldset">
+      <legend class="fieldset-legend">{@effect_type}</legend>
       <%= for param <- @params do %>
-        <div class="flex flex-col gap-1">
-          <label class="label-text text-xs opacity-70">{param}</label>
-          <%= cond do %>
-            <% param == "card" -> %>
-              <select name={"#{@field_base}[card][value]"} class="select select-sm w-full">
-                <option value="">-- Select card --</option>
-                <%= for base_card <- list_base_cards() do %>
-                  <option
-                    value={base_card.id}
-                    selected={to_string(base_card.id) == to_string(Map.get(@value_map, "card", ""))}
-                  >
-                    {base_card.name}
-                  </option>
-                <% end %>
-              </select>
-            <% param == "pile" -> %>
-              <select name={"#{@field_base}[pile][value]"} class="select select-sm w-full">
-                <%= for pile <- ["hand", "draw", "discard"] do %>
-                  <option
-                    value={pile}
-                    selected={pile == to_string(Map.get(@value_map, "pile", "hand"))}
-                  >
-                    {pile}
-                  </option>
-                <% end %>
-              </select>
-            <% param == "trajectory" -> %>
-              <select name={"#{@field_base}[trajectory][value]"} class="select select-sm w-full">
-                <%= for trajectory <- ["slide", "linear", "null"] do %>
-                  <option
-                    value={trajectory}
-                    selected={trajectory == to_string(Map.get(@value_map, "trajectory", "slide"))}
-                  >
-                    {trajectory}
-                  </option>
-                <% end %>
-              </select>
-            <% param == "attribute" -> %>
-              <select name={"#{@field_base}[attribute][value]"} class="select select-sm w-full">
-                <%= for attr <- @modifiable_attributes do %>
-                  <option
-                    value={attr}
-                    selected={attr == to_string(Map.get(@value_map, "attribute", "max_hp"))}
-                  >
-                    {attr}
-                  </option>
-                <% end %>
-              </select>
-            <% true -> %>
-              <.live_component
-                module={GameWeb.FormulaEditorComponent}
-                id={"effect-#{@form[@name].id}-#{@name}-#{param}"}
-                value={Map.get(@value_map, param, %{})}
-                field={"#{@field_base}[#{param}]"}
-                path={[]}
-                context={:effect}
-              />
-          <% end %>
-        </div>
+        <label class="fieldset-label">{param}</label>
+        <%= cond do %>
+          <% param == "card" -> %>
+            <select name={"#{@field_base}[card][value]"} class="select select-sm w-full">
+              <option value="">-- Select card --</option>
+              <%= for base_card <- list_base_cards() do %>
+                <option
+                  value={base_card.id}
+                  selected={to_string(base_card.id) == to_string(Map.get(@value_map, "card", ""))}
+                >
+                  {base_card.name}
+                </option>
+              <% end %>
+            </select>
+          <% param == "pile" -> %>
+            <select name={"#{@field_base}[pile][value]"} class="select select-sm w-full">
+              <%= for pile <- ["hand", "draw", "discard"] do %>
+                <option
+                  value={pile}
+                  selected={pile == to_string(Map.get(@value_map, "pile", "hand"))}
+                >
+                  {pile}
+                </option>
+              <% end %>
+            </select>
+          <% param == "trajectory" -> %>
+            <select name={"#{@field_base}[trajectory][value]"} class="select select-sm w-full">
+              <%= for trajectory <- ["slide", "linear", "null"] do %>
+                <option
+                  value={trajectory}
+                  selected={trajectory == to_string(Map.get(@value_map, "trajectory", "slide"))}
+                >
+                  {trajectory}
+                </option>
+              <% end %>
+            </select>
+          <% param == "attribute" -> %>
+            <select name={"#{@field_base}[attribute][value]"} class="select select-sm w-full">
+              <%= for attr <- @modifiable_attributes do %>
+                <option
+                  value={attr}
+                  selected={attr == to_string(Map.get(@value_map, "attribute", "max_hp"))}
+                >
+                  {attr}
+                </option>
+              <% end %>
+            </select>
+          <% true -> %>
+            <.live_component
+              module={GameWeb.FormulaEditorComponent}
+              id={"effect-#{@form[@name].id}-#{@name}-#{param}"}
+              value={Map.get(@value_map, param, %{})}
+              field={"#{@field_base}[#{param}]"}
+              path={[]}
+              context={:effect}
+            />
+        <% end %>
       <% end %>
-    </div>
+    </fieldset>
     """
   end
 

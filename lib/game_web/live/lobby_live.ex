@@ -166,47 +166,46 @@ defmodule GameWeb.LobbyLive do
             <% my_player = @lobby.players |> Enum.find(&(&1.id == @current_user_id)) %>
             <% my_class = my_player && my_player.class %>
             <% my_team = my_player && my_player.team %>
-            <div class="flex flex-col gap-2">
-              <h2 class="text-xl font-semibold">My Character</h2>
-
-              <form class="list-row text-lg items-center" phx-change="select_class">
-                <label class=" list-col-grow">Class</label>
-                <select name="class" class="select">
+            <fieldset class="fieldset w-full bg-base-200 border-base-300 rounded-box border p-4">
+              <legend class="fieldset-legend">My Character</legend>
+              <form class="join w-full" phx-change="select_class">
+                <label class="join-item btn btn-neutral no-animation flex-none">Class</label>
+                <select name="class" class="join-item select select-bordered flex-1">
                   <option value="" selected={is_nil(my_class)}>Pick a class</option>
                   <%= for bc <- @base_classes do %>
                     <option value={bc.class} selected={my_class == bc.class}>{bc.class}</option>
                   <% end %>
                 </select>
               </form>
-              <form class="list-row text-lg items-center" phx-change="select_team">
-                <label class=" list-col-grow">Team</label>
-                <select name="team" class="select">
-                  <option value={nil} selected={is_nil(my_class)}>Pick a team</option>
+              <form class="join w-full" phx-change="select_team">
+                <label class="join-item btn btn-neutral no-animation flex-none">Team</label>
+                <select name="team" class="join-item select select-bordered flex-1">
+                  <option value={nil} selected={is_nil(my_player.team)}>Pick a team</option>
                   <%= for index <- 1..8 do %>
-                    <option value={index} selected={my_player.team == index}>Team {index}</option>
+                    <option value={index} selected={my_player.team == to_string(index)}>Team {index}</option>
                   <% end %>
                 </select>
               </form>
               <% my_name = my_player && my_player.name %>
-              <form class="list-row text-lg items-center" phx-change="set_name">
-                <label class="list-col-grow">Display Name</label>
+              <form class="join w-full" phx-change="set_name">
+                <label class="join-item btn btn-neutral no-animation flex-none">Display</label>
                 <input
                   type="text"
                   name="name"
                   value={my_name || ""}
                   placeholder={@current_scope.user.email}
-                  class="input input-bordered"
+                  class="join-item input input-bordered flex-1"
                 />
               </form>
-            </div>
+            </fieldset>
             <% is_host = hd(@lobby.players).id == @current_user_id %>
             <% boosters = get_in(@lobby, [:settings, :boosters]) || 0 %>
             <% booster_size = get_in(@lobby, [:settings, :booster_size]) || 5 %>
             <% deck_picks = get_in(@lobby, [:settings, :deck_picks]) || 1 %>
-            <ul class="flex flex-col items-start gap-2">
-              <h2 class="text-xl font-semibold">Lobby Settings</h2>
-              <span class="flex w-full items-center justify-between">
-                <label class="text-lg">Booster packs at start:</label>
+            <fieldset class="fieldset w-full bg-base-200 border-base-300 rounded-box border p-4">
+              <legend class="fieldset-legend">Lobby Settings</legend>
+              <div class="flex w-full items-center justify-between">
+                <label class="fieldset-label">Booster packs at start</label>
                 <%= if is_host do %>
                   <form phx-change="set_boosters">
                     <input
@@ -221,9 +220,9 @@ defmodule GameWeb.LobbyLive do
                 <% else %>
                   <span class="badge badge-lg">{boosters}</span>
                 <% end %>
-              </span>
-              <span class="flex w-full items-center justify-between">
-                <label class="text-lg">Cards per booster:</label>
+              </div>
+              <div class="flex w-full items-center justify-between">
+                <label class="fieldset-label">Cards per booster</label>
                 <%= if is_host do %>
                   <form phx-change="set_booster_size">
                     <input
@@ -238,9 +237,9 @@ defmodule GameWeb.LobbyLive do
                 <% else %>
                   <span class="badge badge-lg">{booster_size}</span>
                 <% end %>
-              </span>
-              <span class="flex w-full items-center justify-between">
-                <label class="text-lg">Picks per booster:</label>
+              </div>
+              <div class="flex w-full items-center justify-between">
+                <label class="fieldset-label">Picks per booster</label>
                 <%= if is_host do %>
                   <form phx-change="set_deck_picks">
                     <input
@@ -255,10 +254,10 @@ defmodule GameWeb.LobbyLive do
                 <% else %>
                   <span class="badge badge-lg">{deck_picks}</span>
                 <% end %>
-              </span>
+              </div>
               <% selected_map = get_in(@lobby, [:settings, :map]) || "" %>
-              <span class="flex w-full items-center justify-between">
-                <label class="text-lg">Map:</label>
+              <div class="flex w-full items-center justify-between">
+                <label class="fieldset-label">Map</label>
                 <%= if is_host do %>
                   <form phx-change="set_map">
                     <select name="map" class="select select-bordered">
@@ -272,10 +271,10 @@ defmodule GameWeb.LobbyLive do
                     {if selected_map == "", do: "None", else: selected_map}
                   </span>
                 <% end %>
-              </span>
+              </div>
               <% render_3d = Map.get(@lobby.settings || %{}, :render_3d, true) %>
-              <span class="flex w-full items-center justify-between">
-                <label class="text-lg">3D renderer:</label>
+              <div class="flex w-full items-center justify-between">
+                <label class="fieldset-label">3D renderer</label>
                 <%= if is_host do %>
                   <form phx-change="set_render_3d">
                     <input type="checkbox" name="render_3d" class="checkbox" checked={render_3d} />
@@ -283,7 +282,7 @@ defmodule GameWeb.LobbyLive do
                 <% else %>
                   <span class="badge badge-lg">{if render_3d, do: "On", else: "Off"}</span>
                 <% end %>
-              </span>
+              </div>
               <button
                 phx-click="toggle_ready"
                 disabled={is_nil(my_class)}
@@ -296,7 +295,7 @@ defmodule GameWeb.LobbyLive do
               <% else %>
                 <p>Waiting for players...</p>
               <% end %>
-            </ul>
+            </fieldset>
           </div>
           <ul class="grid grid-cols-2 xl:grid-cols-3 gap-8 p-4">
             <%= for {team, players} <- Enum.group_by(@lobby.players, & &1.team) do %>
