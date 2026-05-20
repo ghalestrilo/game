@@ -24,15 +24,15 @@
       </div>
       <ul class="flex join">
         <% options = if @current_scope, do: %{
-          ~p"/profile" => @current_scope.user.email,
-          ~p"/" => "Play",
-          ~p"/users/settings" => "Settings",
-          ~p"/users/log-out" => "Log out"
-        }, else: %{ ~p"/users/register" => "Register", ~p"/users/log-in" => "Log in"} %>
+          ~p"/profile" => {@current_scope.user.email, :get},
+          ~p"/" => {"Play", :get},
+          ~p"/users/settings" => {"Settings", :get},
+          ~p"/users/log-out" => {"Log out", :delete}
+        }, else: %{ ~p"/users/register" => {"Register", :get}, ~p"/users/log-in" => {"Log in", :get}} %>
         
-        <%= for {route, label} <- options do %>
+        <%= for {route, {label, method}} <- options do %>
           <li class="join-item btn btn-md btn-ghost btn-primary">
-            <.link href={route}>{label}</.link>
+            <.link href={route} method={method}>{label}</.link>
           </li>
         <% end  %>
       </ul>

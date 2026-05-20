@@ -8,7 +8,7 @@ export class CharacterLayer {
   constructor(scene, assetLoader) {
     this._scene  = scene
     this._assets = assetLoader
-    this._map    = new Map()  // id -> { node, mixer, idleAction, walkAction, walkTimer, moveFrom, moveTo, moveProgress }
+    this._map    = new Map()  // id -> { node, mixer, idleAction, walkAction, walkTimer, moveFrom, moveTo, moveProgress, visualState, dead }
   }
 
   sync(characters) {
@@ -23,7 +23,7 @@ export class CharacterLayer {
       }
     }
 
-    characters.forEach(({ id, q, r, model_url }) => {
+    characters.forEach(({ id, q, r, model_url, dead, hidden, ethereal }) => {
       const { x, y } = hexToWorld(q, r)
       let entry = this._map.get(id)
 
@@ -39,19 +39,24 @@ export class CharacterLayer {
           this._scene.add(node)
 
           const mixer = new THREE.AnimationMixer(node)
-          const idleAction = mixer.clipAction(this._assets.clips.idle)
-          const walkAction = mixer.clipAction(this._assets.clips.walk)
+          const idleAction  = mixer.clipAction(this._assets.clips.idle)
+          const walkAction  = mixer.clipAction(this._assets.clips.walk)
           walkAction.enabled = true
           idleAction.play()
 
-          this._map.set(id, {
+          const newEntry = {
             node, mixer, idleAction, walkAction,
             walkTimer: null,
             moveFrom: new THREE.Vector3(),
-            moveTo: new THREE.Vector3(),
-            moveProgress: null
-          })
-          // Face toward center of mass now that this character is loaded
+            moveTo:   new THREE.Vector3(),
+            moveProgress: null,
+            visualState: null,
+            dead: false
+          }
+          this._map.set(id, newEntry)
+
+          applyVisualState(newEntry, dead, hidden, ethereal, this._assets.clips.death)
+
           const center = this.centerOfMass()
           if (this.allNodes().length > 0) this.faceToward(center)
         })
@@ -59,6 +64,28 @@ export class CharacterLayer {
       }
 
       if (entry.pending) return
+
+      // Apply death animation once when a character transitions to dead
+      if (dead && !entry.dead) {
+        entry.dead = true
+        const deathClip = this._assets.clips.death
+        if (deathClip) {
+          const deathAction = entry.mixer.clipAction(deathClip)
+          deathAction.setLoop(THREE.LoopOnce)
+          deathAction.clampWhenFinished = true
+          deathAction.reset().play()
+          deathAction.crossFadeFrom(entry.idleAction, 0.2, true)
+        }
+      }
+
+      // Apply visual state (hidden/ethereal/dead greyscale) only when it changes
+      const newVisual = dead ? "dead" : hidden ? "hidden" : ethereal ? "ethereal" : "normal"
+      if (entry.visualState !== newVisual) {
+        applyVisualState(entry, dead, hidden, ethereal, this._assets.clips.death)
+      }
+
+      // Dead characters don't move
+      if (dead) return
 
       const cur = entry.node.position
       const moved = Math.abs(cur.x - x) > 0.001 || Math.abs(cur.y - y) > 0.001
@@ -129,4 +156,47 @@ export class CharacterLayer {
     }
     this._map.clear()
   }
+}
+
+function applyVisualState(entry, dead, hidden, ethereal, deathClip) {
+  const visual = dead ? "dead" : hidden ? "hidden" : ethereal ? "ethereal" : "normal"
+  entry.visualState = visual
+  entry.dead = dead
+
+  entry.node.traverse(o => {
+    if (!o.isMesh && !o.isSkinnedMesh) return
+
+    if (!o.userData.baseMaterial) o.userData.baseMaterial = o.material.clone()
+    const mat = o.userData.baseMaterial.clone()
+
+    if (visual === "dead") {
+      // No death clip available: greyscale + heavily dimmed as fallback
+      if (!deathClip) {
+        mat.color.set(greyOf(o.userData.baseMaterial.color))
+        mat.transparent = true
+        mat.opacity = 0.5
+      }
+      // If there is a death clip the animation handles the visual; leave material alone
+    } else if (visual === "hidden") {
+      // Ally stealth: greyscale + semi-transparent (mirrors 2D `grayscale opacity-60`)
+      mat.transparent = true
+      mat.opacity = 0.1
+      mat.color.set(greyOf(o.userData.baseMaterial.color))
+    } else if (visual === "ethereal") {
+      // Ethereal: greyscale + heavy transparency (mirrors 2D `grayscale opacity-40`)
+      mat.transparent = true
+      mat.opacity = 0.5
+      mat.color.set(new THREE.Color(4, 4, 200))
+    } else {
+      mat.transparent = false
+      mat.opacity = 1.0
+    }
+
+    o.material = mat
+  })
+}
+
+function greyOf(color) {
+  const l = color.r * 0.299 + color.g * 0.587 + color.b * 0.114
+  return new THREE.Color(l, l, l)
 }

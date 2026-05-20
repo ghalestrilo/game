@@ -25,6 +25,8 @@ defmodule Game.CombatState do
             # `queue` is the transient value that processes current player state
             # as well as their turn order
             queue: [],
+            # Characters who have died; kept here so they remain visible on the board
+            dead_characters: [],
             grid: %Grid{},
             current_turn: %{
               player: nil,
@@ -203,7 +205,9 @@ defmodule Game.CombatState do
       |> Enum.map(& &1.team)
       |> Enum.uniq()
 
-    # Remove dead characters from queue
+    # Move newly dead characters out of the queue and into dead_characters
+    newly_dead = Enum.filter(combat.queue, &(&1.dead == true))
+    dead_characters = (combat.dead_characters ++ newly_dead) |> Enum.uniq_by(& &1.id)
     alive_queue = Enum.filter(combat.queue, &(&1.dead == false))
 
     # Update current_turn if current player is dead
@@ -216,13 +220,19 @@ defmodule Game.CombatState do
 
     case length(alive_teams) do
       n when n <= 1 ->
-        result = %{combat | state: :game_over, queue: alive_queue, current_turn: updated_current_turn}
+        result = %{combat | state: :game_over, queue: alive_queue, dead_characters: dead_characters, current_turn: updated_current_turn}
         Task.start(fn -> Game.Events.Publisher.publish_game_over(result) end)
         result
 
       _ ->
-        %{combat | state: :running, queue: alive_queue, current_turn: updated_current_turn}
+        %{combat | state: :running, queue: alive_queue, dead_characters: dead_characters, current_turn: updated_current_turn}
     end
+  end
+
+  def reinsert_into_queue(%CombatState{queue: queue, dead_characters: dead} = combat, character) do
+    updated_dead = Enum.reject(dead, &(&1.id == character.id))
+    updated_queue = if Enum.any?(queue, &(&1.id == character.id)), do: queue, else: queue ++ [character]
+    %{combat | queue: updated_queue, dead_characters: updated_dead}
   end
 
   @doc """

@@ -24,7 +24,8 @@ defmodule Game.Card do
     "hex" => CardEffects.Hex,
     "self_destruct" => CardEffects.SelfDestruct,
     "give" => CardEffects.Give,
-    "modify_attribute" => CardEffects.ModifyAttribute
+    "modify_attribute" => CardEffects.ModifyAttribute,
+    "revive" => CardEffects.Revive
   }
 
   def effect_types, do: @effect_types
@@ -175,23 +176,33 @@ defmodule Game.Card do
           effective_target = resolve_effect_target(effect, current_target, combat_state)
           aoe_range = Map.get(effect, :range) || Map.get(effect, "range") || 0
 
-          if aoe_range > 0 do
-            # Skip pre-resolution: AoE effects resolve formulas per-target inside apply_aoe_effect,
-            # using blast-relative context (e.g. angle_push_from_blast).
-            {new_combat, new_anims} =
-              apply_aoe_effect(resolved, aoe_range, effective_target, combat_state, cast_distance)
+          # Skip effects on dead targets, except revive which explicitly targets the dead.
+          dead_skip =
+            is_struct(effective_target) &&
+              Map.get(effective_target, :dead, false) &&
+              resolved.type != :revive
 
-            {new_combat, Enum.reverse(new_anims) ++ anims}
+          if dead_skip do
+            {combat_state, anims}
           else
-            # Formula context always uses the card's selected target for directional variables
-            # (push_delta, pull_delta, etc.), even when the effect itself targets someone else.
-            # formula_state preserves caster status effects from before dispel_stealth ran.
-            resolved =
-              resolve_effect_value(resolved, current_target, formula_state, cast_distance)
+            if aoe_range > 0 do
+              # Skip pre-resolution: AoE effects resolve formulas per-target inside apply_aoe_effect,
+              # using blast-relative context (e.g. angle_push_from_blast).
+              {new_combat, new_anims} =
+                apply_aoe_effect(resolved, aoe_range, effective_target, combat_state, cast_distance)
 
-            new_combat = CardEffect.process(resolved, effective_target, combat_state)
-            new_anim = CardEffect.animate(resolved)
-            {new_combat, if(new_anim, do: [new_anim | anims], else: anims)}
+              {new_combat, Enum.reverse(new_anims) ++ anims}
+            else
+              # Formula context always uses the card's selected target for directional variables
+              # (push_delta, pull_delta, etc.), even when the effect itself targets someone else.
+              # formula_state preserves caster status effects from before dispel_stealth ran.
+              resolved =
+                resolve_effect_value(resolved, current_target, formula_state, cast_distance)
+
+              new_combat = CardEffect.process(resolved, effective_target, combat_state)
+              new_anim = CardEffect.animate(resolved)
+              {new_combat, if(new_anim, do: [new_anim | anims], else: anims)}
+            end
           end
       end
     end)
@@ -528,6 +539,17 @@ defmodule Game.Card do
           end
       end
 
+    base_result =
+      case base_result do
+        {:ok, %{dead: true}} ->
+          if Map.get(targeting || %{}, "allow_dead"),
+            do: base_result,
+            else: {:error, "Cannot target a dead character"}
+
+        other ->
+          other
+      end
+
     case base_result do
       {:ok, _} = ok ->
         caster = CombatState.get_current_player(combat_state)
@@ -573,6 +595,17 @@ defmodule Game.Card do
 
         _ ->
           {:ok, character}
+      end
+
+    base_result =
+      case base_result do
+        {:ok, %{dead: true}} ->
+          if Map.get(targeting || %{}, "allow_dead"),
+            do: base_result,
+            else: {:error, "Cannot target a dead character"}
+
+        other ->
+          other
       end
 
     case base_result do

@@ -162,14 +162,17 @@ const ThreeJSBoard = {
       entry.node.traverse(o => {
         if (!o.isMesh && !o.isSkinnedMesh) return
         if (!o.userData.baseMaterial) o.userData.baseMaterial = o.material.clone()
-        o.material = o.userData.baseMaterial.clone()
-        o.material.emissive = emissive
-        o.material.emissiveIntensity = 1.0
+        // Save current visual material (may be grey/transparent) so we restore it after flash
+        o.userData.preFlashMaterial = o.material
+        const flashMat = o.material.clone()
+        flashMat.emissive = emissive
+        flashMat.emissiveIntensity = 1.0
+        o.material = flashMat
       })
       setTimeout(() => {
         entry.node.traverse(o => {
-          if ((!o.isMesh && !o.isSkinnedMesh) || !o.userData.baseMaterial) return
-          o.material = o.userData.baseMaterial
+          if ((!o.isMesh && !o.isSkinnedMesh) || !o.userData.preFlashMaterial) return
+          o.material = o.userData.preFlashMaterial
         })
       }, 300)
     }

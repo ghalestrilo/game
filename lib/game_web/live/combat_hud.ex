@@ -67,12 +67,12 @@ defmodule GameWeb.CombatHUD do
       >
         <svg viewBox="-1.1 -1.1 2.2 2.2" width="112" height="112">
           <g id="minimap-labels">
-            <g transform="translate(0,-0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">q</text></g>
-            <g transform="translate(0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">e</text></g>
-            <g transform="translate(0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">d</text></g>
-            <g transform="translate(0,0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">c</text></g>
-            <g transform="translate(-0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">z</text></g>
-            <g transform="translate(-0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">a</text></g>
+            <g class="bg-red-200" transform="translate(0,-0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">q</text></g>
+            <g class="bg-red-200" transform="translate(0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">e</text></g>
+            <g class="bg-red-200" transform="translate(0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">d</text></g>
+            <g class="bg-red-200" transform="translate(0,0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">c</text></g>
+            <g class="bg-red-200" transform="translate(-0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">z</text></g>
+            <g class="bg-red-200" transform="translate(-0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">a</text></g>
           </g>
         </svg>
       </div>
@@ -180,8 +180,10 @@ defmodule GameWeb.CombatHUD do
     ~H"""
     <div class="max-h-[calc(100vh-350px)]">
       <% [current | queue] = Game.CombatState.get_current_queue(@combat) %>
+      <% alive_queue = Enum.filter(queue, &(&1 != nil)) %>
       <h3 class="text-base font-bold mb-2">Current turn</h3>
       <.character_queue_card
+        :if={current != nil}
         character={current}
         current_player={@current_player}
         current={true}
@@ -189,7 +191,7 @@ defmodule GameWeb.CombatHUD do
       <h3 class="text-base font-bold mt-2">Next up</h3>
       <ul class="max-h-[calc(100vh-650px)] text-sm flex flex-col gap-3 overflow-y-scroll overflow-x-clip">
         <.character_queue_card
-          :for={character <- Enum.filter(queue, &(&1 != nil))}
+          :for={character <- alive_queue}
           character={character}
           current_player={@current_player}
           current={character == @combat.current_turn.player}

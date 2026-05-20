@@ -39,8 +39,9 @@ defmodule GameWeb.GameBoard3D do
         default: "#{base}/objects/detail_treeA.gltf.glb"
       },
       animations: %{
-        idle: %{url: "#{base}/animation/Rig_Medium_General.glb",      clip: "Idle_A"},
-        walk: %{url: "#{base}/animation/Rig_Medium_MovementBasic.glb", clip: "Walking_A"}
+        idle:  %{url: "#{base}/animation/Rig_Medium_General.glb",      clip: "Idle_A"},
+        walk:  %{url: "#{base}/animation/Rig_Medium_MovementBasic.glb", clip: "Walking_A"},
+        death: %{url: "#{base}/animation/Rig_Medium_General.glb",      clip: "Death_A"}
       }
     }
   end
@@ -154,22 +155,34 @@ defmodule GameWeb.GameBoard3D do
   defp build_characters(nil, _current_player), do: []
 
   defp build_characters(combat, current_player) do
-    combat
-    |> Game.CombatState.get_current_queue()
-    |> Enum.reject(&is_nil/1)
-    |> Enum.filter(&visible_to?(&1, current_player))
-    |> Enum.map(fn character ->
-      {q, r, s} = character.position
+    alive =
+      combat
+      |> Game.CombatState.get_current_queue()
+      |> Enum.reject(&is_nil/1)
+      |> Enum.filter(&visible_to?(&1, current_player))
+      |> Enum.map(&character_to_map(&1, current_player, false))
 
-      %{
-        id: character.id,
-        q: q,
-        r: r,
-        s: s,
-        model_url: model_url(character.class, base_url()),
-        team: to_string(character.team)
-      }
-    end)
+    dead =
+      (combat.dead_characters || [])
+      |> Enum.map(&character_to_map(&1, current_player, true))
+
+    alive ++ dead
+  end
+
+  defp character_to_map(character, _current_player, dead) do
+    {q, r, s} = character.position
+
+    %{
+      id: character.id,
+      q: q,
+      r: r,
+      s: s,
+      model_url: model_url(character.class, base_url()),
+      team: to_string(character.team),
+      dead: dead,
+      hidden: Game.Character.get_status_effect(character, :stealth) != nil,
+      ethereal: Game.Character.get_status_effect(character, :ethereal) != nil
+    }
   end
 
   defp encode_blast_map(blast_map) do
