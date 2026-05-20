@@ -57,6 +57,17 @@ export class CharacterLayer {
 
           applyVisualState(newEntry, dead, hidden, ethereal, this._assets.clips.death)
 
+          if (dead) {
+            const deathClip = this._assets.clips.death
+            if (deathClip) {
+              const deathAction = mixer.clipAction(deathClip)
+              deathAction.setLoop(THREE.LoopOnce)
+              deathAction.clampWhenFinished = true
+              deathAction.reset().play()
+              deathAction.crossFadeFrom(idleAction, 0.2, true)
+            }
+          }
+
           const center = this.centerOfMass()
           if (this.allNodes().length > 0) this.faceToward(center)
         })
