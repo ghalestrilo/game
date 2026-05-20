@@ -41,15 +41,8 @@ defmodule GameWeb.Admin.Fields.EffectField do
     assigns = assign(assigns, :child_fields, @child_fields)
 
     ~H"""
-    <div>
-    <Backpex.HTML.Layout.field_container>
-      <:label align="top">
-        <Backpex.HTML.Layout.input_label
-          id={"inline-crud-label-#{@name}"}
-          as="span"
-          text={@field_options[:label]}
-        />
-      </:label>
+    <fieldset class="fieldset m-8">
+      <legend class="fieldset-legend">{@field_options[:label]}</legend>
 
       <div class="flex flex-col gap-3">
         <.inputs_for :let={f_nested} field={@form[@name]}>
@@ -63,13 +56,6 @@ defmodule GameWeb.Admin.Fields.EffectField do
 
           <div class="card bg-base-200">
             <div class="card-body p-4 gap-3">
-              <div class="flex gap-4 items-end">
-                {Backpex.HTML.Resource.resource_form_field(
-                  assign(assigns, fields: @child_fields, name: :type, form: f_nested, hide_label: false)
-                )}
-                {Backpex.HTML.Resource.resource_form_field(
-                  assign(assigns, fields: @child_fields, name: :range, form: f_nested, hide_label: false)
-                )}
                 <label for={"#{@name}-checkbox-delete-#{f_nested.index}"} class="ml-auto pb-1">
                   <input
                     id={"#{@name}-checkbox-delete-#{f_nested.index}"}
@@ -82,7 +68,13 @@ defmodule GameWeb.Admin.Fields.EffectField do
                     <Backpex.HTML.CoreComponents.icon name="hero-trash" class="size-5" />
                   </div>
                 </label>
-              </div>
+
+              {Backpex.HTML.Resource.resource_form_field(
+                assign(assigns, fields: @child_fields, name: :type, form: f_nested, hide_label: false)
+              )}
+              {Backpex.HTML.Resource.resource_form_field(
+                assign(assigns, fields: @child_fields, name: :range, form: f_nested, hide_label: false)
+              )}
 
               {Backpex.HTML.Resource.resource_form_field(
                 assign(assigns, fields: @child_fields, name: :target_formula, form: f_nested, hide_label: false)
@@ -104,11 +96,10 @@ defmodule GameWeb.Admin.Fields.EffectField do
       <input
         name={"change[#{@name}_order][]"}
         type="checkbox"
-        aria-label="Add entry"
+        aria-label="Add Effect"
         class="btn btn-outline btn-sm btn-primary mt-2"
       />
-    </Backpex.HTML.Layout.field_container>
-    </div>
+    </fieldset>
     """
   end
 
