@@ -200,7 +200,7 @@ defmodule GameWeb.CoreComponents do
       <ul class="flex flex-col gap-2">
         <li :for={{label, opts} <- @options}>
           <a
-            class="btn btn-xl btn-ghost btn-primary rounded-xl rounded-l-none pl-[180px] hover:pl-[200px] transition-all"
+            class="btn btn-xl btn-outline border-l-0 btn-primary rounded-xl rounded-l-none pl-[180px] hover:pl-[200px] transition-all"
             {opts}
           >
             {label}
