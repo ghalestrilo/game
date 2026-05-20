@@ -77,7 +77,7 @@ defmodule GameWeb.GameBoard3D do
         |> push_event("init", %{assets: default_assets()})
       end
 
-    tiles = build_tiles(combat, overlay)
+    tiles = build_tiles(combat, overlay, assigns[:current_player])
     characters = build_characters(combat, assigns[:current_player])
     encoded_blast_map = encode_blast_map(blast_map)
     # current_turn_id = get_in(combat, [:current_turn, :player, :id])
@@ -117,25 +117,24 @@ defmodule GameWeb.GameBoard3D do
     {:noreply, socket}
   end
 
-  defp build_tiles(nil, _overlay), do: []
+  defp build_tiles(nil, _overlay, _viewer), do: []
 
-  defp build_tiles(combat, overlay) do
+  defp build_tiles(combat, overlay, viewer) do
     queue = Game.CombatState.get_current_queue(combat)
     current_player = combat.current_turn.player
+    my_turn? = viewer == nil || (current_player && viewer.id == current_player.id)
 
     combat.grid.tiles
     |> Enum.map(fn {{q, r, s}, tile} ->
       highlight =
         cond do
-          Map.has_key?(overlay, {q, r, s}) ->
+          my_turn? && Map.has_key?(overlay, {q, r, s}) ->
             Map.get(@overlay_classes, Map.get(overlay, {q, r, s}))
 
-          current_player && within_movement_range?(combat, {q, r, s}) &&
-              current_turn_visible?(combat, queue, current_player) ->
+          my_turn? && current_player && within_movement_range?(combat, {q, r, s}) ->
             @movement_class
 
-          current_player_at?(combat, queue, {q, r, s}) &&
-              current_turn_visible?(combat, queue, current_player) ->
+          my_turn? && current_player_at?(combat, queue, {q, r, s}) ->
             @player_pos_class
 
           true ->
@@ -213,11 +212,6 @@ defmodule GameWeb.GameBoard3D do
           :unreachable -> false
         end
     end
-  end
-
-  defp current_turn_visible?(combat, queue, current_player) do
-    current_turn_character = Enum.find(queue, fn c -> c && c == combat.current_turn.player end)
-    current_turn_character == nil or visible_to?(current_turn_character, current_player)
   end
 
   defp current_player_at?(combat, queue, coord) do
