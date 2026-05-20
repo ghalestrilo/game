@@ -63,15 +63,17 @@ defmodule GameWeb.CombatHUD do
     <!-- Minimap -->
       <div
         id="minimap"
-        class="fixed bottom-20 right-4 z-20 pointer-events-none mask mask-hexagon w-28 h-28 bg-base-300/70 flex items-center justify-center"
+        class="fixed bottom-20 left-4 z-20 pointer-events-none mask mask-hexagon w-28 h-28 bg-base-300/70 flex items-center justify-center"
       >
         <svg viewBox="-1.1 -1.1 2.2 2.2" width="112" height="112">
-          <text x="0"     y="-0.82" text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">q</text>
-          <text x="0.71"  y="-0.41" text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">e</text>
-          <text x="0.71"  y="0.41"  text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">d</text>
-          <text x="0"     y="0.82"  text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">c</text>
-          <text x="-0.71" y="0.41"  text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">z</text>
-          <text x="-0.71" y="-0.41" text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">a</text>
+          <g id="minimap-labels">
+            <g transform="translate(0,-0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">q</text></g>
+            <g transform="translate(0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">e</text></g>
+            <g transform="translate(0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">d</text></g>
+            <g transform="translate(0,0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">c</text></g>
+            <g transform="translate(-0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">z</text></g>
+            <g transform="translate(-0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">a</text></g>
+          </g>
         </svg>
       </div>
 

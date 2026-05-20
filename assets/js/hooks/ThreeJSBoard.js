@@ -64,6 +64,12 @@ const ThreeJSBoard = {
         const offset = this._camera.position.clone().sub(controls.target)
         const azimuthDeg = THREE.MathUtils.radToDeg(Math.atan2(offset.x, offset.y) - Math.PI)
         minimap.style.transform = `rotate(${-azimuthDeg}deg)`
+        const labels = document.getElementById("minimap-labels")
+        if (labels)
+          labels.querySelectorAll("g").forEach(g => {
+            const t = g.getAttribute("transform").replace(/\s*rotate\([^)]*\)/, "")
+            g.setAttribute("transform", `${t} rotate(${azimuthDeg})`)
+          })
       }
     }
     animate()
