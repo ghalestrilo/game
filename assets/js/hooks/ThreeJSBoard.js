@@ -57,6 +57,14 @@ const ThreeJSBoard = {
         this._activeFloats[i](delta)
       this._renderer.render(this._scene, this._camera)
       this._labelRenderer.render(this._scene, this._camera)
+
+      const minimap = document.getElementById("minimap")
+      if (minimap) {
+        const controls = this._boardCamera._controls
+        const offset = this._camera.position.clone().sub(controls.target)
+        const azimuthDeg = THREE.MathUtils.radToDeg(Math.atan2(offset.x, offset.y) - Math.PI)
+        minimap.style.transform = `rotate(${-azimuthDeg}deg)`
+      }
     }
     animate()
 

@@ -10,4 +10,3 @@ Once the plan is written, revisit this document and do the exact same process ag
 
 ## Feature list.
 
-1. reaction cards

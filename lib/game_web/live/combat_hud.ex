@@ -60,6 +60,21 @@ defmodule GameWeb.CombatHUD do
         </ul>
       </div>
 
+    <!-- Minimap -->
+      <div
+        id="minimap"
+        class="fixed bottom-20 right-4 z-20 pointer-events-none mask mask-hexagon w-28 h-28 bg-base-300/70 flex items-center justify-center"
+      >
+        <svg viewBox="-1.1 -1.1 2.2 2.2" width="112" height="112">
+          <text x="0"     y="-0.82" text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">q</text>
+          <text x="0.71"  y="-0.41" text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">e</text>
+          <text x="0.71"  y="0.41"  text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">d</text>
+          <text x="0"     y="0.82"  text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">c</text>
+          <text x="-0.71" y="0.41"  text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">z</text>
+          <text x="-0.71" y="-0.41" text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">a</text>
+        </svg>
+      </div>
+
     <!-- Card piles -->
       <%= if Map.get(assigns, :game_mode, nil) == :sandbox || (@game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id)) do %>
