@@ -14,7 +14,7 @@ defmodule GameWeb.MultiplayerPlayLiveTest do
 
     # User1 creates lobby
     {:ok, view1, _} = live(conn1, ~p"/multiplayer")
-    view1 |> element("button[phx-click='create_lobby']") |> render_click()
+    view1 |> element("[phx-click='create_lobby']") |> render_click()
     {lobby_path, _} = assert_redirect(view1)
 
     # Both join the lobby

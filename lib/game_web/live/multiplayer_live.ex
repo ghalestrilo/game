@@ -3,7 +3,7 @@ defmodule GameWeb.MultiplayerLive do
 
   @impl true
   def mount(_params, _session, socket) do
-    {:ok, socket}
+    {:ok, assign(socket, page_title: "PVP", no_padding: true)}
   end
 
   @impl true
@@ -15,15 +15,11 @@ defmodule GameWeb.MultiplayerLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="flex flex-col h-screen justify-center items-center gap-4">
-      <h1 class="text-2xl font-bold">PVP Lobby</h1>
-      <button
-        phx-click="create_lobby"
-        class="px-4 py-2 rounded-2 bg-primary"
-      >
-        Create Lobby
-      </button>
-    </div>
+    <.game_menu
+      title="PVP"
+      title_size={:regular}
+      options={[{"Create Lobby", "phx-click": "create_lobby"}]}
+    />
     """
   end
 end

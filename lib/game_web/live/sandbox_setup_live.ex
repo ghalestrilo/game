@@ -14,6 +14,7 @@ defmodule GameWeb.SandboxSetupLive do
 
     {:ok,
      assign(socket,
+       page_title: "Sandbox",
        classes: classes,
        map_options: map_options,
        selected_map: "",

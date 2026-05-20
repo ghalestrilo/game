@@ -12,11 +12,10 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Double:wght@100..900&family=Play:wght@400;700&display=swap" rel="stylesheet">
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
-    <.live_title default="HexDecks" suffix={}>
+    <.live_title default="HexDecks" suffix={if assigns[:page_title], do: " | HexDecks"}>
       {assigns[:page_title]}
     </.live_title>
-    </script>
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
   </head>
   <body>
     <div class="navbar max-md:collapse bg-base-100 text-neutral-content !fixed top-0 px-2 min-h-[3rem]">

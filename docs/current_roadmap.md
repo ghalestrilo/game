@@ -10,24 +10,4 @@ Once the plan is written, revisit this document and do the exact same process ag
 
 ## Feature list.
 
-1. push_content_sync should use insert_all
-4. universes should exist (capturing cards, etc)
-5. cards should have `:class` to appear in boosters
-  - picking up a booster on the map should trigger a class select (player's class + 2 random additionals)
-6. cards to add _permanently_ or _temporarily_ add cards to other player's hands
-7. implement `scry` and `dredge` effects
-  - implement card actions in card view dialog
-8. orbital coordinate helper (arrows)
-9. additional key support:
-  - "esc" when selecting a card
-  - "left/right" when selecting a card
-  - up/down (make header sticky) cycling through targets
-  - highlighting selected targets
-10. UI
-  - Improve landing
-  - use Fieldsets for:
-    - Card effects
-    - lobby settings
-11. Card mechanics:
-  - calculation based on _number of cards played this turn_
-12. reaction cards
+1. reaction cards

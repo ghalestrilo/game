@@ -1,26 +1,8 @@
-<.flash_group flash={@flash} />
-<div class="flex flex-col h-screen w-screen text-4xl justify-center items-start gap-4">
-  <div>
-    <h1 class="mb-40 play-bold text-6xl px-4 pl-[200px]">HexDecks</h1>
-  </div>
-  <ul class="flex flex-col gap-2">
-    <% options = 
-    [  {  ~p"/multiplayer", "PVP"},
-       { ~p"/sandbox/setup", "Sandbox"}
-       ]
-    %>
-    <%# <% options = 
-    [  {  ~p"/multiplayer", "PVP"},
-       { ~p"/sandbox/setup", "Sandbox"},
-       { ~p"/campaign/character-select", "Campaign"}
-       ]
-    %>
-    <%= for {route, label} <- options do %>
-    <li >
-      <a class="btn btn-xl btn-ghost btn-primary rounded-xl rounded-l-none pl-[180px] hover:pl-[200px] transition-all" href={route}>
-        {label}
-      </a>
-    </li>
-    <% end %>
-  </ul>
-</div>
+<.game_menu
+  title="HexDecks"
+  title_size={:large}
+  options={[
+    {"PVP", href: ~p"/multiplayer"},
+    {"Sandbox", href: ~p"/sandbox/setup"}
+  ]}
+/>

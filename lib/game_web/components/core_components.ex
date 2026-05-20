@@ -180,6 +180,37 @@ defmodule GameWeb.CoreComponents do
     """
   end
 
+  attr :title, :string, required: true
+  attr :title_size, :atom, default: :large
+  # Each option is {label, opts} where opts is a keyword list.
+  # Use href: for navigation, "phx-click": for LiveView events.
+  attr :options, :list, required: true
+
+  def game_menu(assigns) do
+    ~H"""
+    <div class="flex flex-col h-screen w-screen text-4xl justify-center items-start gap-4">
+      <div>
+        <h1 class={[
+          "mb-40 play-bold px-4 pl-[200px]",
+          @title_size == :large && "text-6xl"
+        ]}>
+          {@title}
+        </h1>
+      </div>
+      <ul class="flex flex-col gap-2">
+        <li :for={{label, opts} <- @options}>
+          <a
+            class="btn btn-xl btn-ghost btn-primary rounded-xl rounded-l-none pl-[180px] hover:pl-[200px] transition-all"
+            {opts}
+          >
+            {label}
+          </a>
+        </li>
+      </ul>
+    </div>
+    """
+  end
+
   @doc """
   Renders a simple form.
 
