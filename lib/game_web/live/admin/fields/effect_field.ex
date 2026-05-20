@@ -9,15 +9,17 @@ defmodule GameWeb.Admin.Fields.EffectField do
 
   @modifiable_attributes ~w(max_hp max_ap movement_range hand_size damage_multiplier outgoing_damage_multiplier)
 
-  @child_fields [
-    type: %{
-      module: Backpex.Fields.Select,
-      label: "Type",
-      options: Game.Card.effect_types() |> Map.keys() |> Enum.map(&{String.capitalize(&1), &1})
-    },
-    range: %{module: Backpex.Fields.Number, label: "Blast Radius"},
-    target_formula: %{module: GameWeb.Admin.Fields.FormulaField, label: "Target Formula"}
-  ]
+  defp child_fields do
+    [
+      type: %{
+        module: Backpex.Fields.Select,
+        label: "Type",
+        options: Game.Card.effect_types() |> Map.keys() |> Enum.map(&{String.capitalize(&1), &1})
+      },
+      range: %{module: Backpex.Fields.Number, label: "Blast Radius", default: fn _ -> 0 end},
+      target_formula: %{module: GameWeb.Admin.Fields.FormulaField, label: "Target Formula"}
+    ]
+  end
 
   @impl Backpex.Field
   def render_value(assigns) do
@@ -38,7 +40,7 @@ defmodule GameWeb.Admin.Fields.EffectField do
 
   @impl Backpex.Field
   def render_form(assigns) do
-    assigns = assign(assigns, :child_fields, @child_fields)
+    assigns = assign(assigns, :child_fields, child_fields())
 
     ~H"""
     <div class="p-8">

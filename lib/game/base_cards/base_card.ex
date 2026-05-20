@@ -60,7 +60,10 @@ defmodule Game.BaseCards.BaseCard do
         :conditional,
         :target_formula
       ])
-      |> validate_required([:type])
+      |> then(fn cs ->
+        if get_field(cs, :range) == nil, do: put_change(cs, :range, 0), else: cs
+      end)
+      |> validate_required([:type, :range])
     end
   end
 
