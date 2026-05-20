@@ -1,16 +1,23 @@
 defmodule GameWeb.Admin.Fields.EffectField do
   @moduledoc """
-  A Backpex field for the effect `value` column that renders one FormulaEditorComponent
-  per parameter key declared by the effect type's CardEffect.params/0 implementation.
+  A Backpex field for the `:effects` embed on BaseCard.
 
-  The stored value is a map keyed by param name, e.g.:
-    %{"value" => 3, "damage" => 5}   for dot
-    %{"q" => 1, "r" => 0, "s" => -1} for move
-    %{"value" => 2}                   for damage/heal/shield/etc.
+  Owns the full InlineCRUD-style list rendering: inputs_for loop, sibling fields
+  (type, range, target_formula), delete/add buttons, and the per-param fieldset.
   """
   use Backpex.Field
 
   @modifiable_attributes ~w(max_hp max_ap movement_range hand_size damage_multiplier outgoing_damage_multiplier)
+
+  @child_fields [
+    type: %{
+      module: Backpex.Fields.Select,
+      label: "Type",
+      options: Game.Card.effect_types() |> Map.keys() |> Enum.map(&{String.capitalize(&1), &1})
+    },
+    range: %{module: Backpex.Fields.Number, label: "Blast Radius"},
+    target_formula: %{module: GameWeb.Admin.Fields.FormulaField, label: "Target Formula"}
+  ]
 
   @impl Backpex.Field
   def render_value(assigns) do
@@ -31,26 +38,94 @@ defmodule GameWeb.Admin.Fields.EffectField do
 
   @impl Backpex.Field
   def render_form(assigns) do
-    # Read the effect type from the embedded item form (sibling :type field)
-    effect_type = Phoenix.HTML.Form.input_value(assigns.form, :type) || ""
-    params = Game.Card.effect_params(effect_type)
+    assigns = assign(assigns, :child_fields, @child_fields)
 
-    raw_value = Phoenix.HTML.Form.input_value(assigns.form, assigns.name)
+    ~H"""
+    <div>
+    <Backpex.HTML.Layout.field_container>
+      <:label align="top">
+        <Backpex.HTML.Layout.input_label
+          id={"inline-crud-label-#{@name}"}
+          as="span"
+          text={@field_options[:label]}
+        />
+      </:label>
+
+      <div class="flex flex-col gap-3">
+        <.inputs_for :let={f_nested} field={@form[@name]}>
+          <input
+            type="hidden"
+            name={"change[#{@name}_order][]"}
+            value={f_nested.index}
+            tabindex="-1"
+            aria-hidden="true"
+          />
+
+          <div class="card bg-base-200">
+            <div class="card-body p-4 gap-3">
+              <div class="flex gap-4 items-end">
+                {Backpex.HTML.Resource.resource_form_field(
+                  assign(assigns, fields: @child_fields, name: :type, form: f_nested, hide_label: false)
+                )}
+                {Backpex.HTML.Resource.resource_form_field(
+                  assign(assigns, fields: @child_fields, name: :range, form: f_nested, hide_label: false)
+                )}
+                <label for={"#{@name}-checkbox-delete-#{f_nested.index}"} class="ml-auto pb-1">
+                  <input
+                    id={"#{@name}-checkbox-delete-#{f_nested.index}"}
+                    type="checkbox"
+                    name={"change[#{@name}_delete][]"}
+                    value={f_nested.index}
+                    class="hidden"
+                  />
+                  <div class="btn btn-outline btn-error btn-sm">
+                    <Backpex.HTML.CoreComponents.icon name="hero-trash" class="size-5" />
+                  </div>
+                </label>
+              </div>
+
+              {Backpex.HTML.Resource.resource_form_field(
+                assign(assigns, fields: @child_fields, name: :target_formula, form: f_nested, hide_label: false)
+              )}
+
+              {render_param_fieldset(assign(assigns, :f_nested, f_nested))}
+            </div>
+          </div>
+        </.inputs_for>
+
+        <input
+          type="hidden"
+          name={"change[#{@name}_delete][]"}
+          tabindex="-1"
+          aria-hidden="true"
+        />
+      </div>
+
+      <input
+        name={"change[#{@name}_order][]"}
+        type="checkbox"
+        aria-label="Add entry"
+        class="btn btn-outline btn-sm btn-primary mt-2"
+      />
+    </Backpex.HTML.Layout.field_container>
+    </div>
+    """
+  end
+
+  defp render_param_fieldset(assigns) do
+    f = assigns.f_nested
+    effect_type = Phoenix.HTML.Form.input_value(f, :type) || ""
+    params = Game.Card.effect_params(effect_type)
+    raw_value = Phoenix.HTML.Form.input_value(f, :value)
+    field_base = "#{f[:value].name}"
 
     value_map =
       case raw_value do
-        # Already a params map (has non-operator keys or multiple keys)
         v when is_map(v) and map_size(v) > 0 ->
           if params_map?(v), do: v, else: %{"value" => v}
-
-        v when is_integer(v) ->
-          %{"value" => v}
-
-        v when is_binary(v) and v != "" ->
-          %{"value" => v}
-
-        _ ->
-          %{}
+        v when is_integer(v) -> %{"value" => v}
+        v when is_binary(v) and v != "" -> %{"value" => v}
+        _ -> %{}
       end
 
     assigns =
@@ -58,7 +133,7 @@ defmodule GameWeb.Admin.Fields.EffectField do
       |> assign(:params, params)
       |> assign(:value_map, value_map)
       |> assign(:effect_type, effect_type)
-      |> assign(:field_base, "#{assigns.form[assigns.name].name}")
+      |> assign(:field_base, field_base)
       |> assign(:modifiable_attributes, @modifiable_attributes)
 
     ~H"""
@@ -115,7 +190,7 @@ defmodule GameWeb.Admin.Fields.EffectField do
           <% true -> %>
             <.live_component
               module={GameWeb.FormulaEditorComponent}
-              id={"effect-#{@form[@name].id}-#{@name}-#{param}"}
+              id={"effect-#{@f_nested.id}-#{param}"}
               value={Map.get(@value_map, param, %{})}
               field={"#{@field_base}[#{param}]"}
               path={[]}
@@ -132,8 +207,6 @@ defmodule GameWeb.Admin.Fields.EffectField do
     |> Enum.sort_by(& &1.name)
   end
 
-  # A params map has multiple keys OR its single key is not a JsonLogic operator.
-  # A formula map has exactly one key which is a known operator (e.g. %{"+" => [...]}).
   @formula_operators MapSet.new(
                        ~w(var == === != !== ! !! if or and > >= < <= max min + - * / % map filter reduce all none some in cat log alias)
                      )
