@@ -14,7 +14,7 @@ defmodule GameWeb.LobbyLiveTest do
     test "create lobby redirects to lobby page", %{conn: conn} do
       {:ok, view, _html} = live(conn, ~p"/multiplayer")
 
-      view |> element("button[phx-click='create_lobby']") |> render_click()
+      view |> element("[phx-click='create_lobby']") |> render_click()
 
       {path, _flash} = assert_redirect(view)
       assert path =~ ~r|/multiplayer/[a-f0-9]+|
@@ -45,7 +45,7 @@ defmodule GameWeb.LobbyLiveTest do
 
     test "single player lobby shows waiting status", %{conn1: conn1, user1: user1} do
       {:ok, view, _html} = live(conn1, ~p"/multiplayer")
-      view |> element("button[phx-click='create_lobby']") |> render_click()
+      view |> element("[phx-click='create_lobby']") |> render_click()
       {lobby_path, _flash} = assert_redirect(view)
 
       {:ok, lobby_view, _html} = live(conn1, lobby_path)
@@ -62,7 +62,7 @@ defmodule GameWeb.LobbyLiveTest do
 
     test "lobby allows up to 8 players", %{conn1: conn1, conn2: conn2} do
       {:ok, view1, _} = live(conn1, ~p"/multiplayer")
-      view1 |> element("button[phx-click='create_lobby']") |> render_click()
+      view1 |> element("[phx-click='create_lobby']") |> render_click()
       {lobby_path, _} = assert_redirect(view1)
 
       {:ok, _lobby_view1, _} = live(conn1, lobby_path)
@@ -78,7 +78,7 @@ defmodule GameWeb.LobbyLiveTest do
 
     test "lobby rejects 9th player when full (8 players)", %{conn1: conn1, conn2: conn2} do
       {:ok, view1, _} = live(conn1, ~p"/multiplayer")
-      view1 |> element("button[phx-click='create_lobby']") |> render_click()
+      view1 |> element("[phx-click='create_lobby']") |> render_click()
       {lobby_path, _} = assert_redirect(view1)
 
       {:ok, _lobby_view1, _} = live(conn1, lobby_path)
@@ -99,7 +99,7 @@ defmodule GameWeb.LobbyLiveTest do
 
     test "lobby is ready with 2 players and waiting with 1", %{conn1: conn1} do
       {:ok, view1, _} = live(conn1, ~p"/multiplayer")
-      view1 |> element("button[phx-click='create_lobby']") |> render_click()
+      view1 |> element("[phx-click='create_lobby']") |> render_click()
       {lobby_path, _} = assert_redirect(view1)
 
       {:ok, lobby_view1, html1} = live(conn1, lobby_path)
@@ -114,7 +114,7 @@ defmodule GameWeb.LobbyLiveTest do
 
     test "lobby stays ready when a 3rd player joins", %{conn1: conn1, conn2: conn2} do
       {:ok, view1, _} = live(conn1, ~p"/multiplayer")
-      view1 |> element("button[phx-click='create_lobby']") |> render_click()
+      view1 |> element("[phx-click='create_lobby']") |> render_click()
       {lobby_path, _} = assert_redirect(view1)
 
       {:ok, lobby_view1, _} = live(conn1, lobby_path)
@@ -134,7 +134,7 @@ defmodule GameWeb.LobbyLiveTest do
       user2: user2
     } do
       {:ok, view1, _} = live(conn1, ~p"/multiplayer")
-      view1 |> element("button[phx-click='create_lobby']") |> render_click()
+      view1 |> element("[phx-click='create_lobby']") |> render_click()
       {lobby_path, _} = assert_redirect(view1)
 
       {:ok, lobby_view1, _} = live(conn1, lobby_path)
@@ -942,7 +942,7 @@ defmodule GameWeb.LobbyLiveTest do
     conn2 = Phoenix.ConnTest.build_conn() |> log_in_user(user2)
 
     {:ok, view1, _html} = live(conn1, ~p"/multiplayer")
-    view1 |> element("button[phx-click='create_lobby']") |> render_click()
+    view1 |> element("[phx-click='create_lobby']") |> render_click()
     {lobby_path, _flash} = assert_redirect(view1)
 
     {:ok, lobby_view1, _} = live(conn1, lobby_path)
