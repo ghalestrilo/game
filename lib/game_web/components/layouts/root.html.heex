@@ -4,37 +4,40 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="Game" suffix=" · Phoenix Framework">
+    <%# TODO: add suffix based on route %>
+    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Double:wght@100..900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Double:wght@100..900&family=Play:wght@400;700&display=swap" rel="stylesheet">
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+    <.live_title default="HexDecks" suffix={}>
       {assigns[:page_title]}
     </.live_title>
-    <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
   </head>
   <body>
-    <ul class="menu menu-horizontal w-full relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
-      <%= if @current_scope do %>
-        <li>
-          {@current_scope.user.email}
-        </li>
-        <li>
-          <.link href={~p"/"}>Play</.link>
-        </li>
-        <li>
-          <.link href={~p"/users/settings"}>Settings</.link>
-        </li>
-        <li>
-          <.link href={~p"/users/log-out"} method="delete">Log out</.link>
-        </li>
-      <% else %>
-        <li>
-          <.link href={~p"/users/register"}>Register</.link>
-        </li>
-        <li>
-          <.link href={~p"/users/log-in"}>Log in</.link>
-        </li>
-      <% end %>
-    </ul>
+    <div class="navbar max-md:collapse bg-base-100 text-neutral-content !fixed top-0 px-2 min-h-[3rem]">
+      <div class="flex-1">
+        <a class="btn btn-ghost btn-primary text-xl">HexDecks</a>
+      </div>
+      <ul class="flex join">
+        <% options = if @current_scope, do: %{
+          ~p"/profile" => @current_scope.user.email,
+          ~p"/" => "Play",
+          ~p"/users/settings" => "Settings",
+          ~p"/users/log-out" => "Log out"
+        }, else: %{ ~p"/users/register" => "Register", ~p"/users/log-in" => "Log in"} %>
+        
+        <%= for {route, label} <- options do %>
+          <li class="join-item btn btn-md btn-ghost btn-primary">
+            <.link href={route}>{label}</.link>
+          </li>
+        <% end  %>
+      </ul>
+    </div>
     {@inner_content}
   </body>
 </html>

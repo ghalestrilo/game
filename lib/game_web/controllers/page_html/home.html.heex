@@ -1,13 +1,26 @@
 <.flash_group flash={@flash} />
-<div class="flex flex-col h-screen text-4xl justify-center items-center gap-4">
-  <h1 class="mb-12">HexDecks</h1>
-  <a class="btn btn-xl btn-primary" href={~p"/campaign/character-select"}>
-    Campaign
-  </a>
-  <a class="btn btn-xl btn-primary" href={~p"/sandbox/setup"}>
-    Sandbox
-  </a>
-  <a class="btn btn-xl btn-primary" href={~p"/multiplayer"}>
-    PVP
-  </a>
+<div class="flex flex-col h-screen w-screen text-4xl justify-center items-start gap-4">
+  <div>
+    <h1 class="mb-40 play-bold text-6xl px-4 pl-[200px]">HexDecks</h1>
+  </div>
+  <ul class="flex flex-col gap-2">
+    <% options = 
+    [  {  ~p"/multiplayer", "PVP"},
+       { ~p"/sandbox/setup", "Sandbox"}
+       ]
+    %>
+    <%# <% options = 
+    [  {  ~p"/multiplayer", "PVP"},
+       { ~p"/sandbox/setup", "Sandbox"},
+       { ~p"/campaign/character-select", "Campaign"}
+       ]
+    %>
+    <%= for {route, label} <- options do %>
+    <li >
+      <a class="btn btn-xl btn-ghost btn-primary rounded-xl rounded-l-none pl-[180px] hover:pl-[200px] transition-all" href={route}>
+        {label}
+      </a>
+    </li>
+    <% end %>
+  </ul>
 </div>
