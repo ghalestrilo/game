@@ -23,7 +23,8 @@ defmodule GameWeb.GameLive do
          modal: nil,
          mode: mode,
          render_3d: false,
-         keyboard_target_index: 0
+         keyboard_target_index: 0,
+         keyboard_card_index: 0
        )}
     end
   end
@@ -56,7 +57,8 @@ defmodule GameWeb.GameLive do
            modal: nil,
            mode: :pvp,
            render_3d: params["3d"] == "true",
-           keyboard_target_index: 0
+           keyboard_target_index: 0,
+           keyboard_card_index: 0
          )}
     end
   end
@@ -89,7 +91,8 @@ defmodule GameWeb.GameLive do
          modal: nil,
          mode: :campaign,
          render_3d: params["3d"] == "true",
-         keyboard_target_index: 0
+         keyboard_target_index: 0,
+         keyboard_card_index: 0
        )}
     end
   end
@@ -117,7 +120,8 @@ defmodule GameWeb.GameLive do
        modal: nil,
        mode: :sandbox,
        render_3d: params["3d"] == "true",
-       keyboard_target_index: 0
+       keyboard_target_index: 0,
+       keyboard_card_index: 0
      )}
   end
 
@@ -159,6 +163,27 @@ defmodule GameWeb.GameLive do
       else: {:noreply, socket}
   end
 
+  def handle_event("handle_keys", %{"key" => "Escape"},
+      %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket) do
+    card = combat.current_turn.card
+    CombatController.dispatch(socket, %{type: :pick_card, card: card})
+  end
+
+  def handle_event("handle_keys", %{"key" => key}, socket) when key in ["ArrowLeft", "ArrowRight"] do
+    hand = socket.assigns.game_state.combat.current_turn.player.cards.hand
+    count = length(hand)
+
+    if count == 0 do
+      {:noreply, socket}
+    else
+      delta = if key == "ArrowRight", do: 1, else: -1
+      new_index = rem(socket.assigns.keyboard_card_index + delta + count, count)
+      card = Enum.at(hand, new_index)
+      socket = assign(socket, keyboard_card_index: new_index)
+      CombatController.dispatch(socket, %{type: :pick_card, card: card})
+    end
+  end
+
   def handle_event("handle_keys", %{"key" => " "}, %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket) do
     targets = keyboard_targets(combat)
 
@@ -169,14 +194,14 @@ defmodule GameWeb.GameLive do
   end
 
   def handle_event("handle_keys", %{"key" => key}, %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket)
-      when key in ["s", "w"] do
+      when key in ["s", "w", "ArrowDown", "ArrowUp"] do
     targets = keyboard_targets(combat)
     count = length(targets)
 
     if count == 0 do
       {:noreply, socket}
     else
-      delta = if key == "s", do: 1, else: -1
+      delta = if key in ["s", "ArrowDown"], do: 1, else: -1
       new_index = rem(socket.assigns.keyboard_target_index + delta + count, count)
       {_, target} = Enum.at(targets, new_index)
 

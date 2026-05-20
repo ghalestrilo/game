@@ -53,6 +53,10 @@ defmodule Game.DataCase do
         name: "Strike",
         headline: "A basic melee attack",
         ap: 1,
+        range: 3,
+        targeting: %{
+          "rule" => %{"!==" => [%{"var" => "caster.team"}, %{"var" => "target.team"}]}
+        },
         effects: [%{type: "damage", value: "5"}],
         rarity: :common
       })
