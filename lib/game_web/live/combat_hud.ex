@@ -11,7 +11,7 @@ defmodule GameWeb.CombatHUD do
   @impl true
   def render(assigns) do
     ~H"""
-    <div class="fixed z-10 grid max-w-full [grid-template-areas:'queue_game_action'_'draw_hand_discard'] [grid-template-columns:320px_auto_280px] [grid-template-rows:1fr_auto] gap-4 p-4 pointer-events-none origin-top-left  w-[133%] h-[133%] pb-12">
+    <div class="fixed z-10 grid max-w-full [grid-template-areas:'queue_game_action'_'draw_hand_discard'] [grid-template-columns:320px_auto_280px] [grid-template-rows:1fr_auto] gap-4 p-4 pointer-events-none origin-top-left  w-[133%] h-[133%] pb-12 [zoom:0.56]">
       <div
         :if={@game_state}
         class="[grid-area:queue] bg-gray-800 self-start pointer-events-auto p-2 rounded"
@@ -67,12 +67,12 @@ defmodule GameWeb.CombatHUD do
       >
         <svg viewBox="-1.1 -1.1 2.2 2.2" width="112" height="112">
           <g id="minimap-labels">
-            <g class="bg-red-200" transform="translate(0,-0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">q</text></g>
-            <g class="bg-red-200" transform="translate(0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">e</text></g>
-            <g class="bg-red-200" transform="translate(0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">d</text></g>
-            <g class="bg-red-200" transform="translate(0,0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">c</text></g>
-            <g class="bg-red-200" transform="translate(-0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">z</text></g>
-            <g class="bg-red-200" transform="translate(-0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">a</text></g>
+            <g transform="translate(0,-0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">q</text></g>
+            <g transform="translate(0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">e</text></g>
+            <g transform="translate(0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">d</text></g>
+            <g transform="translate(0,0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">c</text></g>
+            <g transform="translate(-0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">z</text></g>
+            <g transform="translate(-0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">a</text></g>
           </g>
         </svg>
       </div>
