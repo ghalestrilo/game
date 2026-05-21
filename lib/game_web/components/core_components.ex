@@ -688,8 +688,8 @@ defmodule GameWeb.CoreComponents do
       phx-value-card_index={@index}
       phx-target={@click_target}
     >
-      <div class="bg-base-100 rounded-lg m-0.5 mt-2">
-        <div class={["p-4 pb-6", GameWeb.Theme.rarity_bg_class(Map.get(@card, :rarity), :soft)]}>
+      <div class="bg-base-100 rounded-lg rounded-t-md m-1 mt-2 h-full">
+        <div class={["p-4 pb-6 h-full", GameWeb.Theme.rarity_bg_class(Map.get(@card, :rarity), :soft)]}>
         <div class="flex items-center justify-between">
           <span class="font-bold text-sm text-base-content">{@card.name}</span>
           <div class="flex flex-col lg:flex-row gap-2 items-center">
