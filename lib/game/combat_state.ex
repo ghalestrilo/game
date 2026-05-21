@@ -22,11 +22,9 @@ defmodule Game.CombatState do
               # the default character state and set AP appropriately
               players: []
             },
-            # `queue` is the transient value that processes current player state
-            # as well as their turn order
+            # `queue` is the single source of truth for all characters — alive and dead.
+            # Dead characters stay in the queue with dead: true and have their turns skipped.
             queue: [],
-            # Characters who have died; kept here so they remain visible on the board
-            dead_characters: [],
             grid: %Grid{},
             current_turn: %{
               player: nil,
@@ -53,6 +51,16 @@ defmodule Game.CombatState do
 
   defdelegate process_card(combat, target, card), to: Game.Card
 
+  @doc "Returns only the alive characters from the full queue."
+  def alive_characters(%CombatState{} = combat) do
+    get_current_queue(combat) |> Enum.filter(&(&1.dead == false))
+  end
+
+  @doc "Returns only the dead characters from the full queue."
+  def dead_characters(%CombatState{} = combat) do
+    get_current_queue(combat) |> Enum.filter(&(&1.dead == true))
+  end
+
   @doc """
   Initializes a player's turn by ensuring they have 5 cards in their hand.
   Always draws up to 5 cards at the beginning of a turn.
@@ -64,8 +72,6 @@ defmodule Game.CombatState do
     combat
     |> draw_cards_for_player(player)
   end
-
-  # def initialize_turn(combat), do: combat
 
   # Helper functions for refactored code
 
@@ -87,10 +93,8 @@ defmodule Game.CombatState do
 
   def refresh_grid(%{current_turn: %{player: _current_player}, grid: grid} = combat) do
     updated_grid =
-      combat
-      |> get_current_queue()
+      get_current_queue(combat)
       |> Enum.reduce(grid, fn player, grid ->
-        # Check if the position exists in the grid before updating
         if Map.has_key?(grid.tiles, player.position) do
           Grid.update_character(grid, player)
         else
@@ -119,12 +123,19 @@ defmodule Game.CombatState do
       |> put_in([:current_turn], new_turn(next_player))
       |> tick_status_effects()
 
-    if stun_active?(ticked.current_turn.player) do
-      ticked |> rotate_queue() |> setup_player_turn()
-    else
-      ticked
-      |> draw_cards_for_player(ticked.current_turn.player)
-      |> restore_max_ap()
+    current = ticked.current_turn.player
+
+    cond do
+      current.dead ->
+        ticked |> rotate_queue() |> setup_player_turn()
+
+      stun_active?(current) ->
+        ticked |> rotate_queue() |> setup_player_turn()
+
+      true ->
+        ticked
+        |> draw_cards_for_player(current)
+        |> restore_max_ap()
     end
   end
 
@@ -195,49 +206,35 @@ defmodule Game.CombatState do
   end
 
   def check_game_over(combat) do
-    alive_characters =
-      combat
-      |> get_current_queue()
-      |> Enum.filter(&(&1.dead == false))
-
     alive_teams =
-      alive_characters
+      alive_characters(combat)
       |> Enum.map(& &1.team)
       |> Enum.uniq()
 
     current_player = combat.current_turn.player
     current_player_dead? = current_player && current_player.dead
 
-    # Move newly dead characters out of the queue and into dead_characters,
-    # including the current player if they died on their own turn.
-    newly_dead_in_queue = Enum.filter(combat.queue, &(&1.dead == true))
-    newly_dead = if current_player_dead?, do: [current_player | newly_dead_in_queue], else: newly_dead_in_queue
-    dead_characters = (combat.dead_characters ++ newly_dead) |> Enum.uniq_by(& &1.id)
-    alive_queue = Enum.filter(combat.queue, &(&1.dead == false))
-
     case length(alive_teams) do
       n when n <= 1 ->
-        current_turn = if current_player_dead?, do: %{combat.current_turn | player: nil}, else: combat.current_turn
-        result = %{combat | state: :game_over, queue: alive_queue, dead_characters: dead_characters, current_turn: current_turn}
+        current_turn =
+          if current_player_dead?,
+            do: %{combat.current_turn | player: nil},
+            else: combat.current_turn
+
+        result = %{combat | state: :game_over, current_turn: current_turn}
         Task.start(fn -> Game.Events.Publisher.publish_game_over(result) end)
         result
 
       _ ->
-        combat_pruned = %{combat | queue: alive_queue, dead_characters: dead_characters}
-
-        if current_player_dead? && alive_queue != [] do
-          [next | rest] = alive_queue
-          %{combat_pruned | state: :running, current_turn: new_turn(next), queue: rest}
+        if current_player_dead? do
+          combat
+          |> put_in([:state], :running)
+          |> rotate_queue()
+          |> setup_player_turn()
         else
-          %{combat_pruned | state: :running}
+          %{combat | state: :running}
         end
     end
-  end
-
-  def reinsert_into_queue(%CombatState{queue: queue, dead_characters: dead} = combat, character) do
-    updated_dead = Enum.reject(dead, &(&1.id == character.id))
-    updated_queue = if Enum.any?(queue, &(&1.id == character.id)), do: queue, else: queue ++ [character]
-    %{combat | queue: updated_queue, dead_characters: updated_dead}
   end
 
   @doc """

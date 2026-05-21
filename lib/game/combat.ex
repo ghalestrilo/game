@@ -235,7 +235,6 @@ defmodule Game.Combat do
             result =
               processed_combat
               |> then(fn combat ->
-                # Only check target death for character targeting
                 if is_nil(target),
                   do: combat,
                   else: CombatState.check_target_death(combat, target)

@@ -366,16 +366,14 @@ defmodule Game.CombatTest do
       assert updated_combat.state == :game_over
     end
 
-    test "dead character is removed from players list", %{result: {:ok, updated_combat}} do
-      # Queue only contains waiting players, not current player
-      # After mage dies, only fighter remains (as current player), so queue is empty
-      assert length(updated_combat.queue) == 0
+    test "dead character is tagged dead in the queue", %{result: {:ok, updated_combat}} do
+      dead = Game.CombatState.dead_characters(updated_combat)
+      assert length(dead) == 1
     end
 
-    test "dead character is removed from queue", %{result: {:ok, updated_combat}} do
-      # Queue only contains waiting players, not current player
-      # After mage dies, only fighter remains (as current player), so queue is empty
-      assert length(updated_combat.queue) == 0
+    test "alive characters only contains the survivor", %{result: {:ok, updated_combat}} do
+      alive = Game.CombatState.alive_characters(updated_combat)
+      assert length(alive) == 1
     end
   end
 
@@ -837,11 +835,11 @@ defmodule Game.CombatTest do
       assert result.current_turn.player.id == mage.id
     end
 
-    test "dead fighter is moved to dead_characters", %{combat: combat, fighter: fighter} do
+    test "dead fighter is tagged dead: true in the queue", %{combat: combat, fighter: fighter} do
       {:ok, result, _animations} =
         Combat.process_action(combat, {:play_card_on_character, combat.current_turn.player})
 
-      assert Enum.any?(result.dead_characters, &(&1.id == fighter.id))
+      assert Enum.any?(Game.CombatState.dead_characters(result), &(&1.id == fighter.id))
     end
 
     test "game state remains :running when both teams still have survivors", %{combat: combat} do

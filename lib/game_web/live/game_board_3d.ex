@@ -153,18 +153,11 @@ defmodule GameWeb.GameBoard3D do
   defp build_characters(nil, _current_player), do: []
 
   defp build_characters(combat, current_player) do
-    alive =
-      combat
-      |> Game.CombatState.get_current_queue()
-      |> Enum.reject(&is_nil/1)
-      |> Enum.filter(&visible_to?(&1, current_player))
-      |> Enum.map(&character_to_map(&1, current_player, false))
-
-    dead =
-      (combat.dead_characters || [])
-      |> Enum.map(&character_to_map(&1, current_player, true))
-
-    alive ++ dead
+    combat
+    |> Game.CombatState.get_current_queue()
+    |> Enum.reject(&is_nil/1)
+    |> Enum.filter(&visible_to?(&1, current_player))
+    |> Enum.map(&character_to_map(&1, current_player, &1.dead))
   end
 
   defp character_to_map(character, _current_player, dead) do

@@ -70,15 +70,43 @@ defmodule Game.DataCase do
         rarity: :uncommon
       })
 
+    {:ok, executioner_card} =
+      Game.BaseCards.create_base_card(%{
+        name: "Executioner",
+        headline: "Lethal strike against anyone",
+        ap: 1,
+        range: 3,
+        effects: [%{type: "damage", value: "100"}],
+        rarity: :legendary
+      })
+
+    {:ok, ressurrect_card} =
+      Game.BaseCards.create_base_card(%{
+        name: "Ressurrect",
+        headline: "Revive a dead ally with 5 HP",
+        ap: 2,
+        range: 5,
+        effects: [%{type: "revive", value: "5"}],
+        targeting: %{"type" => "character"},
+        rarity: :legendary
+      })
+
     # Create decks
     {:ok, fighter_deck} = Game.Repo.insert(%BaseDeck{name: "Fighter Starter"})
     {:ok, mage_deck} = Game.Repo.insert(%BaseDeck{name: "Mage Starter"})
 
-    # Associate cards with decks
+    # Fighter deck: exactly 5 cards (hand_size=5) so the opening hand is always the full deck.
+    # 3× Executioner + 2× Ressurrect guarantees both names appear in every hand.
     Game.Repo.insert!(%BaseDeckCard{
       deck_id: fighter_deck.id,
-      card_id: strike_card.id,
-      count: 10
+      card_id: executioner_card.id,
+      count: 3
+    })
+
+    Game.Repo.insert!(%BaseDeckCard{
+      deck_id: fighter_deck.id,
+      card_id: ressurrect_card.id,
+      count: 2
     })
 
     Game.Repo.insert!(%BaseDeckCard{

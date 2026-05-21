@@ -180,7 +180,7 @@ defmodule Game.Card do
           dead_skip =
             is_struct(effective_target) &&
               Map.get(effective_target, :dead, false) &&
-              resolved.type != :revive
+              resolved.type not in [:revive, "revive"]
 
           if dead_skip do
             {combat_state, anims}
@@ -502,16 +502,33 @@ defmodule Game.Card do
     targeting_type = get_targeting_type(card)
     position_result = Game.Grid.get_object(combat_state.grid, target_position)
 
+    # Gate on dead/alive first — this is a domain constraint from the effect type,
+    # not something the targeting rule can override.
     base_result =
-      case targeting do
-        %{"rule" => targeting_rule} ->
-          data_context = build_data_context(position_result, combat_state)
-          result = JsonLogic.resolve(targeting_rule, data_context)
+      case position_result do
+        {:ok, %{dead: true}} ->
+          if has_revive_effect?(card),
+            do: position_result,
+            else: {:error, "Cannot target a dead character"}
 
-          if result do
+        {:ok, %{dead: false}} ->
+          if has_revive_effect?(card),
+            do: {:error, "Cannot target a living character"},
+            else: position_result
+
+        other ->
+          other
+      end
+
+    # Apply targeting rule to filter among the gated pool.
+    base_result =
+      case {base_result, targeting} do
+        {{:ok, _}, %{"rule" => targeting_rule}} when map_size(targeting_rule) > 0 ->
+          data_context = build_data_context(position_result, combat_state)
+
+          if JsonLogic.resolve(targeting_rule, data_context) do
             case targeting_type do
-              :tile ->
-                {:ok, nil}
+              :tile -> {:ok, nil}
 
               :character ->
                 case position_result do
@@ -523,7 +540,7 @@ defmodule Game.Card do
             {:error, "Target does not match targeting rule"}
           end
 
-        _ ->
+        {{:ok, _}, _} ->
           case targeting_type do
             :tile ->
               case position_result do
@@ -537,17 +554,9 @@ defmodule Game.Card do
                 _ -> {:error, "No character at this position"}
               end
           end
-      end
 
-    base_result =
-      case base_result do
-        {:ok, %{dead: true}} ->
-          if Map.get(targeting || %{}, "allow_dead"),
-            do: base_result,
-            else: {:error, "Cannot target a dead character"}
-
-        other ->
-          other
+        {err, _} ->
+          err
       end
 
     case base_result do
@@ -581,31 +590,37 @@ defmodule Game.Card do
       ) do
     position_result = {:ok, character}
 
+    # Gate on dead/alive first — domain constraint from effect type.
     base_result =
-      case targeting do
-        %{"rule" => targeting_rule} ->
-          data_context = build_data_context(position_result, combat_state)
-          result = JsonLogic.resolve(targeting_rule, data_context)
+      case character do
+        %{dead: true} ->
+          if has_revive_effect?(card),
+            do: position_result,
+            else: {:error, "Cannot target a dead character"}
 
-          if result do
+        %{dead: false} ->
+          if has_revive_effect?(card),
+            do: {:error, "Cannot target a living character"},
+            else: position_result
+      end
+
+    # Apply targeting rule to filter among the gated pool.
+    base_result =
+      case {base_result, targeting} do
+        {{:ok, _}, %{"rule" => targeting_rule}} when map_size(targeting_rule) > 0 ->
+          data_context = build_data_context(position_result, combat_state)
+
+          if JsonLogic.resolve(targeting_rule, data_context) do
             {:ok, character}
           else
             {:error, "Target does not match targeting rule"}
           end
 
-        _ ->
+        {{:ok, _}, _} ->
           {:ok, character}
-      end
 
-    base_result =
-      case base_result do
-        {:ok, %{dead: true}} ->
-          if Map.get(targeting || %{}, "allow_dead"),
-            do: base_result,
-            else: {:error, "Cannot target a dead character"}
-
-        other ->
-          other
+        {err, _} ->
+          err
       end
 
     case base_result do
@@ -684,6 +699,7 @@ defmodule Game.Card do
     {:ok, state_map} = Jason.decode(state_json)
 
     targeting_rule = get_in(card.targeting, ["rule"])
+    use_rule? = is_map(targeting_rule) && map_size(targeting_rule) > 0
 
     overlay =
       Map.new(in_range, fn coord ->
@@ -694,7 +710,28 @@ defmodule Game.Card do
           "state" => %{"combat" => state_map}
         }
 
-        valid? = targeting_rule && JsonLogic.resolve(targeting_rule, data_context)
+        rule_valid? =
+          if use_rule? do
+            JsonLogic.resolve(targeting_rule, data_context)
+          else
+            case position_result do
+              {:ok, nil} -> get_targeting_type(card) == :tile
+              {:ok, _} -> true
+              _ -> false
+            end
+          end
+
+        valid? =
+          if rule_valid? do
+            case position_result do
+              {:ok, %{dead: true}} -> has_revive_effect?(card)
+              {:ok, %{dead: false}} -> not has_revive_effect?(card)
+              _ -> true
+            end
+          else
+            false
+          end
+
         {coord, if(valid?, do: :valid, else: :invalid)}
       end)
 
@@ -768,7 +805,8 @@ defmodule Game.Card do
           "occupied" => true,
           "team" => to_string(character.team),
           "hp" => Map.get(character, :hp),
-          "max_hp" => Map.get(character, :max_hp)
+          "max_hp" => Map.get(character, :max_hp),
+          "dead" => Map.get(character, :dead, false)
         }
 
       nil ->
@@ -790,4 +828,13 @@ defmodule Game.Card do
   def is_one_time_use?(card) do
     false
   end
+
+  defp has_revive_effect?(%{effects: effects}) when is_list(effects) do
+    Enum.any?(effects, fn effect ->
+      Map.get(effect, :type) in [:revive, "revive"] or
+        Map.get(effect, "type") in [:revive, "revive"]
+    end)
+  end
+
+  defp has_revive_effect?(_), do: false
 end

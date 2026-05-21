@@ -60,7 +60,10 @@ defmodule GameWeb.CombatController do
   Returns nil if the event doesn't apply in the current state.
   """
   def event_to_intent("interact", %{"target_character_id" => id}, %{state: :card_selected} = combat) do
-    character = Enum.find(Game.CombatState.get_current_queue(combat), &(to_string(&1.id) == id))
+    character =
+      Game.CombatState.get_current_queue(combat)
+      |> Enum.find(&(to_string(&1.id) == id))
+
     if character, do: %{type: :play_card, character: character}, else: nil
   end
 

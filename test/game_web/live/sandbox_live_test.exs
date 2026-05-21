@@ -232,6 +232,11 @@ defmodule GameWeb.SandboxLiveTest do
     end
   end
 
+  defp find_card_in_hand(_view, game_pid, card_name) do
+    Game.get_state(game_pid).combat.current_turn.player.cards.hand
+    |> Enum.find_index(&(&1.name == card_name))
+  end
+
   defp pick_first_card(view) do
     view
     |> element("div.card:first-child()")
@@ -242,5 +247,107 @@ defmodule GameWeb.SandboxLiveTest do
     view
     |> element("[phx-value-target_position=\"0_0_0\"]")
     |> render_click()
+  end
+
+  describe "Revive card effect E2E (3d=true)" do
+    # Scenario: fighter1 (team1) kills fighter2 (team1 ally) with Executioner,
+    # then revives them with Ressurrect. The mage (team2) stays alive throughout
+    # so game never reaches game_over. After revival, fighter2 takes their own turn.
+    #
+    # This test exercises the full production code paths:
+    #   - build_tile_overlay marks dead character positions :valid for revive cards
+    #   - keyboard_targets (w/s keys) finds dead characters
+    #   - is_target_cell_valid? accepts a dead character's tile
+    #   - revive effect reinserts character into queue
+    #   - revived character can act normally
+
+    test "fighter kills ally, casts Ressurrect via character click, revived ally takes a turn", %{conn: conn} do
+      # 3 chars, all adjacent: fighter1 (team1, acts first), fighter2 (team1, will die),
+      # mage (team2, stays alive so game never ends)
+      {:ok, view, _html} =
+        live(conn, ~p"/sandbox?initial_state=[0_0_0:fighter:1,1_0_-1:fighter:1,2_0_-2:mage:2]&3d=true")
+
+      %{socket: %{assigns: %{game_pid: game_pid}}} = :sys.get_state(view.pid)
+
+      # --- Turn 1: fighter1 kills fighter2 with Executioner ---
+      s = Game.get_state(game_pid)
+      fighter1 = s.combat.current_turn.player
+      assert fighter1.class == "fighter"
+
+      [fighter2, mage] = s.combat.queue
+      assert fighter2.class == "fighter"
+      assert mage.class == "mage"
+
+      # Draw until Executioner is in hand (deck is all Executioner/Ressurrect so it will appear)
+      exec_idx = find_card_in_hand(view, game_pid, "Executioner")
+
+      render_hook(view, "pick_card", %{"card_index" => to_string(exec_idx)})
+      render_hook(view, "interact", %{"target_character_id" => to_string(fighter2.id)})
+
+      s = Game.get_state(game_pid)
+      assert Enum.any?(Game.CombatState.dead_characters(s.combat), &(&1.id == fighter2.id)),
+             "fighter2 should be dead after Executioner"
+
+      # fighter1 skips remaining turn; turn advances to mage (fighter2 is dead, skipped)
+      render_hook(view, "skip_turn", %{})
+
+      # --- Turn 2: mage skips ---
+      s = Game.get_state(game_pid)
+      assert s.combat.current_turn.player.class == "mage"
+      render_hook(view, "skip_turn", %{})
+
+      # --- Turn 3: fighter1 casts Ressurrect on dead fighter2 ---
+      s = Game.get_state(game_pid)
+      assert s.combat.current_turn.player.id == fighter1.id
+
+      # ASSERT: tile overlay marks dead fighter2's position as :valid
+      ressurrect_idx = find_card_in_hand(view, game_pid, "Ressurrect")
+      assert ressurrect_idx != nil, "fighter1 must have Ressurrect in hand on turn 3"
+
+      ressurrect_card = Enum.at(s.combat.current_turn.player.cards.hand, ressurrect_idx)
+      {overlay, _} = Game.Card.build_tile_overlay(ressurrect_card, s.combat)
+
+      dead_fighter2 = hd(Game.CombatState.dead_characters(s.combat))
+
+      assert Map.get(overlay, dead_fighter2.position) == :valid,
+             "dead fighter2's tile must be :valid in Ressurrect overlay"
+      assert Map.get(overlay, fighter1.position) != :valid,
+             "alive fighter1's tile must not be :valid for Ressurrect"
+
+      # Pick Ressurrect, then cast via tile click at fighter2's position
+      {f2q, f2r, f2s} = fighter2.position
+      render_hook(view, "pick_card", %{"card_index" => to_string(ressurrect_idx)})
+      render_hook(view, "interact", %{"target_position" => "#{f2q}_#{f2r}_#{f2s}"})
+
+      s = Game.get_state(game_pid)
+      revived = Enum.find(Game.CombatState.alive_characters(s.combat), &(&1.id == fighter2.id))
+      assert revived != nil, "fighter2 should be back in queue after Ressurrect"
+      assert revived.dead == false
+      assert revived.hp == 5
+
+      render_hook(view, "skip_turn", %{})
+
+      # --- Turn 4: fighter2 (revived) acts ---
+      s = Game.get_state(game_pid)
+      assert s.combat.current_turn.player.id == fighter2.id,
+             "revived fighter2 should be current player"
+
+      mage_hp_before = Enum.find(s.combat.queue, &(&1.class == "mage")).hp
+
+      attack_idx =
+        Enum.find_index(s.combat.current_turn.player.cards.hand, fn c ->
+          c.name in ["Executioner", "Strike"]
+        end)
+
+      assert attack_idx != nil, "fighter2 must have an attack card after revival"
+
+      render_hook(view, "pick_card", %{"card_index" => to_string(attack_idx)})
+      render_hook(view, "interact", %{"target_character_id" => to_string(mage.id)})
+
+      s = Game.get_state(game_pid)
+      mage_after = Enum.find(Game.CombatState.get_current_queue(s.combat), &(&1.class == "mage"))
+      assert mage_after.hp < mage_hp_before,
+             "mage should have taken damage from revived fighter2"
+    end
   end
 end

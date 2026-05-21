@@ -13,13 +13,11 @@ defmodule Game.Combat.CardEffects.Revive do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Revive
 
-    def process(%Revive{value: hp}, target, %CombatState{} = combat_state) do
-      dbg(target)
-      revived = %{target | dead: false, hp: max(hp, 1)}
+    def process(%Revive{}, %{dead: false}, %CombatState{} = combat_state), do: combat_state
 
-      combat_state
-      |> CombatState.update_target(target, revived)
-      |> CombatState.reinsert_into_queue(revived)
+    def process(%Revive{value: hp}, target, %CombatState{} = combat_state) do
+      revived = %{target | dead: false, hp: max(hp, 1)}
+      CombatState.update_target(combat_state, target, revived)
     end
 
     def get_description(%Revive{value: v}), do: "Revive target with #{v} HP"
