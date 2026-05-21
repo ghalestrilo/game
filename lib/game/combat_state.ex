@@ -205,27 +205,32 @@ defmodule Game.CombatState do
       |> Enum.map(& &1.team)
       |> Enum.uniq()
 
-    # Move newly dead characters out of the queue and into dead_characters
-    newly_dead = Enum.filter(combat.queue, &(&1.dead == true))
+    current_player = combat.current_turn.player
+    current_player_dead? = current_player && current_player.dead
+
+    # Move newly dead characters out of the queue and into dead_characters,
+    # including the current player if they died on their own turn.
+    newly_dead_in_queue = Enum.filter(combat.queue, &(&1.dead == true))
+    newly_dead = if current_player_dead?, do: [current_player | newly_dead_in_queue], else: newly_dead_in_queue
     dead_characters = (combat.dead_characters ++ newly_dead) |> Enum.uniq_by(& &1.id)
     alive_queue = Enum.filter(combat.queue, &(&1.dead == false))
 
-    # Update current_turn if current player is dead
-    updated_current_turn =
-      if combat.current_turn.player && combat.current_turn.player.dead do
-        %{combat.current_turn | player: nil}
-      else
-        combat.current_turn
-      end
-
     case length(alive_teams) do
       n when n <= 1 ->
-        result = %{combat | state: :game_over, queue: alive_queue, dead_characters: dead_characters, current_turn: updated_current_turn}
+        current_turn = if current_player_dead?, do: %{combat.current_turn | player: nil}, else: combat.current_turn
+        result = %{combat | state: :game_over, queue: alive_queue, dead_characters: dead_characters, current_turn: current_turn}
         Task.start(fn -> Game.Events.Publisher.publish_game_over(result) end)
         result
 
       _ ->
-        %{combat | state: :running, queue: alive_queue, dead_characters: dead_characters, current_turn: updated_current_turn}
+        combat_pruned = %{combat | queue: alive_queue, dead_characters: dead_characters}
+
+        if current_player_dead? && alive_queue != [] do
+          [next | rest] = alive_queue
+          %{combat_pruned | state: :running, current_turn: new_turn(next), queue: rest}
+        else
+          %{combat_pruned | state: :running}
+        end
     end
   end
 
@@ -327,7 +332,7 @@ defmodule Game.CombatState do
             Character.apply_damage(acc, dmg)
 
           %{type: :regen, heal: h, value: v} when v > 0 ->
-            %{acc | hp: min(acc.hp + h, Character.effective_attribute(acc, "max_hp"))}
+            Character.set_hp(acc, min(acc.hp + h, Character.effective_attribute(acc, "max_hp")))
 
           _ ->
             acc

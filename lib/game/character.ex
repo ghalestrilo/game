@@ -60,7 +60,7 @@ defmodule Game.Character do
   @doc """
   Returns true if the character is dead (hp <= 0)
   """
-  def is_dead?(%__MODULE__{hp: hp}) when is_integer(hp), do: hp <= 0
+  def is_dead?(%__MODULE__{hp: hp}) when is_number(hp), do: hp <= 0
   def is_dead?(_), do: false
 
   @doc """
@@ -72,10 +72,14 @@ defmodule Game.Character do
   @doc """
   Applies damage to a character, accounting for shield status effects
   """
+  def set_hp(character, amount) do
+    %{character | hp: round(amount)}
+  end
+
   def apply_damage(character, amount) when amount < 0 do
     # Healing (negative amount): hex flips it to damage
     effective = if get_status_effect(character, :hex), do: -amount, else: amount
-    %{character | hp: character.hp - effective}
+    set_hp(character, character.hp - effective)
   end
 
   def apply_damage(character, amount) do
@@ -97,7 +101,7 @@ defmodule Game.Character do
 
     # Hex flips the post-shield damage: positive damage becomes healing (negative)
     effective_damage = if get_status_effect(character, :hex), do: -hp_damage, else: hp_damage
-    %{char_after_shield | hp: char_after_shield.hp - effective_damage}
+    set_hp(char_after_shield, char_after_shield.hp - effective_damage)
   end
 
   @doc """
@@ -105,7 +109,7 @@ defmodule Game.Character do
   """
   @deprecated "use -apply_damage instead"
   def apply_healing(character, amount) do
-    %{character | hp: min(character.hp + amount, get_max_hp(character))}
+    set_hp(character, min(character.hp + amount, get_max_hp(character)))
   end
 
   @doc """

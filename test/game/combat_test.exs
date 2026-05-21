@@ -789,4 +789,66 @@ defmodule Game.CombatTest do
       assert result.current_turn.player.position == target
     end
   end
+
+  describe "current player dying on their own turn" do
+    # Three players across two teams: fighter (team1) suicides.
+    # mage (team2) and ally (team1) survive — two teams still alive so game stays :running.
+    # The turn must advance to the next queued player (mage), not leave player nil.
+    setup do
+      fighter = Fixtures.fighter()
+      mage = Fixtures.mage()
+      ally = %{Fixtures.fighter() | id: 3, name: "Ally", position: {2, 0, -2}}
+
+      # Card that deals exactly the fighter's max HP — lethal on self
+      suicide_card = %{Fixtures.lethal_card() | id: 99, range: 1}
+      fighter = %{fighter | cards: %{fighter.cards | hand: [suicide_card]}}
+
+      grid = %Grid{
+        tiles: %{
+          {0, 0, 0} => %{terrain: :plain, occupied_by: fighter},
+          {1, 0, -1} => %{terrain: :plain, occupied_by: mage},
+          {2, 0, -2} => %{terrain: :plain, occupied_by: ally}
+        }
+      }
+
+      combat = %CombatState{
+        state: :card_selected,
+        __constants__: %{players: [fighter, mage, ally]},
+        queue: [mage, ally],
+        grid: grid,
+        current_turn: %{
+          starting_position: fighter.position,
+          player: fighter,
+          card: suicide_card
+        }
+      }
+
+      {:ok, combat: combat, fighter: fighter, mage: mage, ally: ally}
+    end
+
+    test "turn advances to the next character instead of leaving player nil", %{
+      combat: combat,
+      mage: mage
+    } do
+      {:ok, result, _animations} =
+        Combat.process_action(combat, {:play_card_on_character, combat.current_turn.player})
+
+      assert result.current_turn.player != nil
+      assert result.current_turn.player.id == mage.id
+    end
+
+    test "dead fighter is moved to dead_characters", %{combat: combat, fighter: fighter} do
+      {:ok, result, _animations} =
+        Combat.process_action(combat, {:play_card_on_character, combat.current_turn.player})
+
+      assert Enum.any?(result.dead_characters, &(&1.id == fighter.id))
+    end
+
+    test "game state remains :running when both teams still have survivors", %{combat: combat} do
+      {:ok, result, _animations} =
+        Combat.process_action(combat, {:play_card_on_character, combat.current_turn.player})
+
+      assert result.state == :running
+    end
+  end
 end

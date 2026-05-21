@@ -80,8 +80,7 @@ defmodule GameWeb.GameBoard3D do
     tiles = build_tiles(combat, overlay, assigns[:current_player])
     characters = build_characters(combat, assigns[:current_player])
     encoded_blast_map = encode_blast_map(blast_map)
-    # current_turn_id = get_in(combat, [:current_turn, :player, :id])
-    current_turn_id = combat.current_turn.player.id
+    current_turn_id = combat.current_turn.player && combat.current_turn.player.id
 
     socket =
       push_event(socket, "board_state", %{

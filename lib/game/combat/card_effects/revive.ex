@@ -14,6 +14,7 @@ defmodule Game.Combat.CardEffects.Revive do
     alias Game.Combat.CardEffects.Revive
 
     def process(%Revive{value: hp}, target, %CombatState{} = combat_state) do
+      dbg(target)
       revived = %{target | dead: false, hp: max(hp, 1)}
 
       combat_state

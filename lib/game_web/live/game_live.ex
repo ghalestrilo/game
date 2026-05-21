@@ -158,9 +158,13 @@ defmodule GameWeb.GameLive do
   @impl true
   def handle_event("pick_card", %{"card_index" => idx}, socket) do
     card = Enum.at(socket.assigns.game_state.combat.current_turn.player.cards.hand, String.to_integer(idx))
-    if card,
-      do: CombatController.dispatch(socket, %{type: :pick_card, card: card}),
-      else: {:noreply, socket}
+    if is_nil(card) do
+      {:noreply, socket}
+    else
+      socket
+      |> assign(keyboard_card_index: idx)
+      |> CombatController.dispatch(%{type: :pick_card, card: card})
+    end
   end
 
   def handle_event("handle_keys", %{"key" => "Escape"},
@@ -238,27 +242,22 @@ defmodule GameWeb.GameLive do
 
   @impl true
   def handle_event("win_match", _params, socket) do
-    current_player = socket.assigns.game_state.combat.current_turn.player
+    current_player = socket.assigns.game_state.combat.current_turn.player || hd(socket.assigns.game_state.combat.queue)
+    updated_combat = force_game_over(socket.assigns.game_state.combat, current_player.team)
+    new_state = %{socket.assigns.game_state | combat: updated_combat}
 
-    if is_nil(current_player) do
-      {:noreply, put_flash(socket, :error, "No active player")}
-    else
-      updated_combat = force_game_over(socket.assigns.game_state.combat, current_player.team)
-      new_state = %{socket.assigns.game_state | combat: updated_combat}
+    :ok = GenServer.call(socket.assigns.game_pid, {:set_state, new_state})
 
-      :ok = GenServer.call(socket.assigns.game_pid, {:set_state, new_state})
-
-      if socket.assigns.mode == :pvp do
-        Lobby.reset(socket.assigns.lobby_id)
-      end
-
-      action = "#{current_player.name}'s team (#{current_player.team}) wins the match!"
-
-      {:noreply,
-       socket
-       |> assign(game_state: new_state)
-       |> update(:action_log, &Enum.slice([action | &1], 0, 20))}
+    if socket.assigns.mode == :pvp do
+      Lobby.reset(socket.assigns.lobby_id)
     end
+
+    action = "#{current_player.name}'s team (#{current_player.team}) wins the match!"
+
+    {:noreply,
+      socket
+      |> assign(game_state: new_state)
+      |> update(:action_log, &Enum.slice([action | &1], 0, 20))}
   end
 
   @impl true
