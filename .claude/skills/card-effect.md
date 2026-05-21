@@ -69,6 +69,7 @@ end
 
 - **Simple value effect** (damage, heal, shield): just `value`, call a Character helper
 - **Status effect** (dot, slow, stun, regen): call `Character.add_status_effect/2` with a map including `type:`, `value:`, and any extra fields; the status is ticked each turn by `CombatState.tick_status_effects/1` — make sure `combat_state.ex` handles the new type there
+- **Effect that targets dead characters**: set `dead_skip` exemption in `apply_card_effects` (`resolved.type not in [:revive, "revive"]`) — note that effects loaded from DB have `type` as a string while inline structs have it as an atom; `dead_skip` already handles both for `:revive`/`"revive"`, so extend that list if adding another dead-targeting effect
 - **Movement effect** (move): use `Grid.direction_from_angle/1` and `Grid.direction_toward/3`; move step-by-step checking `Grid.tile_blocked?/2`
 - **Multi-param effect** (dot, modify_attribute): add struct fields beyond `value`; list them all in `params/1`
 - **No-formula effect** (give, cleanse): `params(_), do: []`
@@ -84,6 +85,8 @@ In `lib/game/card.ex`, add to the `@effect_types` map:
 ### 3. Handle the status effect tick (if applicable)
 
 If the effect adds a status that ticks each turn, open `lib/game/combat_state.ex` and find `tick_status_effects/1`. Add a clause for the new type following the existing pattern for `:dot`, `:slow`, `:regen`, etc.
+
+Note: dead characters are **not** removed from the queue — they stay with `dead: true` and `setup_player_turn` skips their turn automatically. There is no separate `dead_characters` list to manage.
 
 ### 4. Verify it compiles
 

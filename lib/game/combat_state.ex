@@ -117,12 +117,14 @@ defmodule Game.CombatState do
   end
 
   def setup_player_turn(%{current_turn: %{player: next_player}} = combat) do
-    ticked =
+    after_tick =
       combat
       |> put_in([:state], :running)
       |> put_in([:current_turn], new_turn(next_player))
       |> tick_status_effects()
 
+    # If DOT reduced HP to 0, mark the player dead before deciding whether to skip
+    ticked = check_target_death(after_tick, after_tick.current_turn.player)
     current = ticked.current_turn.player
 
     cond do
