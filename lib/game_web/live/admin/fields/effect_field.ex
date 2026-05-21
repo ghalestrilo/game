@@ -41,6 +41,7 @@ defmodule GameWeb.Admin.Fields.EffectField do
   @impl Backpex.Field
   def render_form(assigns) do
     assigns = assign(assigns, :child_fields, child_fields())
+    assigns = assign(assigns, :modifiable_attributes, @modifiable_attributes)
 
     ~H"""
     <div class="p-8">

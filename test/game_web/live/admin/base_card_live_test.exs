@@ -222,6 +222,24 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
     end
   end
 
+  describe "modify_attribute effect" do
+    test "renders attribute select when editing a card with modify_attribute effect", %{conn: conn} do
+      {:ok, card} =
+        BaseCards.create_base_card(%{
+          name: "Attribute Card",
+          ap: 1,
+          headline: "Modifies an attribute",
+          rarity: :common,
+          effects: [%{type: "modify_attribute", value: %{"attribute" => "max_hp", "value" => 5, "duration" => 2}}]
+        })
+
+      {:ok, _view, html} = live(conn, ~p"/admin/base_cards/#{card.id}/edit")
+
+      assert html =~ ~s(name="change[effects][0][value][attribute][value]")
+      assert html =~ "max_hp"
+    end
+  end
+
   describe "creating cards with new compound effects via admin form" do
     # Builds a minimal valid form params map for a card with the given effects list.
     # Each effect is %{"type" => "...", params: %{"param_key" => "scalar_value", ...}}.
