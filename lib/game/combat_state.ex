@@ -129,7 +129,13 @@ defmodule Game.CombatState do
 
     cond do
       current.dead ->
-        ticked |> rotate_queue() |> setup_player_turn()
+        alive_teams = alive_characters(ticked) |> Enum.map(& &1.team) |> Enum.uniq()
+
+        if length(alive_teams) <= 1 do
+          check_game_over(ticked)
+        else
+          ticked |> rotate_queue() |> setup_player_turn()
+        end
 
       stun_active?(current) ->
         ticked |> rotate_queue() |> setup_player_turn()
@@ -218,12 +224,14 @@ defmodule Game.CombatState do
 
     case length(alive_teams) do
       n when n <= 1 ->
-        current_turn =
-          if current_player_dead?,
-            do: %{combat.current_turn | player: nil},
-            else: combat.current_turn
+        {current_turn, queue} =
+          if current_player_dead? do
+            {%{combat.current_turn | player: nil}, [current_player | combat.queue]}
+          else
+            {combat.current_turn, combat.queue}
+          end
 
-        result = %{combat | state: :game_over, current_turn: current_turn}
+        result = %{combat | state: :game_over, current_turn: current_turn, queue: queue}
         Task.start(fn -> Game.Events.Publisher.publish_game_over(result) end)
         result
 
@@ -375,7 +383,7 @@ defmodule Game.CombatState do
   def get_current_turn(%{current_turn: turn}), do: turn
 
   def get_current_queue(%CombatState{current_turn: %{player: player}, queue: queue}) do
-    [player] ++ queue
+    [player | queue] |> Enum.reject(&is_nil/1)
   end
 
   def is_players_turn?(

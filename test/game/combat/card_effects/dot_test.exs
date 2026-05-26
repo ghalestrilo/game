@@ -132,7 +132,8 @@ defmodule Game.Combat.CardEffects.DotTest do
       combat: combat,
       mage: mage
     } do
-      # Mage has 15 HP; DOT of 20 damage over 1 tick kills them
+      # Mage has 15 HP; DOT of 20 damage over 1 tick kills them.
+      # Since mage is the only team 2 player, their death ends the game.
       lethal_mage = Character.add_status_effect(mage, %{type: :dot, damage: 20, value: 1})
       combat = %{combat | queue: [lethal_mage]}
 
@@ -141,28 +142,27 @@ defmodule Game.Combat.CardEffects.DotTest do
         |> CombatState.rotate_queue()
         |> CombatState.setup_player_turn()
 
-      dead_mage = Enum.find(CombatState.get_current_queue(next), &(&1.id == mage.id))
+      dead_mage = Enum.find(CombatState.dead_characters(next), &(&1.id == mage.id))
+      assert dead_mage != nil
       assert dead_mage.hp <= 0
       assert dead_mage.dead == true
     end
 
-    test "dead-from-DOT character's turn is skipped — next alive player acts", %{
+    test "dead-from-DOT character's turn is skipped and game ends when last enemy dies", %{
       combat: combat,
-      fighter: fighter,
       mage: mage
     } do
-      # Mage has 15 HP; DOT of 20 kills them on their turn
+      # Mage is the only team 2 player; lethal DOT ends the game on mage's turn
       lethal_mage = Character.add_status_effect(mage, %{type: :dot, damage: 20, value: 1})
       combat = %{combat | queue: [lethal_mage]}
 
-      # Rotate to mage: DOT fires, mage dies, turn skips back to fighter
       next =
         combat
         |> CombatState.rotate_queue()
         |> CombatState.setup_player_turn()
 
-      assert next.current_turn.player.id == fighter.id,
-             "fighter should be current player after dead mage's turn is skipped"
+      # Game ends rather than skipping to fighter — fighter wins
+      assert next.state == :game_over
     end
 
     test "dead-from-DOT character appears in dead_characters getter", %{
@@ -178,6 +178,23 @@ defmodule Game.Combat.CardEffects.DotTest do
         |> CombatState.setup_player_turn()
 
       assert Enum.any?(CombatState.dead_characters(next), &(&1.id == mage.id))
+    end
+  end
+
+  describe "dot kill triggers game_over in 2-team game" do
+    test "lethal DOT on last enemy transitions combat to :game_over", %{
+      combat: combat,
+      mage: mage
+    } do
+      lethal_mage = Character.add_status_effect(mage, %{type: :dot, damage: 20, value: 1})
+      combat = %{combat | queue: [lethal_mage]}
+
+      next =
+        combat
+        |> CombatState.rotate_queue()
+        |> CombatState.setup_player_turn()
+
+      assert next.state == :game_over
     end
   end
 
