@@ -41,7 +41,7 @@ defmodule Game.BaseDecks.BaseDeck do
   defp base_card_to_card(card) do
     card =
       card
-      |> Map.drop([:__meta__, :__struct__, :inserted_at, :updated_at, :ap])
+      |> Map.drop([:__meta__, :__struct__, :inserted_at, :updated_at, :ap, :slug])
       |> Map.merge(%{
         cost: card.ap
       })

@@ -330,7 +330,7 @@ defmodule Game do
 
   defp base_card_to_game_card(base_card, id) do
     base_card
-    |> Map.drop([:__meta__, :__struct__, :inserted_at, :updated_at, :ap])
+    |> Map.drop([:__meta__, :__struct__, :inserted_at, :updated_at, :ap, :slug])
     |> Map.merge(%{cost: base_card.ap, id: id})
     |> then(&struct!(Game.Card, &1))
   end

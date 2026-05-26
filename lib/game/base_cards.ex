@@ -37,6 +37,8 @@ defmodule Game.BaseCards do
   """
   def get_base_card!(id), do: Repo.get!(BaseCard, id)
 
+  def get_base_card_by_slug!(slug), do: Repo.get_by!(BaseCard, slug: slug)
+
   @doc """
   Creates a base_card.
 

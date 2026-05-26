@@ -95,8 +95,8 @@ defmodule GameWeb.Admin.Fields.EffectField do
                   <option value="">-- Select card --</option>
                   <%= for base_card <- list_base_cards() do %>
                     <option
-                      value={base_card.id}
-                      selected={to_string(base_card.id) == to_string(Map.get(value_map, "card", ""))}
+                      value={base_card.slug}
+                      selected={base_card.slug == Map.get(value_map, "card", "")}
                     >
                       {base_card.name}
                     </option>

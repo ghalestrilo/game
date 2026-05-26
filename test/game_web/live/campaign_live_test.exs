@@ -6,9 +6,11 @@ defmodule GameWeb.CampaignLiveTest do
 
   setup do
     # Create an attack card with 1 damage
+    uid = System.unique_integer([:positive])
+
     {:ok, attack_card} =
       BaseCards.create_base_card(%{
-        name: "Attack",
+        name: "Attack-#{uid}",
         ap: 1,
         effects: [%{"type" => "damage", "value" => 1}],
         headline: "Deal 1 damage",
@@ -18,7 +20,7 @@ defmodule GameWeb.CampaignLiveTest do
     # Create a fireball card for the shop
     {:ok, fireball_card} =
       BaseCards.create_base_card(%{
-        name: "Fireball",
+        name: "Fireball-#{uid}",
         ap: 2,
         effects: [%{"type" => "damage", "value" => 3}],
         headline: "Deal 3 damage",
@@ -229,9 +231,11 @@ defmodule GameWeb.CampaignLiveTest do
       wolf_class: _wolf_class
     } do
       # Create a kill card that deals 999 damage
+      uid2 = System.unique_integer([:positive])
+
       {:ok, kill_card} =
         BaseCards.create_base_card(%{
-          name: "Kill",
+          name: "Kill-#{uid2}",
           ap: 1,
           effects: [%{"type" => "damage", "value" => 999}],
           headline: "Instant death",
@@ -241,7 +245,7 @@ defmodule GameWeb.CampaignLiveTest do
       # Create a summon wolf card
       {:ok, summon_wolf_card} =
         BaseCards.create_base_card(%{
-          name: "Summon Wolf",
+          name: "Summon Wolf-#{uid2}",
           ap: 1,
           effects: [%{"type" => "summon", "value" => "wolf"}],
           headline: "Summon a wolf ally",

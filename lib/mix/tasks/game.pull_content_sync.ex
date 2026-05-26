@@ -81,35 +81,37 @@ defmodule Mix.Tasks.Game.PullContentSync do
               Map.put(acc, prod_strategy.id, local_strategy.id)
             end)
 
+          Enum.each(prod_cards, fn prod_card ->
+            effects_attrs =
+              Enum.map(prod_card.effects, fn e ->
+                Map.take(e, [
+                  :type,
+                  :value,
+                  :value_label,
+                  :range,
+                  :multi,
+                  :scaling,
+                  :conditional
+                ])
+              end)
+
+            %BaseCard{}
+            |> BaseCard.changeset(%{
+              name: prod_card.name,
+              ap: prod_card.ap,
+              range: prod_card.range,
+              headline: prod_card.headline,
+              rarity: prod_card.rarity,
+              targeting: prod_card.targeting,
+              effects: effects_attrs
+            })
+            |> Game.Repo.insert!()
+          end)
+
           card_id_map =
-            Enum.reduce(prod_cards, %{}, fn prod_card, acc ->
-              effects_attrs =
-                Enum.map(prod_card.effects, fn e ->
-                  Map.take(e, [
-                    :type,
-                    :value,
-                    :value_label,
-                    :range,
-                    :multi,
-                    :scaling,
-                    :conditional
-                  ])
-                end)
-
-              local_card =
-                %BaseCard{}
-                |> BaseCard.changeset(%{
-                  name: prod_card.name,
-                  ap: prod_card.ap,
-                  range: prod_card.range,
-                  headline: prod_card.headline,
-                  rarity: prod_card.rarity,
-                  targeting: prod_card.targeting,
-                  effects: effects_attrs
-                })
-                |> Game.Repo.insert!()
-
-              Map.put(acc, prod_card.id, local_card.id)
+            Map.new(prod_cards, fn prod_card ->
+              local_card = Game.Repo.get_by!(BaseCard, slug: prod_card.slug)
+              {prod_card.id, local_card.id}
             end)
 
           deck_id_map =

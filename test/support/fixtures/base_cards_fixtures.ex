@@ -14,7 +14,7 @@ defmodule Game.BaseCardsFixtures do
         ap: 42,
         effects: [],
         headline: "some headline",
-        name: "some name",
+        name: "card-#{System.unique_integer([:positive])}",
         rarity: :common
       })
       |> Game.BaseCards.create_base_card()

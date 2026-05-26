@@ -1,6 +1,7 @@
 defmodule Game.BaseCards.BaseCard do
   use Ecto.Schema
   import Ecto.Changeset
+  alias Slug
 
   defmodule StringOrNumber do
     @behaviour Ecto.Type
@@ -69,6 +70,7 @@ defmodule Game.BaseCards.BaseCard do
 
   schema "cards" do
     field :name, :string
+    field :slug, :string
     embeds_many :effects, Effect, on_replace: :delete
     field :ap, :integer
     field :range, :integer
@@ -82,12 +84,23 @@ defmodule Game.BaseCards.BaseCard do
   @doc false
   def changeset(base_card, attrs) do
     base_card
-    |> cast(attrs, [:name, :ap, :range, :headline, :rarity, :targeting])
+    |> cast(attrs, [:name, :ap, :range, :headline, :rarity, :targeting, :slug])
     |> cast_embed(:effects,
       with: &Effect.changeset/2,
       sort_param: :effects_order,
       drop_param: :effects_delete
     )
     |> validate_required([:name, :ap, :headline, :rarity])
+    |> put_slug()
+    |> unique_constraint(:slug)
+  end
+
+  defp put_slug(changeset) do
+    existing_slug = get_field(changeset, :slug)
+
+    case {get_change(changeset, :slug), get_change(changeset, :name), existing_slug} do
+      {nil, name, nil} when is_binary(name) -> put_change(changeset, :slug, Slug.slugify(name))
+      _ -> changeset
+    end
   end
 end

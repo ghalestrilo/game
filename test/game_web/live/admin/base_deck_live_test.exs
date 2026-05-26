@@ -8,7 +8,7 @@ defmodule GameWeb.Admin.BaseDeckLiveTest do
   setup do
     {:ok, card_a} =
       BaseCards.create_base_card(%{
-        name: "Strike",
+        name: "Strike-#{System.unique_integer([:positive])}",
         ap: 1,
         effects: [],
         headline: "Deal damage",
@@ -17,7 +17,7 @@ defmodule GameWeb.Admin.BaseDeckLiveTest do
 
     {:ok, card_b} =
       BaseCards.create_base_card(%{
-        name: "Fireball",
+        name: "Fireball-#{System.unique_integer([:positive])}",
         ap: 2,
         effects: [],
         headline: "AoE damage",

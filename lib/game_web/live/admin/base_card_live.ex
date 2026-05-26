@@ -27,6 +27,12 @@ defmodule GameWeb.Admin.BaseCardLive do
         searchable: true,
         default: fn assigns -> Map.get(assigns.params, "name") end
       },
+      slug: %{
+        module: Backpex.Fields.Text,
+        label: "Name",
+        searchable: true,
+        default: fn assigns ->  "---" end
+      },
       headline: %{
         module: Backpex.Fields.Text,
         label: "Headline",

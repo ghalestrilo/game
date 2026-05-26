@@ -7,7 +7,7 @@ defmodule Game.Combat.CardEffects.Give do
   @type t() :: %__MODULE__{
           type: atom(),
           value: nil,
-          card: integer() | nil,
+          card: String.t() | integer() | nil,
           pile: String.t(),
           value_label: String.t() | nil
         }
@@ -15,18 +15,22 @@ defmodule Game.Combat.CardEffects.Give do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Give
 
+    def process(%Give{card: slug, pile: pile}, target, %CombatState{} = combat_state)
+        when is_binary(slug) do
+      pile_atom = pile_to_atom(pile)
+      base_card = Game.BaseCards.get_base_card_by_slug!(slug)
+      game_card = base_card_to_card(base_card)
+      updated_target = %{target | cards: Map.update!(target.cards, pile_atom, &[game_card | &1])}
+      CombatState.update_target(combat_state, target, updated_target)
+    end
+
     def process(%Give{card: card_id, pile: pile}, target, %CombatState{} = combat_state)
         when is_integer(card_id) do
       pile_atom = pile_to_atom(pile)
-
-      with base_card <- Game.BaseCards.get_base_card!(card_id),
-           game_card <- base_card_to_card(base_card) do
-        updated_cards =
-          Map.update!(target.cards, pile_atom, &[game_card | &1])
-
-        updated_target = %{target | cards: updated_cards}
-        CombatState.update_target(combat_state, target, updated_target)
-      end
+      base_card = Game.BaseCards.get_base_card!(card_id)
+      game_card = base_card_to_card(base_card)
+      updated_target = %{target | cards: Map.update!(target.cards, pile_atom, &[game_card | &1])}
+      CombatState.update_target(combat_state, target, updated_target)
     end
 
     def process(%Give{}, _target, combat_state), do: combat_state
@@ -50,7 +54,7 @@ defmodule Game.Combat.CardEffects.Give do
       card_map =
         base_card
         |> Map.from_struct()
-        |> Map.drop([:__meta__, :inserted_at, :updated_at, :ap, :headline])
+        |> Map.drop([:__meta__, :inserted_at, :updated_at, :ap, :headline, :slug])
         |> Map.merge(%{cost: base_card.ap, id: -base_card.id})
 
       struct!(Game.Card, card_map)

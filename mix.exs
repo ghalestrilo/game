@@ -69,7 +69,8 @@ defmodule Game.MixProject do
       {:git_hooks, "~> 0.8.1", only: :dev},
       {:json_logic, "~> 1.0"},
       {:broadway, "~> 1.1"},
-      {:broadway_rabbitmq, "~> 0.8"}
+      {:broadway_rabbitmq, "~> 0.8"},
+      {:slugify, "~> 1.3"}
     ]
   end
 

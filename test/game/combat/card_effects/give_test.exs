@@ -36,6 +36,22 @@ defmodule Game.Combat.CardEffects.GiveTest do
     {:ok, combat: combat, fighter: fighter, mage: mage, base_card: base_card}
   end
 
+  describe "process/3 — slug-based lookup" do
+    test "adds card to target's hand by slug", %{combat: combat, mage: mage, base_card: base_card} do
+      effect = %Give{card: base_card.slug, pile: "hand"}
+      updated = CardEffect.process(effect, mage, combat)
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      assert Enum.any?(updated_mage.cards.hand, &(&1.name == base_card.name))
+    end
+
+    test "adds card to draw pile by slug", %{combat: combat, mage: mage, base_card: base_card} do
+      effect = %Give{card: base_card.slug, pile: "draw"}
+      updated = CardEffect.process(effect, mage, combat)
+      updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+      assert Enum.any?(updated_mage.cards.draw, &(&1.name == base_card.name))
+    end
+  end
+
   describe "process/3 — adds card to target pile" do
     test "adds card to target's hand", %{combat: combat, mage: mage, base_card: base_card} do
       effect = %Give{card: base_card.id, pile: "hand"}

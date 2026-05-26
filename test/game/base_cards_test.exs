@@ -76,5 +76,36 @@ defmodule Game.BaseCardsTest do
       base_card = base_card_fixture()
       assert %Ecto.Changeset{} = BaseCards.change_base_card(base_card)
     end
+
+    test "create_base_card/1 auto-generates slug from name" do
+      {:ok, card} = BaseCards.create_base_card(%{name: "Fire Ball", ap: 1, headline: "h", rarity: :common, effects: []})
+      assert card.slug == "fire-ball"
+    end
+
+    test "create_base_card/1 with explicit slug uses that slug" do
+      {:ok, card} = BaseCards.create_base_card(%{name: "Fire Ball", slug: "custom-slug", ap: 1, headline: "h", rarity: :common, effects: []})
+      assert card.slug == "custom-slug"
+    end
+
+    test "update_base_card/2 renaming does not change slug" do
+      {:ok, card} = BaseCards.create_base_card(%{name: "Original", ap: 1, headline: "h", rarity: :common, effects: []})
+      {:ok, updated} = BaseCards.update_base_card(card, %{name: "Renamed"})
+      assert updated.slug == "original"
+    end
+
+    test "create_base_card/1 slug must be unique" do
+      {:ok, _} = BaseCards.create_base_card(%{name: "Twin", ap: 1, headline: "h", rarity: :common, effects: []})
+      assert {:error, changeset} = BaseCards.create_base_card(%{name: "Twin", ap: 1, headline: "h", rarity: :common, effects: []})
+      assert {:slug, _} = List.keyfind(changeset.errors, :slug, 0)
+    end
+
+    test "get_base_card_by_slug!/1 returns card with matching slug" do
+      {:ok, card} = BaseCards.create_base_card(%{name: "Slug Test", ap: 1, headline: "h", rarity: :common, effects: []})
+      assert BaseCards.get_base_card_by_slug!("slug-test").id == card.id
+    end
+
+    test "get_base_card_by_slug!/1 raises for unknown slug" do
+      assert_raise Ecto.NoResultsError, fn -> BaseCards.get_base_card_by_slug!("no-such-slug") end
+    end
   end
 end

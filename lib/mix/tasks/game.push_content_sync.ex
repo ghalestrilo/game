@@ -79,35 +79,37 @@ defmodule Mix.Tasks.Game.PushContentSync do
             Map.put(acc, local_strategy.id, prod_strategy.id)
           end)
 
+        Enum.each(local_cards, fn local_card ->
+          effects_attrs =
+            Enum.map(local_card.effects, fn e ->
+              Map.take(e, [
+                :type,
+                :value,
+                :value_label,
+                :range,
+                :multi,
+                :scaling,
+                :conditional
+              ])
+            end)
+
+          %BaseCard{}
+          |> BaseCard.changeset(%{
+            name: local_card.name,
+            ap: local_card.ap,
+            range: local_card.range,
+            headline: local_card.headline,
+            rarity: local_card.rarity,
+            targeting: local_card.targeting,
+            effects: effects_attrs
+          })
+          |> Game.ProdRepo.insert!()
+        end)
+
         card_id_map =
-          Enum.reduce(local_cards, %{}, fn local_card, acc ->
-            effects_attrs =
-              Enum.map(local_card.effects, fn e ->
-                Map.take(e, [
-                  :type,
-                  :value,
-                  :value_label,
-                  :range,
-                  :multi,
-                  :scaling,
-                  :conditional
-                ])
-              end)
-
-            prod_card =
-              %BaseCard{}
-              |> BaseCard.changeset(%{
-                name: local_card.name,
-                ap: local_card.ap,
-                range: local_card.range,
-                headline: local_card.headline,
-                rarity: local_card.rarity,
-                targeting: local_card.targeting,
-                effects: effects_attrs
-              })
-              |> Game.ProdRepo.insert!()
-
-            Map.put(acc, local_card.id, prod_card.id)
+          Map.new(local_cards, fn local_card ->
+            prod_card = Game.ProdRepo.get_by!(BaseCard, slug: local_card.slug)
+            {local_card.id, prod_card.id}
           end)
 
         deck_id_map =

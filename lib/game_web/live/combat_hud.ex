@@ -57,9 +57,9 @@ defmodule GameWeb.CombatHUD do
               {if is_map(action), do: action.text, else: action}
               <div
                 :if={is_map(action) && action.card != nil}
-                class="absolute right-full -top-2 z-50 invisible group-hover:visible group-hover:mr-4 pointer-events-none transition-all duration-200"
+                class="absolute right-full -top-2 z-50 invisible opacity-0 group-hover:visible group-hover:opacity-100 group-hover:mr-4 pointer-events-none transition-all duration-200"
               >
-                <.card card={action.card} index={0} disabled={true} />
+                <.card card={action.card} index={0} disabled={false} />
               </div>
             </div>
             <div class="timeline-middle min-w-4 min-h-4 rounded-full bg-base-300"></div>
