@@ -2,44 +2,129 @@
 
 ## Context
 
-Cards need a `:class` field so they can be associated with a specific character class and appear
-selectively in booster packs. When a player walks over a booster pickup on the map, it triggers a
-class selection modal (player's own class + 2 random others), and the resulting booster pack is
-filtered to that chosen class's cards.
+When a player walks over a booster pickup on the map, it triggers a class selection modal (player's
+own class + 2 random others), and the resulting booster pack is drawn from that chosen class's
+booster pool.
 
 Boosters already exist as a pre-combat draft mechanic (lobby phase). This feature adds an in-game
 booster pickup triggered by map exploration.
 
 ---
 
+## Data Design
+
+Booster pools mirror the existing deck pattern: a `BoosterPool` entity owns a list of cards via a
+`booster_pool_cards` join table (analogous to `base_deck_cards`). Each `BaseClass` gets a nullable
+`booster_pool_id` FK pointing to its pool.
+
+**Why not a `:class` string field on `BaseCard`?**
+- One class per card — cards can't appear in multiple class pools without duplication.
+- No probability weighting — the join table's `count` field lets you weight a card's appearance
+  frequency, matching how decks already work.
+- Fragile coupling — renaming a class would require auditing all card records.
+- The join table approach is already proven in this codebase and the admin UI pattern is identical.
+
+A card that should appear in all class pools is simply added to each pool. A "class-agnostic" card
+has no special status — it is curated explicitly per pool.
+
+---
+
 ## Implementation Plan
 
-### 1. Add `:class` field to BaseCard
+### 1. Create `BoosterPool` and `booster_pool_cards`
 
-**File:** `lib/game/base_cards/base_card.ex`
-
-Add a nullable string field `:class`. A card with `class: nil` is class-agnostic and can appear in
-any booster; a card with a class value only appears in that class's booster pool.
+**New file:** `lib/game/content/booster_pool.ex`
 
 ```elixir
-field :class, :string
-```
+defmodule Game.Content.BoosterPool do
+  use Ecto.Schema
+  import Ecto.Changeset
 
-Add `:class` to the `cast` list in `changeset/2`. No `validate_required` — it is optional.
+  schema "booster_pools" do
+    field :name, :string
+    has_many :booster_pool_cards, Game.Content.BoosterPoolCard
+    has_many :cards, through: [:booster_pool_cards, :card]
+    timestamps()
+  end
 
-**Migration:**
-
-```elixir
-alter table(:cards) do
-  add :class, :string
+  def changeset(pool, attrs) do
+    pool
+    |> cast(attrs, [:name])
+    |> validate_required([:name])
+    |> unique_constraint(:name)
+  end
 end
 ```
 
-**Admin UI** (`lib/game_web/live/admin/base_card_live.ex`): add a `class` text field (or a
-BelongsTo-style select if you prefer referencing BaseClass names). A simple text field is the
-minimal approach since `:class` is a string matching BaseClass's `:class` field.
+**New file:** `lib/game/content/booster_pool_card.ex`
 
-### 2. Create the Booster map object
+```elixir
+defmodule Game.Content.BoosterPoolCard do
+  use Ecto.Schema
+  import Ecto.Changeset
+
+  schema "booster_pool_cards" do
+    field :count, :integer, default: 1
+    belongs_to :pool, Game.Content.BoosterPool
+    belongs_to :card, Game.BaseCards.BaseCard
+  end
+
+  def changeset(bpc, attrs) do
+    bpc
+    |> cast(attrs, [:count, :pool_id, :card_id])
+    |> validate_required([:pool_id, :card_id])
+    |> unique_constraint([:pool_id, :card_id])
+  end
+end
+```
+
+**Migrations:**
+
+```elixir
+# create_booster_pools
+create table(:booster_pools) do
+  add :name, :string, null: false
+  timestamps()
+end
+create unique_index(:booster_pools, [:name])
+
+# create_booster_pool_cards
+create table(:booster_pool_cards) do
+  add :count, :integer, null: false, default: 1
+  add :pool_id, references(:booster_pools, on_delete: :delete_all), null: false
+  add :card_id, references(:cards, on_delete: :delete_all), null: false
+end
+create unique_index(:booster_pool_cards, [:pool_id, :card_id])
+
+# add_booster_pool_id_to_base_classes
+alter table(:base_classes) do
+  add :booster_pool_id, references(:booster_pools, on_delete: :nilify_all)
+end
+```
+
+### 2. Update `BaseClass`
+
+**File:** `lib/game/content/base_class.ex`
+
+Add the association:
+
+```elixir
+belongs_to :booster_pool, Game.Content.BoosterPool
+```
+
+Add `:booster_pool_id` to the `cast` list in `changeset/2`.
+
+### 3. Admin UI
+
+**File:** `lib/game_web/live/admin/base_class_live.ex` (or equivalent)
+
+Add a booster pool selector to the class admin form (BelongsTo-style select, same pattern as the
+deck selector on BaseClass).
+
+Add a `BoosterPool` admin page (clone of the BaseDeck admin) so pools and their cards can be
+managed.
+
+### 4. Create the Booster map object
 
 **New file:** `lib/game/map_objects/booster.ex`
 
@@ -60,7 +145,7 @@ end
 Returns `{:booster_pickup, combat_state}` — a new return variant that signals the game loop to
 trigger a class selection flow.
 
-### 3. Handle `{:booster_pickup}` in combat entry effects
+### 5. Handle `{:booster_pickup}` in combat entry effects
 
 **File:** `lib/game/combat.ex` — `apply_entry_effects/3`
 
@@ -76,7 +161,6 @@ defp apply_entry_effects(%CombatState{grid: grid} = combat, character, position)
         {updated, events}
 
       {:booster_pickup, updated} ->
-        # Remove the booster from the tile so it can't be collected twice
         updated_grid = remove_object_at(updated.grid, position, object)
         {%{updated | grid: updated_grid}, [:booster_pickup | events]}
 
@@ -89,9 +173,10 @@ end
 
 Change the function signature to return `{combat_state, [events]}` and update its call site in
 `process_action/2` to destructure accordingly. Broadcast the `:booster_pickup` event to the
-LiveView via the existing state broadcast mechanism (same path as animations).
+LiveView via the existing state broadcast mechanism.
 
-Add a private helper to remove one object from a tile:
+Add a private helper:
+
 ```elixir
 defp remove_object_at(grid, position, object) do
   update_in(grid.tiles[position][:objects], fn objs ->
@@ -100,27 +185,23 @@ defp remove_object_at(grid, position, object) do
 end
 ```
 
-### 4. Map deserialization support
+### 6. Map deserialization support
 
 **File:** `lib/game/maps.ex` (or wherever `deserialize_objects/1` lives)
-
-Add `"booster"` to the object type switch:
 
 ```elixir
 defp deserialize_object(%{"type" => "booster"}), do: %Game.MapObject.Booster{}
 ```
 
-### 5. Class selection flow in Game/LiveView
+### 7. Class selection flow in Game/LiveView
 
 When the server broadcasts a `:booster_pickup` event, the LiveView must:
 1. Show a class selection modal.
 2. Player picks one class from: their current class + 2 random others.
-3. Game generates a booster pack filtered to that class's cards.
-4. Player picks cards from that pack (using the existing booster picking flow).
+3. Game generates a booster pack drawn from that class's pool.
+4. Player picks cards from that pack (existing booster pick flow).
 
-**In `lib/game.ex`** (or the module that drives game state updates):
-
-Add a handler for the booster pickup event that attaches `pending_booster: {player_id, [class_options]}` to the game state so the LiveView can render the modal.
+**In `lib/game.ex`:**
 
 ```elixir
 def handle_booster_pickup(game_state, player_id) do
@@ -133,46 +214,48 @@ def handle_booster_pickup(game_state, player_id) do
 end
 ```
 
-**In `lib/game_web/live/game_live.ex`** (or `combat_live.ex`):
-
-Add a `"select_booster_class"` event handler:
+**In `lib/game_web/live/game_live.ex`:**
 
 ```elixir
 def handle_event("select_booster_class", %{"class" => class}, socket) do
   game_id = socket.assigns.game_id
   player_id = socket.assigns.current_player.id
-
   Game.trigger_class_booster(game_id, player_id, class)
   {:noreply, socket}
 end
 ```
 
-**In `lib/game.ex`**:
+**In `lib/game.ex`:**
 
 ```elixir
 def trigger_class_booster(game_id, player_id, class) do
   cards = generate_booster_cards_for_class(class, booster_size)
-  # Set player's booster_state and transition them into the existing booster pick flow
+  # Set player's booster_state and transition into the existing booster pick flow
 end
-```
 
-Add a `generate_booster_cards_for_class/2` function that:
-- Queries `BaseCard` where `class == chosen_class OR class IS NULL` (class-agnostic cards are always
-  eligible)
-- Randomly samples `booster_size` cards from that pool
-
-```elixir
 defp generate_booster_cards_for_class(class, count) do
   import Ecto.Query
-  Game.Repo.all(
-    from c in Game.BaseCards.BaseCard,
-    where: c.class == ^class or is_nil(c.class)
-  )
+
+  pool =
+    Game.Repo.one(
+      from c in Game.Content.BaseClass,
+      where: c.class == ^class,
+      join: p in assoc(c, :booster_pool),
+      join: bpc in assoc(p, :booster_pool_cards),
+      join: card in assoc(bpc, :card),
+      preload: [booster_pool: {p, booster_pool_cards: {bpc, card: card}}]
+    )
+
+  pool.booster_pool.booster_pool_cards
+  |> Enum.flat_map(fn bpc -> List.duplicate(bpc.card, bpc.count) end)
   |> Enum.shuffle()
   |> Enum.take(count)
   |> Enum.map(&Game.Content.to_game_card/1)
 end
 ```
+
+The `count` field on `BoosterPoolCard` expands into repeated entries before shuffling, so higher
+count means higher probability — matching how `BaseDeck.get_cards/1` works.
 
 **Modal in the HUD/GameLive template:**
 
@@ -192,9 +275,14 @@ end
 
 | File | Change |
 |------|--------|
-| `lib/game/base_cards/base_card.ex` | Add `:class` string field + cast |
-| `priv/repo/migrations/<ts>_add_class_to_cards.exs` | New migration: `add :class, :string` |
-| `lib/game_web/live/admin/base_card_live.ex` | Add `class` field to admin UI |
+| `lib/game/content/booster_pool.ex` | New schema: `booster_pools` table |
+| `lib/game/content/booster_pool_card.ex` | New join schema: `booster_pool_cards` table |
+| `priv/repo/migrations/<ts>_create_booster_pools.exs` | New migration |
+| `priv/repo/migrations/<ts>_create_booster_pool_cards.exs` | New migration |
+| `priv/repo/migrations/<ts>_add_booster_pool_id_to_base_classes.exs` | FK on `base_classes` |
+| `lib/game/content/base_class.ex` | Add `belongs_to :booster_pool` + cast |
+| `lib/game_web/live/admin/base_class_live.ex` | Add booster pool selector |
+| `lib/game_web/live/admin/booster_pool_live.ex` | New admin page for pool management |
 | `lib/game/map_objects/booster.ex` | New map object returning `{:booster_pickup, ...}` |
 | `lib/game/maps.ex` | Deserialize `"booster"` object type |
 | `lib/game/combat.ex` | Handle `{:booster_pickup, ...}` in `apply_entry_effects` |
@@ -205,11 +293,12 @@ end
 
 ## Verification
 
-1. Add `:class` to a few cards via admin (e.g. set class to "warrior" on 3 cards).
-2. Place a `booster` object on a map tile (via map editor or seed data).
-3. Start a combat on that map; move a character onto the booster tile.
-4. Confirm the class selection modal appears with the player's class + 2 others.
-5. Select a class — confirm a booster pack appears with cards filtered to that class (plus
-   class-agnostic cards).
-6. Pick a card — confirm it is added to the player's hand/deck.
-7. Move another character to the same tile — confirm the booster is gone (consumed on first collect).
+1. Create a booster pool via admin; add cards to it with varying counts.
+2. Assign the pool to a class via the class admin.
+3. Place a `booster` object on a map tile (via map editor or seed data).
+4. Start a combat on that map; move a character onto the booster tile.
+5. Confirm the class selection modal appears with the player's class + 2 others.
+6. Select a class — confirm a booster pack appears with cards drawn from that class's pool
+   (higher-count cards should appear more frequently across multiple tests).
+7. Pick a card — confirm it is added to the player's hand/deck.
+8. Move another character to the same tile — confirm the booster is gone (consumed on first collect).

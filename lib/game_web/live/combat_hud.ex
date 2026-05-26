@@ -45,15 +45,23 @@ defmodule GameWeb.CombatHUD do
       </div>
 
     <!-- Action Log -->
-      <div class="[grid-area:action] pointer-events-auto min-w-[320px] min-h-full">
+      <div class="[grid-area:action] pointer-events-auto lg:mr-[66px] min-h-full overflow-visible">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
-        <ul class="timeline timeline-vertical min-h-full">
+        <ul class="timeline timeline-vertical min-h-full overflow-visible">
           <li
             :for={{action, index} <- Enum.with_index(@action_log)}
             class="![grid-template-columns:1fr_16px] mr-8"
           >
             <hr :if={index > 0} />
-            <div class="timeline-start timeline-box">{action}</div>
+            <div class="timeline-start timeline-box group relative">
+              {if is_map(action), do: action.text, else: action}
+              <div
+                :if={is_map(action) && action.card != nil}
+                class="absolute right-full -top-2 z-50 invisible group-hover:visible group-hover:mr-4 pointer-events-none transition-all duration-200"
+              >
+                <.card card={action.card} index={0} disabled={true} />
+              </div>
+            </div>
             <div class="timeline-middle min-w-4 min-h-4 rounded-full bg-base-300"></div>
             <hr :if={index < Enum.count(@action_log) - 1} />
           </li>

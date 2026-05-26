@@ -24,8 +24,8 @@ defmodule GameWeb.CombatController do
 
       case to_action(intent, player) do
         {:ok, action} ->
-          Game.process_action(game_pid, action)
-          {:noreply, log_action(socket, intent, player)}
+          Game.process_action(game_pid, action, log_entry(intent, player, combat))
+          {:noreply, socket}
 
         {:error, reason} ->
           {:noreply, Phoenix.LiveView.put_flash(socket, :error, reason)}
@@ -102,17 +102,16 @@ defmodule GameWeb.CombatController do
 
   defp to_action(_, _), do: {:error, "Unknown intent"}
 
-  defp log_action(socket, %{type: :skip_turn}, player),
-    do: update_log(socket, "#{player.name} skipped their turn")
+  defp log_entry(%{type: :skip_turn}, player, _combat),
+    do: %{text: "#{player.name} skipped their turn", card: nil}
 
-  defp log_action(socket, %{type: :pick_card, card: card}, player),
-    do: update_log(socket, "#{player.name} selected card: #{card.name}")
+  # defp log_entry(%{type: :pick_card, card: card}, player, _combat),
+  #   do: %{text: "#{player.name} selected #{card.name}", card: nil}
 
-  defp log_action(socket, %{type: :play_card}, player),
-    do: update_log(socket, "#{player.name} played a card")
+  defp log_entry(%{type: :play_card}, player, combat) do
+    card = combat.current_turn.card
+    %{text: "#{player.name} played #{if card, do: card.name, else: "a card"}", card: card}
+  end
 
-  defp log_action(socket, _, _player), do: socket
-
-  defp update_log(socket, msg),
-    do: Phoenix.Component.update(socket, :action_log, &Enum.slice([msg | &1], 0, 20))
+  defp log_entry(_, _player, _combat), do: nil
 end
