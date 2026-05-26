@@ -178,11 +178,13 @@ A minimal destruction mechanic: a "Destroy Card" action available during the boo
 
 ## Verification
 
-1. Create a pool with cards at levels 1, 2, and 4 (thresholds: 0, 1, 3 class cards).
-2. Start a combat with an empty deck; step on a booster tile.
-3. Confirm only level-1 cards appear in the pack.
-4. Draft 1 class card; trigger another booster.
-5. Confirm level-1 and level-2 cards appear; level-4 cards do not.
-6. Draft until you hold 3 class cards; confirm level-4 cards now appear.
-7. (Once destruction exists) Destroy 2 class cards; confirm level-4 cards disappear from the pool
-   if progression is tracked dynamically, or remain if using high-water mark.
+1. Create a pool with cards at levels 1, 2, and 4 (thresholds: 0, 1, 6 class cards).
+2. Start a combat with a 10-card starting deck (all class cards); confirm progression = 10, all
+   levels accessible immediately.
+3. Start a combat with an empty deck; step on a booster tile.
+4. Confirm only level-1 cards appear in the pack.
+5. Draft 1 class card; trigger another booster.
+6. Confirm level-1 and level-2 cards appear; level-4 cards do not.
+7. Draft until you hold 6 class cards; confirm level-4 cards now appear.
+8. (Once destruction exists) Destroy class cards to drop below 6; confirm level-4 cards disappear
+   from the pool if progression is tracked dynamically, or remain if using high-water mark.
