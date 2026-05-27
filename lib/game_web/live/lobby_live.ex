@@ -34,7 +34,8 @@ defmodule GameWeb.LobbyLive do
                  lobby_id: id,
                  base_classes: base_classes,
                  map_options: map_options,
-                 current_user_id: user.id
+                 current_user_id: user.id,
+                 invite_feedback: nil
                )}
 
             {:error, :full} ->
@@ -45,7 +46,7 @@ defmodule GameWeb.LobbyLive do
           end
       end
     else
-      {:ok, assign(socket, lobby: nil, lobby_id: id, base_classes: [], map_options: [], current_user_id: nil)}
+      {:ok, assign(socket, lobby: nil, lobby_id: id, base_classes: [], map_options: [], current_user_id: nil, invite_feedback: nil)}
     end
   end
 
@@ -130,6 +131,13 @@ defmodule GameWeb.LobbyLive do
   end
 
   @impl true
+  def handle_event("send_invite", %{"email" => email}, socket) do
+    from = socket.assigns.current_scope.user.email
+    Lobby.broadcast_invite(email, from, socket.assigns.lobby_id)
+    {:noreply, assign(socket, invite_feedback: "Invite sent to #{email}")}
+  end
+
+  @impl true
   def handle_event("toggle_ready", _params, socket) do
     user = socket.assigns.current_scope.user
 
@@ -154,6 +162,7 @@ defmodule GameWeb.LobbyLive do
   def handle_info({:lobby_updated, lobby_state}, socket) do
     {:noreply, assign(socket, lobby: lobby_state)}
   end
+
 
   @impl true
   def render(assigns) do
@@ -290,6 +299,9 @@ defmodule GameWeb.LobbyLive do
               >
                 Ready
               </button>
+              <button class="btn btn-secondary w-full" phx-click={show_modal("invite-modal")}>
+                <.icon name="hero-user-plus-solid" /> Invite Player
+              </button>
               <%= if @lobby.status == :ready do %>
                 <p>Players connected. Game starting soon...</p>
               <% else %>
@@ -333,6 +345,46 @@ defmodule GameWeb.LobbyLive do
       <% else %>
         <p>Connecting...</p>
       <% end %>
+
+      <.modal id="invite-modal">
+        <h2 class="text-2xl font-bold mb-6">Invite a Player</h2>
+
+        <p class="fieldset-label mb-2">Share lobby link</p>
+        <div class="join w-full mb-6">
+          <input
+            id="lobby-link-input"
+            type="text"
+            readonly
+            value={url(~p"/multiplayer/#{@lobby_id}")}
+            class="join-item input input-bordered flex-1"
+          />
+          <button
+            class="join-item btn btn-neutral"
+            phx-hook="CopyToClipboard"
+            data-target="lobby-link-input"
+            id="copy-lobby-link-btn"
+          >
+            <.icon name="hero-clipboard-solid" /> Copy
+          </button>
+        </div>
+
+        <p class="fieldset-label mb-2">Send invite notification</p>
+        <form phx-submit="send_invite" class="join w-full">
+          <input
+            type="email"
+            name="email"
+            placeholder="player@example.com"
+            required
+            class="join-item input input-bordered flex-1"
+          />
+          <button type="submit" class="join-item btn btn-primary">
+            <.icon name="hero-paper-airplane-solid" /> Send Invite
+          </button>
+        </form>
+        <%= if @invite_feedback do %>
+          <p class="mt-3 text-sm text-success">{@invite_feedback}</p>
+        <% end %>
+      </.modal>
     </div>
     """
   end

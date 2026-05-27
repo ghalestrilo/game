@@ -935,6 +935,105 @@ defmodule GameWeb.LobbyLiveTest do
     })
   end
 
+  describe "LobbyLive - invite player" do
+    setup :two_players_in_lobby
+
+    test "invite button is visible in the lobby", %{lobby_view1: lobby_view1} do
+      assert lobby_view1 |> element("button", "Invite Player") |> has_element?()
+    end
+
+    test "send_invite broadcasts to the invited user's active LobbyLive session", %{
+      lobby_view2: lobby_view2,
+      user1: user1
+    } do
+      send(lobby_view2.pid, {:invited, %{from: user1.email, lobby_id: "testlobby123"}})
+
+      html = render(lobby_view2)
+      assert html =~ user1.email
+      assert html =~ "/multiplayer/testlobby123"
+    end
+
+    test "invited user can dismiss the banner", %{
+      lobby_view2: lobby_view2,
+      user1: user1
+    } do
+      send(lobby_view2.pid, {:invited, %{from: user1.email, lobby_id: "testlobby123"}})
+      assert render(lobby_view2) =~ "invite-banner"
+
+      lobby_view2 |> element("button[phx-click='dismiss_invite']") |> render_click()
+      refute render(lobby_view2) =~ "invite-banner"
+    end
+
+    test "send_invite event triggers PubSub broadcast to invited user", %{
+      lobby_view1: lobby_view1,
+      lobby_view2: lobby_view2,
+      user1: user1,
+      user2: user2,
+      lobby_path: lobby_path
+    } do
+      # user1 fires the send_invite event
+      lobby_view1
+      |> element("form[phx-submit='send_invite']")
+      |> render_submit(%{"email" => user2.email})
+
+      # user2's lobby view should show the flash with sender name and lobby link
+      html = render(lobby_view2)
+      assert html =~ user1.email
+      assert html =~ lobby_path
+    end
+
+    test "send_invite shows feedback to the sender", %{
+      lobby_view1: lobby_view1,
+      user2: user2
+    } do
+      html =
+        lobby_view1
+        |> element("form[phx-submit='send_invite']")
+        |> render_submit(%{"email" => user2.email})
+
+      assert html =~ user2.email
+    end
+
+    test "invite to non-online user is a silent no-op (no crash)", %{
+      lobby_view1: lobby_view1
+    } do
+      html =
+        lobby_view1
+        |> element("form[phx-submit='send_invite']")
+        |> render_submit(%{"email" => "ghost@example.com"})
+
+      assert html =~ "ghost@example.com"
+    end
+  end
+
+  describe "MultiplayerLive - invite notification" do
+    test "user receives invite notification while browsing multiplayer lobby list", %{} do
+      user1 = Game.AccountsFixtures.user_fixture()
+      user2 = Game.AccountsFixtures.user_fixture()
+      conn1 = Phoenix.ConnTest.build_conn() |> log_in_user(user1)
+      conn2 = Phoenix.ConnTest.build_conn() |> log_in_user(user2)
+
+      # user1 creates a lobby
+      {:ok, view1, _} = live(conn1, ~p"/multiplayer")
+      view1 |> element("[phx-click='create_lobby']") |> render_click()
+      {lobby_path, _} = assert_redirect(view1)
+      {:ok, lobby_view1, _} = live(conn1, lobby_path)
+
+      # user2 is on the multiplayer list page (not in the lobby)
+      {:ok, multi_view2, _} = live(conn2, ~p"/multiplayer")
+
+      # user1 invites user2
+      lobby_view1
+      |> element("form[phx-submit='send_invite']")
+      |> render_submit(%{"email" => user2.email})
+
+      # user2 sees a flash message with the lobby link — no automatic redirect
+      html = render(multi_view2)
+      assert html =~ user1.email
+      assert html =~ lobby_path
+    end
+  end
+
   defp two_players_in_lobby(context) do
     user1 = Game.AccountsFixtures.user_fixture()
     user2 = Game.AccountsFixtures.user_fixture()

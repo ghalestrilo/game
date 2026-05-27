@@ -180,6 +180,38 @@ defmodule GameWeb.CoreComponents do
     """
   end
 
+  attr :invite, :map, default: nil, doc: "pending invite map with :from, :lobby_id, and :lobby_path keys"
+
+  def invite_banner(%{invite: nil} = assigns), do: ~H""
+
+  def invite_banner(assigns) do
+    ~H"""
+    <div
+      id="invite-banner"
+      role="alert"
+      class="fixed top-14 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 rounded-xl bg-primary text-primary-content shadow-lg px-5 py-3"
+    >
+      <.icon name="hero-user-plus-solid" class="h-5 w-5 shrink-0" />
+      <span class="text-sm font-medium">
+        {@invite.from} invited you!
+      </span>
+      <.link
+        navigate={@invite.lobby_path}
+        class="btn btn-sm btn-neutral"
+      >
+        Join lobby
+      </.link>
+      <button
+        phx-click="dismiss_invite"
+        class="-mr-1 rounded p-1 opacity-60 hover:opacity-100"
+        aria-label="dismiss"
+      >
+        <.icon name="hero-x-mark-solid" class="h-4 w-4" />
+      </button>
+    </div>
+    """
+  end
+
   attr :title, :string, required: true
   attr :title_size, :atom, default: :large
   # Each option is {label, opts} where opts is a keyword list.

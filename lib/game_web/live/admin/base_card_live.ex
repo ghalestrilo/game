@@ -29,9 +29,10 @@ defmodule GameWeb.Admin.BaseCardLive do
       },
       slug: %{
         module: Backpex.Fields.Text,
-        label: "Name",
+        label: "Slug",
         searchable: true,
-        default: fn assigns ->  "---" end
+        default: fn assigns ->  "---" end,
+        readonly: true
       },
       headline: %{
         module: Backpex.Fields.Text,

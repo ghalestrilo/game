@@ -27,7 +27,7 @@ Variants are stored on the runtime `Game.Card` struct as a nullable atom field:
 # lib/game/card.ex
 defstruct ...,
           variant: nil   # :foil | :holographic | :first_edition | :misprint | :signed | :shadowless | :promo
-                         # :echo | :volatile | :widened | :discardable
+                         # :echo | :volatile | :widened | :discardable | :negative
 ```
 
 This field is not persisted to `BaseCard` — variants are run-state only, applied at draft time.
@@ -200,6 +200,34 @@ axis of hand management.
 
 ---
 
+### Negative
+> *The card was developed in reverse — everything came out wrong.*
+
+A negative card has its AP cost sign-flipped (playing it restores AP rather than spending it) and
+every numeric value that resolves to an integer at play time is negated. The card's effects still
+execute — damage becomes healing, healing becomes damage, shields drain HP instead of adding to it,
+movement pushes in the opposite direction.
+
+Formula-based values (`Snipe`, `Lifebleed`, `Berserk`) are negated after the formula resolves, not
+before — the formula still evaluates against live game state, and the resulting integer is then
+flipped. A `Snipe` that would deal 14 instead heals the target for 14.
+
+**AP behaviour:** `ap: -ap`. If the card cost 2 AP, playing it gives back 2 AP. If the card
+already had negative AP (e.g. `Blood Magic` at -3), it now costs 3. The sign always flips.
+
+**Implementation:** Applied at variant-attachment time for AP inversion (`ap: -card.ap`). Value
+negation happens at play time: after each effect resolves its final integer value, multiply by -1
+before applying. This requires a thin wrapper in the effect resolution path that checks
+`card.variant == :negative` and negates the resolved value. Formula-based values must be fully
+evaluated before negation — the formula itself is not modified.
+
+**Feel:** The most dangerous variant to apply carelessly, and the most rewarding to build around
+deliberately. A negative `Heal` is a ranged execute. A negative `Iron Skin` depletes a target's
+HP by 5. A negative `Blood Magic` costs 3 AP but deals -3 damage (i.e. heals). The card's
+*identity* inverts — it does something completely different while wearing the same name.
+
+---
+
 ### Promo
 > *Given out at events, not in packs — rarer than rare.*
 
@@ -339,7 +367,35 @@ Add a `"discard_play"` event handler alongside the normal `"play_card"` handler.
 
 In the HUD, render a secondary "Discard" button on cards with `variant: :discardable`.
 
-### 12. Promo: acquisition gating
+### 12. Negative: AP inversion + value negation
+
+**File:** `lib/game/combat/card_effects/apply_variant.ex` — `apply_variant_to_card/3`
+
+At attachment time, invert AP:
+
+```elixir
+updated_card = %{card | ap: -card.ap}
+```
+
+**File:** `lib/game/card.ex` — effect resolution path
+
+After each effect resolves its final value to an integer, negate it if the card carries
+`:negative`. This must happen after formula evaluation, not before:
+
+```elixir
+defp apply_resolved_value(value, card) when card.variant == :negative and is_integer(value),
+  do: -value
+defp apply_resolved_value(value, _card),
+  do: value
+```
+
+Call `apply_resolved_value/2` immediately after `Game.Formula.resolve/2` returns an integer, before
+passing the value into the effect's `process/3`.
+
+**Note:** Non-numeric resolved values (strings, maps, nil) are passed through unchanged — effects
+like `summon`, `give`, and `stuck` are unaffected.
+
+### 13. Promo: acquisition gating
 
 **File:** `lib/game/base_cards/base_card.ex`
 
@@ -352,8 +408,8 @@ Add `promo: :boolean, default: false` field. Update `generate_booster_cards_for_
 
 | File | Change |
 |------|--------|
-| `lib/game/card.ex` | Add `variant`, `play_count` fields; echo copy-on-play; signed play-count increment; holographic post-play hook |
-| `lib/game/combat/card_effects/apply_variant.ex` | New effect: card-targeting modal + variant application; volatile and widened attachment-time mutations |
+| `lib/game/card.ex` | Add `variant`, `play_count` fields; echo copy-on-play; signed play-count increment; holographic post-play hook; negative value negation after formula resolution |
+| `lib/game/combat/card_effects/apply_variant.ex` | New effect: card-targeting modal + variant application; volatile, widened, and negative attachment-time mutations |
 | `lib/game/character.ex` | Foil shuffle priority in draw pile shuffle |
 | `lib/game/combat_builder.ex` | Misprint per-combat value mutation |
 | `lib/game/base_cards/base_card.ex` | Add `promo` boolean field |
@@ -387,3 +443,7 @@ Add `promo: :boolean, default: false` field. Update `generate_booster_cards_for_
 8. Apply volatile to `Repent`; confirm AP doubles and `self_destruct` is gone; play it multiple times.
 9. Apply widened to `Arcane Explosion`; confirm `range` increments on both the card and its effects.
 10. Confirm a discardable card shows a secondary "Discard" button; confirm it triggers effects at 0 AP cost and lands in discard.
+11. Apply negative to `Strike` (ap: 1, damage: 3); confirm it now restores 1 AP on play and heals the target for 3.
+12. Apply negative to `Snipe` (formula: distance × 2); move 4 tiles away and play it; confirm target is healed for 8.
+13. Apply negative to `Blood Magic` (ap: -3); confirm it now costs 3 AP and heals for 3.
+14. Confirm non-numeric effects (e.g. `summon`, `stuck`) on a negative card are unaffected.

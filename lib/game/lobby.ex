@@ -89,4 +89,16 @@ defmodule Game.Lobby do
   def subscribe(id) do
     Phoenix.PubSub.subscribe(Game.PubSub, "lobby:#{id}")
   end
+
+  def subscribe_invites(user_email) do
+    Phoenix.PubSub.subscribe(Game.PubSub, "invites:#{user_email}")
+  end
+
+  def broadcast_invite(to_email, from_email, lobby_id) do
+    Phoenix.PubSub.broadcast(
+      Game.PubSub,
+      "invites:#{to_email}",
+      {:invited, %{from: from_email, lobby_id: lobby_id}}
+    )
+  end
 end
