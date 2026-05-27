@@ -22,9 +22,14 @@ defmodule GameWeb.Router do
   scope "/", GameWeb do
     pipe_through :browser
 
-    get "/", PageController, :home
+    live_session :home,
+      on_mount: [{GameWeb.UserAuth, :subscribe_invites}] do
+      live "/", HomeLive
+    end
 
-    live_session :game, layout: {GameWeb.Layouts, :game} do
+    live_session :game,
+      layout: {GameWeb.Layouts, :game},
+      on_mount: [{GameWeb.UserAuth, :subscribe_invites}] do
       live "/sandbox", GameLive, :sandbox
       live "/campaign/play", GameLive, :campaign
     end
@@ -33,11 +38,12 @@ defmodule GameWeb.Router do
       live "/hello-threejs", HelloThreeJsLive
     end
 
-    live "/campaign/character-select", Campaign.CharacterSelectLive
-    live "/sandbox/setup", SandboxSetupLive
-
-    # Catch-all: redirect any other /campaign/* routes to character select
-    live "/campaign/*path", Campaign.CatchAllLive
+    live_session :campaign_setup,
+      on_mount: [{GameWeb.UserAuth, :subscribe_invites}] do
+      live "/campaign/character-select", Campaign.CharacterSelectLive
+      live "/sandbox/setup", SandboxSetupLive
+      live "/campaign/*path", Campaign.CatchAllLive
+    end
   end
 
   # Other scopes may use custom stacks.

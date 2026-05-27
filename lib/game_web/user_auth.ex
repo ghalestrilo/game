@@ -215,40 +215,16 @@ defmodule GameWeb.UserAuth do
     {:cont, mount_current_scope(socket, session)}
   end
 
+  def on_mount(:subscribe_invites, _params, session, socket) do
+    socket = mount_current_scope(socket, session)
+    {:cont, maybe_subscribe_invites(socket)}
+  end
+
   def on_mount(:require_authenticated, _params, session, socket) do
     socket = mount_current_scope(socket, session)
 
     if socket.assigns.current_scope && socket.assigns.current_scope.user do
-      user = socket.assigns.current_scope.user
-
-      socket =
-        Phoenix.Component.assign(socket, :pending_invite, nil)
-
-      socket =
-        if Phoenix.LiveView.connected?(socket) do
-          Game.Lobby.subscribe_invites(user.email)
-
-          socket
-          |> Phoenix.LiveView.attach_hook(:invite_notification, :handle_info, fn
-            {:invited, %{from: from, lobby_id: lobby_id}}, socket ->
-              invite = %{from: from, lobby_id: lobby_id, lobby_path: "/multiplayer/#{lobby_id}"}
-              {:halt, Phoenix.Component.assign(socket, :pending_invite, invite)}
-
-            _other, socket ->
-              {:cont, socket}
-          end)
-          |> Phoenix.LiveView.attach_hook(:invite_dismiss, :handle_event, fn
-            "dismiss_invite", _params, socket ->
-              {:halt, Phoenix.Component.assign(socket, :pending_invite, nil)}
-
-            _other, _params, socket ->
-              {:cont, socket}
-          end)
-        else
-          socket
-        end
-
-      {:cont, socket}
+      {:cont, maybe_subscribe_invites(socket)}
     else
       socket =
         socket
@@ -286,6 +262,39 @@ defmodule GameWeb.UserAuth do
         |> Phoenix.LiveView.redirect(to: ~p"/users/log-in")
 
       {:halt, socket}
+    end
+  end
+
+  defp maybe_subscribe_invites(socket) do
+    socket = Phoenix.Component.assign_new(socket, :pending_invite, fn -> nil end)
+
+    case socket.assigns[:current_scope] do
+      %{user: user} when not is_nil(user) ->
+        if Phoenix.LiveView.connected?(socket) do
+          Game.Lobby.subscribe_invites(user.email)
+
+          socket
+          |> Phoenix.LiveView.attach_hook(:invite_notification, :handle_info, fn
+            {:invited, %{from: from, lobby_id: lobby_id}}, socket ->
+              invite = %{from: from, lobby_id: lobby_id, lobby_path: "/multiplayer/#{lobby_id}"}
+              {:halt, Phoenix.Component.assign(socket, :pending_invite, invite)}
+
+            _other, socket ->
+              {:cont, socket}
+          end)
+          |> Phoenix.LiveView.attach_hook(:invite_dismiss, :handle_event, fn
+            "dismiss_invite", _params, socket ->
+              {:halt, Phoenix.Component.assign(socket, :pending_invite, nil)}
+
+            _other, _params, socket ->
+              {:cont, socket}
+          end)
+        else
+          socket
+        end
+
+      _ ->
+        socket
     end
   end
 
