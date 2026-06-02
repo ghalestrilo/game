@@ -86,6 +86,19 @@ defmodule Game.Lobby do
     end
   end
 
+  def list_all() do
+    Game.LobbyRegistry
+    |> Registry.select([{{:"$1", :"$2", :_}, [], [{{:"$1", :"$2"}}]}])
+    |> Enum.flat_map(fn {_id, pid} ->
+      case GenServer.call(pid, :get_state, 5_000) do
+        state when is_map(state) -> [state]
+        _ -> []
+      end
+    end)
+  rescue
+    _ -> []
+  end
+
   def subscribe(id) do
     Phoenix.PubSub.subscribe(Game.PubSub, "lobby:#{id}")
   end

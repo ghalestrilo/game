@@ -10,6 +10,7 @@ defmodule Game.Application do
     children = [
       GameWeb.Telemetry,
       Game.Repo,
+      {Oban, Application.fetch_env!(:game, Oban)},
       {DNSCluster, query: Application.get_env(:game, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Game.PubSub},
       Game.CombatSaves,

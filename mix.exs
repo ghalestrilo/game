@@ -70,7 +70,8 @@ defmodule Game.MixProject do
       {:json_logic, "~> 1.0"},
       {:broadway, "~> 1.1"},
       {:broadway_rabbitmq, "~> 0.8"},
-      {:slugify, "~> 1.3"}
+      {:slugify, "~> 1.3"},
+      {:oban, "2.23.0"}
     ]
   end
 

@@ -55,11 +55,11 @@ defmodule Game.LobbyServer do
   @impl true
   def init({id, :pvp}) do
     {:ok,
-     %{id: id, mode: :pvp, players: [], status: :waiting, game_pid: nil, settings: %{boosters: 0, map: nil}}}
+     %{id: id, mode: :pvp, players: [], status: :waiting, game_pid: nil, settings: %{boosters: 0, map: nil}, last_active_at: DateTime.utc_now()}}
   end
 
   def init({id, mode, build_opts}) when mode in [:campaign, :sandbox] do
-    state = %{id: id, mode: mode, players: [], status: :ready, game_pid: nil}
+    state = %{id: id, mode: mode, players: [], status: :ready, game_pid: nil, last_active_at: DateTime.utc_now()}
     {:ok, start_single_player_game(state, build_opts)}
   end
 
@@ -85,8 +85,7 @@ defmodule Game.LobbyServer do
         player = %{id: user.id, email: user.email, name: nil, ready: false, class: nil, team: team}
         new_players = players ++ [player]
         new_status = if length(new_players) >= @min_players, do: :ready, else: :waiting
-        new_state = %{state | players: new_players, status: new_status}
-        broadcast(new_state)
+        new_state = %{state | players: new_players, status: new_status} |> broadcast()
         {:reply, {:ok, new_state}, new_state}
     end
   end
@@ -104,9 +103,7 @@ defmodule Game.LobbyServer do
           p -> p
         end)
 
-      new_state = %{state | players: new_players}
-      new_state = maybe_start_game(new_state)
-      broadcast(new_state)
+      new_state = %{state | players: new_players} |> maybe_start_game() |> broadcast()
       {:reply, {:ok, new_state}, new_state}
     end
   end
@@ -119,8 +116,7 @@ defmodule Game.LobbyServer do
         p -> p
       end)
 
-    new_state = %{state | players: new_players}
-    broadcast(new_state)
+    new_state = %{state | players: new_players} |> broadcast()
     {:reply, {:ok, new_state}, new_state}
   end
 
@@ -132,8 +128,7 @@ defmodule Game.LobbyServer do
         p -> p
       end)
 
-    new_state = %{state | players: new_players}
-    broadcast(new_state)
+    new_state = %{state | players: new_players} |> broadcast()
     {:reply, {:ok, new_state}, new_state}
   end
 
@@ -145,15 +140,13 @@ defmodule Game.LobbyServer do
         p -> p
       end)
 
-    new_state = %{state | players: new_players}
-    broadcast(new_state)
+    new_state = %{state | players: new_players} |> broadcast()
     {:reply, {:ok, new_state}, new_state}
   end
 
   @impl true
   def handle_call({:set_setting, key, value}, _from, state) do
-    new_state = %{state | settings: Map.put(state.settings, key, value)}
-    broadcast(new_state)
+    new_state = %{state | settings: Map.put(state.settings, key, value)} |> broadcast()
     {:reply, {:ok, new_state}, new_state}
   end
 
@@ -161,8 +154,7 @@ defmodule Game.LobbyServer do
   def handle_call({:leave, user_id}, _from, state) do
     new_players = Enum.reject(state.players, &(&1.id == user_id))
     new_status = if length(new_players) >= @min_players, do: :ready, else: :waiting
-    new_state = %{state | players: new_players, status: new_status}
-    broadcast(new_state)
+    new_state = %{state | players: new_players, status: new_status} |> broadcast()
     {:reply, :ok, new_state}
   end
 
@@ -170,8 +162,7 @@ defmodule Game.LobbyServer do
   def handle_cast(:reset, state) do
     if state.game_pid, do: GenServer.stop(state.game_pid, :normal)
     new_players = Enum.map(state.players, &%{&1 | ready: false})
-    new_state = %{state | players: new_players, game_pid: nil}
-    broadcast(new_state)
+    new_state = %{state | players: new_players, game_pid: nil} |> broadcast()
     {:noreply, new_state}
   end
 
@@ -255,6 +246,8 @@ defmodule Game.LobbyServer do
   end
 
   defp broadcast(state) do
+    state = %{state | last_active_at: DateTime.utc_now()}
     Phoenix.PubSub.broadcast(Game.PubSub, "lobby:#{state.id}", {:lobby_updated, state})
+    state
   end
 end

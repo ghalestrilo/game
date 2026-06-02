@@ -70,6 +70,17 @@ config :backpex,
   translator_function: {GameWeb.CoreComponents, :translate_backpex},
   error_translator_function: {GameWeb.CoreComponents, :translate_error}
 
+config :game, Oban,
+  repo: Game.Repo,
+  plugins: [
+    {Oban.Plugins.Pruner, max_age: 60 * 60 * 24},
+    {Oban.Plugins.Cron,
+     crontab: [
+       {"0 */8 * * *", Game.Workers.LobbyCleanup}
+     ]}
+  ],
+  queues: [default: 10]
+
 # Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
