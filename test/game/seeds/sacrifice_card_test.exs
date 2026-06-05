@@ -1,7 +1,7 @@
 defmodule Game.Seeds.SacrificeCardTest do
   use Game.DataCase, async: true
 
-  alias Game.{Card, Character, CombatState, Grid, Fixtures, BaseCards}
+  alias Game.{Card, CombatState, Grid, Fixtures, BaseCards}
 
   # Creates the Sacrifice and Cursed Gift cards directly (not from seeds file,
   # which requires a full DB reset). This tests the same effect configuration.
@@ -105,7 +105,7 @@ defmodule Game.Seeds.SacrificeCardTest do
       fighter: fighter,
       mage: mage,
       cursed_gift: cursed_gift,
-      sacrifice: sacrifice
+      sacrifice: _sacrifice
     } do
       card = to_game_card(cursed_gift, 98)
 
@@ -118,7 +118,7 @@ defmodule Game.Seeds.SacrificeCardTest do
 
     test "the given Sacrifice card deals damage when played by the recipient", %{
       combat: combat,
-      fighter: fighter,
+      fighter: _fighter,
       mage: mage,
       cursed_gift: cursed_gift
     } do

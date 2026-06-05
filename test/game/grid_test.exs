@@ -127,6 +127,7 @@ defmodule Game.GridTest do
           {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
         }
       }
+
       assert :unreachable = Grid.astar_path_length(grid, {0, 0, 0}, {2, 0, -2})
     end
 
@@ -163,6 +164,7 @@ defmodule Game.GridTest do
           {2, 0, -2} => %{terrain: :plain, occupied_by: nil}
         }
       }
+
       assert :unreachable = Grid.astar_path_length(grid, {0, 0, 0}, {2, 0, -2})
     end
   end

@@ -27,8 +27,10 @@ defmodule Game.Combat.CardEffects.Hex do
     def get_value_label(%Hex{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Hex{value: v}), do: "#{v}"
 
+    @impl Game.Combat.CardEffect
     def animate(%Hex{}), do: %{label: "HEX", color: :yellow}
 
+    @impl Game.Combat.CardEffect
     def params(_), do: ["value"]
   end
 end

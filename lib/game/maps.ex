@@ -24,14 +24,14 @@ defmodule Game.Maps do
       name: "two_towers",
       display_name: "Two Towers",
       tiles:
-        (for q <- -4..4, r <- -4..4, s <- -4..4, q + r + s == 0, into: %{} do
-           objects =
-             if {q, r, s} in [{0, 0, 0}, {1, 0, -1}, {-1, 0, 1}],
-               do: [%MapObject.Wall{}],
-               else: []
+        for q <- -4..4, r <- -4..4, s <- -4..4, q + r + s == 0, into: %{} do
+          objects =
+            if {q, r, s} in [{0, 0, 0}, {1, 0, -1}, {-1, 0, 1}],
+              do: [%MapObject.Wall{}],
+              else: []
 
-           {{q, r, s}, %{terrain: :plain, objects: objects}}
-         end),
+          {{q, r, s}, %{terrain: :plain, objects: objects}}
+        end,
       spawn_points: %{
         team_1: {-3, 0, 3},
         team_2: {3, 0, -3}
@@ -103,12 +103,17 @@ defmodule Game.Maps do
 
   defp deserialize_objects(objects) do
     Enum.map(objects, fn
-      %{"type" => "wall"} -> %MapObject.Wall{}
+      %{"type" => "wall"} ->
+        %MapObject.Wall{}
+
       %{"type" => "pickup", "item" => item, "quantity" => qty} ->
         %MapObject.Pickup{item: String.to_existing_atom(item), quantity: qty}
+
       %{"type" => "breakable", "hp" => hp, "max_hp" => max_hp, "blocks_movement" => blocks} ->
         %MapObject.Breakable{hp: hp, max_hp: max_hp, blocks_movement: blocks}
-      _ -> nil
+
+      _ ->
+        nil
     end)
     |> Enum.reject(&is_nil/1)
   end

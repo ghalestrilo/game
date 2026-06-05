@@ -51,7 +51,13 @@ defmodule GameWeb.SandboxLiveTest do
           display_name: "Walled Arena",
           tiles: [
             %{"q" => -3, "r" => 0, "s" => 3, "terrain" => "plain", "objects" => []},
-            %{"q" => 0, "r" => 1, "s" => -1, "terrain" => "plain", "objects" => [%{"type" => "wall"}]},
+            %{
+              "q" => 0,
+              "r" => 1,
+              "s" => -1,
+              "terrain" => "plain",
+              "objects" => [%{"type" => "wall"}]
+            },
             %{"q" => 3, "r" => 0, "s" => -3, "terrain" => "plain", "objects" => []}
           ],
           spawn_points: %{}
@@ -261,11 +267,16 @@ defmodule GameWeb.SandboxLiveTest do
     #   - revive effect reinserts character into queue
     #   - revived character can act normally
 
-    test "fighter kills ally, casts Ressurrect via character click, revived ally takes a turn", %{conn: conn} do
+    test "fighter kills ally, casts Ressurrect via character click, revived ally takes a turn", %{
+      conn: conn
+    } do
       # 3 chars, all adjacent: fighter1 (team1, acts first), fighter2 (team1, will die),
       # mage (team2, stays alive so game never ends)
       {:ok, view, _html} =
-        live(conn, ~p"/sandbox?initial_state=[0_0_0:fighter:1,1_0_-1:fighter:1,2_0_-2:mage:2]&3d=true")
+        live(
+          conn,
+          ~p"/sandbox?initial_state=[0_0_0:fighter:1,1_0_-1:fighter:1,2_0_-2:mage:2]&3d=true"
+        )
 
       %{socket: %{assigns: %{game_pid: game_pid}}} = :sys.get_state(view.pid)
 
@@ -285,6 +296,7 @@ defmodule GameWeb.SandboxLiveTest do
       render_hook(view, "interact", %{"target_character_id" => to_string(fighter2.id)})
 
       s = Game.get_state(game_pid)
+
       assert Enum.any?(Game.CombatState.dead_characters(s.combat), &(&1.id == fighter2.id)),
              "fighter2 should be dead after Executioner"
 
@@ -311,6 +323,7 @@ defmodule GameWeb.SandboxLiveTest do
 
       assert Map.get(overlay, dead_fighter2.position) == :valid,
              "dead fighter2's tile must be :valid in Ressurrect overlay"
+
       assert Map.get(overlay, fighter1.position) != :valid,
              "alive fighter1's tile must not be :valid for Ressurrect"
 
@@ -329,6 +342,7 @@ defmodule GameWeb.SandboxLiveTest do
 
       # --- Turn 4: fighter2 (revived) acts ---
       s = Game.get_state(game_pid)
+
       assert s.combat.current_turn.player.id == fighter2.id,
              "revived fighter2 should be current player"
 
@@ -346,6 +360,7 @@ defmodule GameWeb.SandboxLiveTest do
 
       s = Game.get_state(game_pid)
       mage_after = Enum.find(Game.CombatState.get_current_queue(s.combat), &(&1.class == "mage"))
+
       assert mage_after.hp < mage_hp_before,
              "mage should have taken damage from revived fighter2"
     end

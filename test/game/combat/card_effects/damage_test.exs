@@ -403,6 +403,7 @@ defmodule Game.Combat.CardEffects.DamageTest do
       combat = put_in(combat, [:current_turn, :player], tough_warrior)
       updated = CardEffect.process(%Damage{value: 10}, mage, combat)
       updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
+
       # caster's incoming buff doesn't affect outgoing; target has no incoming debuff → 10 damage
       assert updated_mage.hp == mage.hp - 10
     end

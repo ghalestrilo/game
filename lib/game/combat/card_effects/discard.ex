@@ -35,8 +35,10 @@ defmodule Game.Combat.CardEffects.Discard do
     def get_value_label(%Discard{value: count}),
       do: "#{count} card#{if count != 1, do: "s", else: ""}"
 
+    @impl Game.Combat.CardEffect
     def params(_), do: ["value"]
 
+    @impl Game.Combat.CardEffect
     def animate(_), do: nil
 
     defp discard_random_cards(character, count) do

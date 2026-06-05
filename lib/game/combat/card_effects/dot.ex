@@ -30,8 +30,10 @@ defmodule Game.Combat.CardEffects.Dot do
     def get_value_label(%Dot{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Dot{damage: dmg}), do: "#{dmg}/turn"
 
+    @impl Game.Combat.CardEffect
     def animate(%Dot{damage: dmg}), do: %{label: "-#{dmg}/turn", color: :red}
 
+    @impl Game.Combat.CardEffect
     def params(_), do: ["value", "damage"]
   end
 end

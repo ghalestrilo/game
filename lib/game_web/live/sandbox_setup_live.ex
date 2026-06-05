@@ -76,8 +76,8 @@ defmodule GameWeb.SandboxSetupLive do
       <h1 class="text-3xl font-bold">Sandbox Setup</h1>
 
       <div class="flex flex-col gap-6 w-full max-w-md">
-
-        <!-- Map selector -->
+        
+    <!-- Map selector -->
         <div class="flex flex-col gap-2">
           <label class="font-semibold">Map</label>
           <form phx-change="select_map">
@@ -88,8 +88,8 @@ defmodule GameWeb.SandboxSetupLive do
             </select>
           </form>
         </div>
-
-        <!-- Character list -->
+        
+    <!-- Character list -->
         <div class="flex flex-col gap-2">
           <label class="font-semibold">
             Characters
@@ -121,8 +121,8 @@ defmodule GameWeb.SandboxSetupLive do
             <% end %>
           </ul>
         </div>
-
-        <!-- Class selector — form wrapper required for phx-change to fire -->
+        
+    <!-- Class selector — form wrapper required for phx-change to fire -->
         <form phx-change="add_character">
           <select class="select select-bordered w-full" name="class">
             <option value="" selected>Add a character...</option>
@@ -131,8 +131,8 @@ defmodule GameWeb.SandboxSetupLive do
             <% end %>
           </select>
         </form>
-
-        <!-- 3D toggle -->
+        
+    <!-- 3D toggle -->
         <div class="flex items-center justify-between">
           <label class="font-semibold">3D renderer</label>
           <input
@@ -142,8 +142,8 @@ defmodule GameWeb.SandboxSetupLive do
             phx-click="toggle_3d"
           />
         </div>
-
-        <!-- Start button -->
+        
+    <!-- Start button -->
         <button
           phx-click="start_sandbox"
           class="btn btn-primary btn-lg w-full"

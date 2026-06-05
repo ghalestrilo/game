@@ -59,7 +59,11 @@ defmodule GameWeb.CombatController do
   Translates a LiveView "interact" event's params to a combat intent, given the current combat state.
   Returns nil if the event doesn't apply in the current state.
   """
-  def event_to_intent("interact", %{"target_character_id" => id}, %{state: :card_selected} = combat) do
+  def event_to_intent(
+        "interact",
+        %{"target_character_id" => id},
+        %{state: :card_selected} = combat
+      ) do
     character =
       Game.CombatState.get_current_queue(combat)
       |> Enum.find(&(to_string(&1.id) == id))

@@ -4,18 +4,24 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <%# TODO: add suffix based on route %>
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Double:wght@100..900&display=swap" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Double:wght@100..900&family=Play:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Double:wght@100..900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Bitcount+Grid+Double:wght@100..900&family=Play:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
     <.live_title default="HexDecks" suffix={if assigns[:page_title], do: " | HexDecks"}>
       {assigns[:page_title]}
     </.live_title>
-    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}></script>
+    <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
+    </script>
   </head>
   <body>
     <div class="navbar max-sm:collapse bg-base-100 text-neutral-content !fixed top-0 px-2 min-h-[3rem]">
@@ -23,18 +29,24 @@
         <a class="btn btn-ghost btn-primary text-xl">HexDecks</a>
       </div>
       <ul class="flex join">
-        <% options = if @current_scope, do: [
-          {~p"/", {@current_scope.user.email, :get}},
-          {~p"/", {"Play", :get}},
-          {~p"/users/settings", {"Settings", :get}},
-          {~p"/users/log-out", {"Log out", :delete}}
-        ], else: %{ ~p"/users/register" => {"Register", :get}, ~p"/users/log-in" => {"Log in", :get}} %>
-        
+        <% options =
+          if @current_scope,
+            do: [
+              {~p"/", {@current_scope.user.email, :get}},
+              {~p"/", {"Play", :get}},
+              {~p"/users/settings", {"Settings", :get}},
+              {~p"/users/log-out", {"Log out", :delete}}
+            ],
+            else: %{
+              ~p"/users/register" => {"Register", :get},
+              ~p"/users/log-in" => {"Log in", :get}
+            } %>
+
         <%= for {route, {label, method}} <- options do %>
           <li class="join-item btn btn-md btn-ghost btn-primary">
             <.link href={route} method={method}>{label}</.link>
           </li>
-        <% end  %>
+        <% end %>
       </ul>
     </div>
     {@inner_content}

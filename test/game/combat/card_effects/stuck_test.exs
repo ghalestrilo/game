@@ -66,7 +66,11 @@ defmodule Game.Combat.CardEffects.StuckTest do
 
     test "unstuck character can move normally", %{combat: combat, fighter: fighter} do
       # Add an adjacent tile the fighter can reach directly
-      grid = %{combat.grid | tiles: Map.put(combat.grid.tiles, {0, -1, 1}, %{terrain: :plain, occupied_by: nil})}
+      grid = %{
+        combat.grid
+        | tiles: Map.put(combat.grid.tiles, {0, -1, 1}, %{terrain: :plain, occupied_by: nil})
+      }
+
       combat = %{combat | grid: grid}
 
       result = Game.Combat.process_action(combat, {:move, fighter, {0, -1, 1}})

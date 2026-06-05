@@ -24,7 +24,9 @@ defmodule Game.Combat.CardEffects.Revive do
     def get_icon(%Revive{}), do: "hero-arrow-up-circle"
     def get_value_label(%Revive{value_label: l}) when is_binary(l), do: l
     def get_value_label(%Revive{value: v}), do: "#{v}"
+    @impl Game.Combat.CardEffect
     def animate(%Revive{value: v}), do: %{label: "REVIVED +#{v}", color: :green}
+    @impl Game.Combat.CardEffect
     def params(_), do: ["value"]
   end
 end

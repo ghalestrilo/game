@@ -342,14 +342,20 @@ defmodule GameWeb.LobbyLiveTest do
       user2: user2
     } do
       state_before = Game.get_state(game_pid)
-      p2_id = Enum.find(Map.keys(state_before.booster_state), &(to_string(&1) == to_string(user2.id)))
+
+      p2_id =
+        Enum.find(Map.keys(state_before.booster_state), &(to_string(&1) == to_string(user2.id)))
+
       p2_remaining_before = state_before.booster_state[p2_id].remaining
 
       # Player 1 picks — pack closes (deck_picks default 1), remaining goes from 2 to 1
       game_view1 |> element("[phx-value-card_index='0']") |> render_click()
 
       state_after = Game.get_state(game_pid)
-      p1_id = Enum.find(Map.keys(state_after.booster_state), &(to_string(&1) == to_string(user1.id)))
+
+      p1_id =
+        Enum.find(Map.keys(state_after.booster_state), &(to_string(&1) == to_string(user1.id)))
+
       assert state_after.booster_state[p1_id].remaining == 1
 
       # Player 2's remaining is untouched
@@ -454,9 +460,13 @@ defmodule GameWeb.LobbyLiveTest do
       state_after = Game.get_state(game_pid)
 
       player1_after =
-        Enum.find(state_after.combat.__constants__.players, &(to_string(&1.id) == to_string(player1_id)))
+        Enum.find(
+          state_after.combat.__constants__.players,
+          &(to_string(&1.id) == to_string(player1_id))
+        )
 
       added = List.last(player1_after.cards.draw)
+
       assert added.name == expected_card_name,
              "Expected #{expected_card_name} to be added but got #{added && added.name}"
     end
@@ -481,8 +491,10 @@ defmodule GameWeb.LobbyLiveTest do
 
       # Still in booster phase (deck_picks: 2, only 1 pick done)
       remaining_cards = state_after.booster_state[player1_id].cards
+
       refute Enum.any?(remaining_cards, &(&1.name == picked_name)),
              "Picked card #{picked_name} should have been removed from the pack"
+
       assert length(remaining_cards) == length(cards_before) - 1
     end
 
@@ -614,10 +626,10 @@ defmodule GameWeb.LobbyLiveTest do
           slug: "wall_map",
           display_name: "Wall Map",
           tiles:
-            (for q <- -3..3, r <- -3..3, s <- -3..3, q + r + s == 0 do
-               objects = if {q, r, s} == {0, 2, -2}, do: [%{"type" => "wall"}], else: []
-               %{"q" => q, "r" => r, "s" => s, "terrain" => "plain", "objects" => objects}
-             end),
+            for q <- -3..3, r <- -3..3, s <- -3..3, q + r + s == 0 do
+              objects = if {q, r, s} == {0, 2, -2}, do: [%{"type" => "wall"}], else: []
+              %{"q" => q, "r" => r, "s" => s, "terrain" => "plain", "objects" => objects}
+            end,
           spawn_points: %{}
         })
 
@@ -655,6 +667,7 @@ defmodule GameWeb.LobbyLiveTest do
       {:ok, %{game_pid: game_pid}} = Game.Lobby.get(lobby_id)
 
       state = Game.get_state(game_pid)
+
       any_wall =
         Enum.any?(state.combat.grid.tiles, fn {_, tile} ->
           Enum.any?(tile[:objects] || [], &match?(%Game.MapObject.Wall{}, &1))
@@ -705,10 +718,10 @@ defmodule GameWeb.LobbyLiveTest do
         slug: "booster_wall_map",
         display_name: "Booster Wall Map",
         tiles:
-          (for q <- -3..3, r <- -3..3, s <- -3..3, q + r + s == 0 do
-             objects = if {q, r, s} == {0, 2, -2}, do: [%{"type" => "wall"}], else: []
-             %{"q" => q, "r" => r, "s" => s, "terrain" => "plain", "objects" => objects}
-           end),
+          for q <- -3..3, r <- -3..3, s <- -3..3, q + r + s == 0 do
+            objects = if {q, r, s} == {0, 2, -2}, do: [%{"type" => "wall"}], else: []
+            %{"q" => q, "r" => r, "s" => s, "terrain" => "plain", "objects" => objects}
+          end,
         spawn_points: %{}
       })
 
@@ -791,7 +804,10 @@ defmodule GameWeb.LobbyLiveTest do
       lobby_view1: lobby_view1,
       lobby_view2: lobby_view2
     } do
-      assert lobby_view1 |> element("form[phx-change='set_render_3d'] input[type='checkbox']") |> has_element?()
+      assert lobby_view1
+             |> element("form[phx-change='set_render_3d'] input[type='checkbox']")
+             |> has_element?()
+
       assert lobby_view2 |> element("span.badge", "On") |> has_element?()
     end
 

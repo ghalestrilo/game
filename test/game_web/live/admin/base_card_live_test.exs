@@ -223,14 +223,21 @@ defmodule GameWeb.Admin.BaseCardLiveTest do
   end
 
   describe "modify_attribute effect" do
-    test "renders attribute select when editing a card with modify_attribute effect", %{conn: conn} do
+    test "renders attribute select when editing a card with modify_attribute effect", %{
+      conn: conn
+    } do
       {:ok, card} =
         BaseCards.create_base_card(%{
           name: "Attribute Card",
           ap: 1,
           headline: "Modifies an attribute",
           rarity: :common,
-          effects: [%{type: "modify_attribute", value: %{"attribute" => "max_hp", "value" => 5, "duration" => 2}}]
+          effects: [
+            %{
+              type: "modify_attribute",
+              value: %{"attribute" => "max_hp", "value" => 5, "duration" => 2}
+            }
+          ]
         })
 
       {:ok, _view, html} = live(conn, ~p"/admin/base_cards/#{card.id}/edit")

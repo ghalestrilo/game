@@ -30,8 +30,10 @@ defmodule Game.Combat.CardEffects.Cleanse do
     def get_value_label(%Cleanse{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Cleanse{}), do: ""
 
+    @impl Game.Combat.CardEffect
     def animate(%Cleanse{}), do: %{label: "CLEANSE", color: :green}
 
+    @impl Game.Combat.CardEffect
     def params(_), do: []
   end
 end

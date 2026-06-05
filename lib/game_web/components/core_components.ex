@@ -180,7 +180,9 @@ defmodule GameWeb.CoreComponents do
     """
   end
 
-  attr :invite, :map, default: nil, doc: "pending invite map with :from, :lobby_id, and :lobby_path keys"
+  attr :invite, :map,
+    default: nil,
+    doc: "pending invite map with :from, :lobby_id, and :lobby_path keys"
 
   def invite_banner(%{invite: nil} = assigns), do: ~H""
 
@@ -722,35 +724,35 @@ defmodule GameWeb.CoreComponents do
     >
       <div class="bg-base-100 rounded-lg rounded-t-md m-1 mt-2 h-full">
         <div class={["p-4 pb-6 h-full", GameWeb.Theme.rarity_bg_class(Map.get(@card, :rarity), :soft)]}>
-        <div class="flex items-center justify-between">
-          <span class="font-bold text-sm text-base-content">{@card.name}</span>
-          <div class="flex flex-col lg:flex-row gap-2 items-center">
-            <span
-              :if={Game.Card.is_one_time_use?(@card)}
-              class="text-xs bg-red-900/60 text-red-300 rounded px-2 py-0.5"
-              title="One-time use — this card is removed from your deck when played"
-            >
-              1×
-            </span>
-            <span
-              :if={@card.range > 0}
-              class="badge badge-xs badge-soft text-xs px-1 py-2 !bg-primary/40"
-              title="Range"
-            >
-              <.icon name="hero-wifi-mini" class="inline-block w-3 h-3" /> {@card.range}
-            </span>
-            <span class="badge badge-xs badge-soft text-xs px-1 py-2 !bg-primary/40" title="Cost">
-              <.icon name="hero-bolt-mini" class="inline-block w-3 h-3" /> {@card.cost}
-            </span>
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-sm text-base-content">{@card.name}</span>
+            <div class="flex flex-col lg:flex-row gap-2 items-center">
+              <span
+                :if={Game.Card.is_one_time_use?(@card)}
+                class="text-xs bg-red-900/60 text-red-300 rounded px-2 py-0.5"
+                title="One-time use — this card is removed from your deck when played"
+              >
+                1×
+              </span>
+              <span
+                :if={@card.range > 0}
+                class="badge badge-xs badge-soft text-xs px-1 py-2 !bg-primary/40"
+                title="Range"
+              >
+                <.icon name="hero-wifi-mini" class="inline-block w-3 h-3" /> {@card.range}
+              </span>
+              <span class="badge badge-xs badge-soft text-xs px-1 py-2 !bg-primary/40" title="Cost">
+                <.icon name="hero-bolt-mini" class="inline-block w-3 h-3" /> {@card.cost}
+              </span>
+            </div>
+          </div>
+          <div class="mb-2 text-xs text-base-content/80 min-h-[3rem]">
+            <div class="p-2 my-2 bg-base-200 rounded-sm">
+              {Map.get(@card, :headline)}
+            </div>
+            <.effect_list card={@card} />
           </div>
         </div>
-        <div class="mb-2 text-xs text-base-content/80 min-h-[3rem]">
-          <div class="p-2 my-2 bg-base-200 rounded-sm">
-            {Map.get(@card, :headline)}
-          </div>
-          <.effect_list card={@card} />
-        </div>
-      </div>
       </div>
       <!-- divs required for hover-3d effect -->
       <div></div>
@@ -805,7 +807,12 @@ defmodule GameWeb.CoreComponents do
   slot :inner_block, required: false
 
   def card_modal(assigns) do
-    assigns = assign(assigns, :displayed_cards, if(assigns.ordered, do: assigns.cards, else: Enum.shuffle(assigns.cards)))
+    assigns =
+      assign(
+        assigns,
+        :displayed_cards,
+        if(assigns.ordered, do: assigns.cards, else: Enum.shuffle(assigns.cards))
+      )
 
     ~H"""
     <.modal id={@id} show={@show} on_cancel={@on_cancel} class="!max-w-none">
@@ -933,9 +940,9 @@ defmodule GameWeb.CoreComponents do
   end
 
   defp get_indexed_card_effects(%{effects: effects}) do
-        effects
-        |> Enum.filter(&Game.Card.effect_implemented?/1)
-        |> Enum.map(&Game.Card.get_structured_effect/1)
-        |> Enum.with_index()
+    effects
+    |> Enum.filter(&Game.Card.effect_implemented?/1)
+    |> Enum.map(&Game.Card.get_structured_effect/1)
+    |> Enum.with_index()
   end
 end

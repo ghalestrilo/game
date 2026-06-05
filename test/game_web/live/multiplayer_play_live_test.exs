@@ -176,7 +176,7 @@ defmodule GameWeb.MultiplayerPlayLiveTest do
 
       # Determine which player is active (fighter goes first, but class assignment order
       # isn't guaranteed, so we detect it from the rendered state).
-      {active_view, idle_view} =
+      {active_view, _idle_view} =
         if render(view1) =~ "card-row", do: {view1, view2}, else: {view2, view1}
 
       # Skip turn — a valid, committed action that always succeeds for the active player.

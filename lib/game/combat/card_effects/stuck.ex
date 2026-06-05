@@ -25,8 +25,10 @@ defmodule Game.Combat.CardEffects.Stuck do
     def get_value_label(%Stuck{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Stuck{value: v}), do: "#{v}"
 
+    @impl Game.Combat.CardEffect
     def params(_), do: ["value"]
 
+    @impl Game.Combat.CardEffect
     def animate(%Stuck{}), do: %{label: "STUCK", color: :yellow}
   end
 end

@@ -46,7 +46,15 @@ defmodule GameWeb.LobbyLive do
           end
       end
     else
-      {:ok, assign(socket, lobby: nil, lobby_id: id, base_classes: [], map_options: [], current_user_id: nil, invite_feedback: nil)}
+      {:ok,
+       assign(socket,
+         lobby: nil,
+         lobby_id: id,
+         base_classes: [],
+         map_options: [],
+         current_user_id: nil,
+         invite_feedback: nil
+       )}
     end
   end
 
@@ -151,7 +159,9 @@ defmodule GameWeb.LobbyLive do
   def handle_info({:lobby_updated, %{game_pid: game_pid, id: id} = lobby_state}, socket)
       when not is_nil(game_pid) do
     render_3d = Map.get(lobby_state.settings || %{}, :render_3d, true)
-    play_path = if render_3d, do: ~p"/multiplayer/#{id}/play?3d=true", else: ~p"/multiplayer/#{id}/play"
+
+    play_path =
+      if render_3d, do: ~p"/multiplayer/#{id}/play?3d=true", else: ~p"/multiplayer/#{id}/play"
 
     {:noreply,
      socket
@@ -162,7 +172,6 @@ defmodule GameWeb.LobbyLive do
   def handle_info({:lobby_updated, lobby_state}, socket) do
     {:noreply, assign(socket, lobby: lobby_state)}
   end
-
 
   @impl true
   def render(assigns) do
@@ -191,7 +200,9 @@ defmodule GameWeb.LobbyLive do
                 <select name="team" class="join-item select select-bordered flex-1">
                   <option value={nil} selected={is_nil(my_player.team)}>Pick a team</option>
                   <%= for index <- 1..8 do %>
-                    <option value={index} selected={my_player.team == to_string(index)}>Team {index}</option>
+                    <option value={index} selected={my_player.team == to_string(index)}>
+                      Team {index}
+                    </option>
                   <% end %>
                 </select>
               </form>
@@ -335,7 +346,11 @@ defmodule GameWeb.LobbyLive do
                         {player.class}
                       </span>
                     <% end %>
-                      <.icon name="hero-check-circle-mini" :if={player.ready} class="indicator-item indicator-top indicator-end bg-success rounded-full w-8 h-8"/>
+                    <.icon
+                      :if={player.ready}
+                      name="hero-check-circle-mini"
+                      class="indicator-item indicator-top indicator-end bg-success rounded-full w-8 h-8"
+                    />
                   </li>
                 </ul>
               </li>

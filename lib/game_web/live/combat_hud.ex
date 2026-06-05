@@ -31,7 +31,7 @@ defmodule GameWeb.CombatHUD do
             Win Match
           </button>
         </div>
-
+        
     <!-- Combat state -->
         <div :if={false}>
           <span class="font-semibold text-sm">State:</span>
@@ -43,7 +43,7 @@ defmodule GameWeb.CombatHUD do
           current_player={@current_player}
         />
       </div>
-
+      
     <!-- Action Log -->
       <div class="[grid-area:action] pointer-events-auto lg:mr-[66px] min-h-full overflow-visible">
         <h3 class="text-base font-bold mb-2">Action Log</h3>
@@ -67,7 +67,7 @@ defmodule GameWeb.CombatHUD do
           </li>
         </ul>
       </div>
-
+      
     <!-- Minimap -->
       <div
         id="minimap"
@@ -75,16 +75,82 @@ defmodule GameWeb.CombatHUD do
       >
         <svg viewBox="-1.1 -1.1 2.2 2.2" width="112" height="112">
           <g id="minimap-labels">
-            <g transform="translate(0,-0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">q</text></g>
-            <g transform="translate(0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">e</text></g>
-            <g transform="translate(0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">d</text></g>
-            <g transform="translate(0,0.82)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">c</text></g>
-            <g transform="translate(-0.71,0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">z</text></g>
-            <g transform="translate(-0.71,-0.41)"><text text-anchor="middle" dominant-baseline="middle" fill="currentColor" font-size="0.28" font-weight="bold" opacity="0.9">a</text></g>
+            <g transform="translate(0,-0.82)">
+              <text
+                text-anchor="middle"
+                dominant-baseline="middle"
+                fill="currentColor"
+                font-size="0.28"
+                font-weight="bold"
+                opacity="0.9"
+              >
+                q
+              </text>
+            </g>
+            <g transform="translate(0.71,-0.41)">
+              <text
+                text-anchor="middle"
+                dominant-baseline="middle"
+                fill="currentColor"
+                font-size="0.28"
+                font-weight="bold"
+                opacity="0.9"
+              >
+                e
+              </text>
+            </g>
+            <g transform="translate(0.71,0.41)">
+              <text
+                text-anchor="middle"
+                dominant-baseline="middle"
+                fill="currentColor"
+                font-size="0.28"
+                font-weight="bold"
+                opacity="0.9"
+              >
+                d
+              </text>
+            </g>
+            <g transform="translate(0,0.82)">
+              <text
+                text-anchor="middle"
+                dominant-baseline="middle"
+                fill="currentColor"
+                font-size="0.28"
+                font-weight="bold"
+                opacity="0.9"
+              >
+                c
+              </text>
+            </g>
+            <g transform="translate(-0.71,0.41)">
+              <text
+                text-anchor="middle"
+                dominant-baseline="middle"
+                fill="currentColor"
+                font-size="0.28"
+                font-weight="bold"
+                opacity="0.9"
+              >
+                z
+              </text>
+            </g>
+            <g transform="translate(-0.71,-0.41)">
+              <text
+                text-anchor="middle"
+                dominant-baseline="middle"
+                fill="currentColor"
+                font-size="0.28"
+                font-weight="bold"
+                opacity="0.9"
+              >
+                a
+              </text>
+            </g>
           </g>
         </svg>
       </div>
-
+      
     <!-- Card piles -->
       <%= if Map.get(assigns, :game_mode, nil) == :sandbox || (@game_state.combat.current_turn.player &&
                (@current_player == nil || @current_player.id == @game_state.combat.current_turn.player.id)) do %>
@@ -239,9 +305,17 @@ defmodule GameWeb.CombatHUD do
         <div class="w-10 h-10 rounded-full bg-base-300 flex-shrink-0" />
       <% end %>
       <div class={["flex-1 min-w-0", if(@same_team, do: "items-start", else: "items-end text-end")]}>
-        <div class={["flex !flex-row gap-1 mb-1 items-start", if(@same_team, do: "", else: "flex-row-reverse")]}>
-          <div class="flex flex-wrap items-baseline gap-1"><span>{@character.name}</span><span class="badge badge-sm badge-soft badge-info px-1">{@character.class}</span></div>
-          <span class="badge badge-soft badge-md badge-info my-0.5 ml-auto px-1 min-w-fit tooltip tooltip-bottom tooltip-info" data-tip={"Cards in: draw / hand / discard "}>
+        <div class={[
+          "flex !flex-row gap-1 mb-1 items-start",
+          if(@same_team, do: "", else: "flex-row-reverse")
+        ]}>
+          <div class="flex flex-wrap items-baseline gap-1">
+            <span>{@character.name}</span><span class="badge badge-sm badge-soft badge-info px-1">{@character.class}</span>
+          </div>
+          <span
+            class="badge badge-soft badge-md badge-info my-0.5 ml-auto px-1 min-w-fit tooltip tooltip-bottom tooltip-info"
+            data-tip="Cards in: draw / hand / discard "
+          >
             <.icon name="hero-rectangle-stack-mini" class="size-4 px-0" />
             {Enum.count(@character.cards.draw)} / {Enum.count(@character.cards.hand)} / {Enum.count(
               @character.cards.discard

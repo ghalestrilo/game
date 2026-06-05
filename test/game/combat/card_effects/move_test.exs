@@ -226,7 +226,9 @@ defmodule Game.Combat.CardEffects.MoveTest do
 
     test "moves target the full distance when path is clear", %{combat: combat, mage: mage} do
       # mage at {2,0,-2}, angle 0 (east), distance 1 → dest {3,0,-3} — clear
-      updated = CardEffect.process(%Move{angle: 0, distance: 1, trajectory: :linear}, mage, combat)
+      updated =
+        CardEffect.process(%Move{angle: 0, distance: 1, trajectory: :linear}, mage, combat)
+
       updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
       assert updated_mage.position == {3, 0, -3}
     end
@@ -235,18 +237,24 @@ defmodule Game.Combat.CardEffects.MoveTest do
       tiles = Map.put(combat.grid.tiles, {1, 0, -1}, %{terrain: :wall, occupied_by: nil})
       combat = %{combat | grid: %{combat.grid | tiles: tiles}}
       # fighter → {1,0,-1} (wall) → blocked before dest: no move
-      updated = CardEffect.process(%Move{angle: 0, distance: 2, trajectory: :linear}, fighter, combat)
+      updated =
+        CardEffect.process(%Move{angle: 0, distance: 2, trajectory: :linear}, fighter, combat)
+
       assert updated.current_turn.player.position == fighter.position
     end
 
     test "does nothing when destination is occupied", %{combat: combat, fighter: fighter} do
       # fighter at {0,0,0}, angle 0, distance 2 → dest {2,0,-2} (occupied by mage)
-      updated = CardEffect.process(%Move{angle: 0, distance: 2, trajectory: :linear}, fighter, combat)
+      updated =
+        CardEffect.process(%Move{angle: 0, distance: 2, trajectory: :linear}, fighter, combat)
+
       assert updated.current_turn.player.position == fighter.position
     end
 
     test "accepts mode as string \"linear\"", %{combat: combat, mage: mage} do
-      updated = CardEffect.process(%Move{angle: 0, distance: 1, trajectory: "linear"}, mage, combat)
+      updated =
+        CardEffect.process(%Move{angle: 0, distance: 1, trajectory: "linear"}, mage, combat)
+
       updated_mage = Enum.find(updated.queue, &(&1.id == mage.id))
       assert updated_mage.position == {3, 0, -3}
     end
@@ -256,27 +264,37 @@ defmodule Game.Combat.CardEffects.MoveTest do
     test "teleports target ignoring intermediate wall", %{combat: combat, fighter: fighter} do
       tiles = Map.put(combat.grid.tiles, {1, 0, -1}, %{terrain: :wall, occupied_by: nil})
       combat = %{combat | grid: %{combat.grid | tiles: tiles}}
+
       # fighter at {0,0,0}, angle 0, distance 1 → dest {1,0,-1} — wall tile, teleport lands there
-      updated = CardEffect.process(%Move{angle: 0, distance: 1, trajectory: :null}, fighter, combat)
+      updated =
+        CardEffect.process(%Move{angle: 0, distance: 1, trajectory: :null}, fighter, combat)
+
       assert updated.current_turn.player.position == {1, 0, -1}
     end
 
     test "teleports onto an occupied tile", %{combat: combat, fighter: fighter} do
       # fighter at {0,0,0}, angle 0, distance 2 → dest {2,0,-2} (occupied by mage)
-      updated = CardEffect.process(%Move{angle: 0, distance: 2, trajectory: :null}, fighter, combat)
+      updated =
+        CardEffect.process(%Move{angle: 0, distance: 2, trajectory: :null}, fighter, combat)
+
       assert updated.current_turn.player.position == {2, 0, -2}
     end
 
     test "does nothing when destination is off-grid", %{combat: combat, fighter: fighter} do
       # angle 1 = west {-1,0,1}; fighter at {0,0,0}, distance 3 → {-3,0,3} (not in grid)
-      updated = CardEffect.process(%Move{angle: 1, distance: 3, trajectory: :null}, fighter, combat)
+      updated =
+        CardEffect.process(%Move{angle: 1, distance: 3, trajectory: :null}, fighter, combat)
+
       assert updated.current_turn.player.position == fighter.position
     end
 
     test "accepts mode as string \"null\"", %{combat: combat, fighter: fighter} do
       tiles = Map.put(combat.grid.tiles, {1, 0, -1}, %{terrain: :wall, occupied_by: nil})
       combat = %{combat | grid: %{combat.grid | tiles: tiles}}
-      updated = CardEffect.process(%Move{angle: 0, distance: 1, trajectory: "null"}, fighter, combat)
+
+      updated =
+        CardEffect.process(%Move{angle: 0, distance: 1, trajectory: "null"}, fighter, combat)
+
       assert updated.current_turn.player.position == {1, 0, -1}
     end
   end

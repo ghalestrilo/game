@@ -31,8 +31,7 @@ defmodule GameWeb.Admin.MapEditorLive do
           class="btn btn-ghost btn-sm"
           phx-click={if @dirty, do: show_modal("exit-modal"), else: JS.navigate("/admin/maps")}
         >
-          <Backpex.HTML.CoreComponents.icon name="hero-arrow-left" class="h-4 w-4" />
-          Maps
+          <Backpex.HTML.CoreComponents.icon name="hero-arrow-left" class="h-4 w-4" /> Maps
         </button>
         <h1 class="text-2xl font-bold">{@map.display_name}</h1>
         <span class="text-base-content/50 text-sm font-mono">{@map.slug}</span>
@@ -53,8 +52,8 @@ defmodule GameWeb.Admin.MapEditorLive do
         context={:edit}
         spawn_points={@spawn_points}
       />
-
-      <!-- FAB tool selector -->
+      
+    <!-- FAB tool selector -->
       <div class="fab fixed bottom-8 right-8 !items-end">
         <div tabindex="0" role="button" class="btn btn-lg btn-circle btn-neutral">
           <Backpex.HTML.CoreComponents.icon name={tool_icon(@selected_tool)} class="h-6 w-6" />
@@ -64,24 +63,21 @@ defmodule GameWeb.Admin.MapEditorLive do
           phx-click="select_tool"
           phx-value-tool="wall"
         >
-          <Backpex.HTML.CoreComponents.icon name="hero-cube" class="h-5 w-5" />
-          Wall
+          <Backpex.HTML.CoreComponents.icon name="hero-cube" class="h-5 w-5" /> Wall
         </button>
         <button
           class={["btn btn-lg gap-2", @selected_tool == :spawn_point && "btn-active"]}
           phx-click="select_tool"
           phx-value-tool="spawn_point"
         >
-          <Backpex.HTML.CoreComponents.icon name="hero-map-pin" class="h-5 w-5" />
-          Spawn Point
+          <Backpex.HTML.CoreComponents.icon name="hero-map-pin" class="h-5 w-5" /> Spawn Point
         </button>
         <button
           class={["btn btn-lg gap-2", @selected_tool == :terrain && "btn-active"]}
           phx-click="select_tool"
           phx-value-tool="terrain"
         >
-          <Backpex.HTML.CoreComponents.icon name="hero-square-2-stack" class="h-5 w-5" />
-          Terrain
+          <Backpex.HTML.CoreComponents.icon name="hero-square-2-stack" class="h-5 w-5" /> Terrain
         </button>
       </div>
 
@@ -143,17 +139,41 @@ defmodule GameWeb.Admin.MapEditorLive do
 
     {pending_tiles, pending_spawn_points} =
       case socket.assigns.selected_tool do
-        :wall when not oob? -> apply_wall_toggle(coord, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
-        :spawn_point when not oob? -> apply_spawn_toggle(coord, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
-        :terrain -> apply_terrain_toggle(coord, oob?, socket.assigns.pending_tiles, socket.assigns.pending_spawn_points)
-        _ -> {socket.assigns.pending_tiles, socket.assigns.pending_spawn_points}
+        :wall when not oob? ->
+          apply_wall_toggle(
+            coord,
+            socket.assigns.pending_tiles,
+            socket.assigns.pending_spawn_points
+          )
+
+        :spawn_point when not oob? ->
+          apply_spawn_toggle(
+            coord,
+            socket.assigns.pending_tiles,
+            socket.assigns.pending_spawn_points
+          )
+
+        :terrain ->
+          apply_terrain_toggle(
+            coord,
+            oob?,
+            socket.assigns.pending_tiles,
+            socket.assigns.pending_spawn_points
+          )
+
+        _ ->
+          {socket.assigns.pending_tiles, socket.assigns.pending_spawn_points}
       end
 
     map = %{socket.assigns.map | tiles: pending_tiles, spawn_points: pending_spawn_points}
 
     {:noreply,
      socket
-     |> assign(pending_tiles: pending_tiles, pending_spawn_points: pending_spawn_points, dirty: true)
+     |> assign(
+       pending_tiles: pending_tiles,
+       pending_spawn_points: pending_spawn_points,
+       dirty: true
+     )
      |> assign_grid(map)}
   end
 
@@ -215,7 +235,16 @@ defmodule GameWeb.Admin.MapEditorLive do
   defp toggle_wall_in_tiles(tiles, q, r, s) do
     case Enum.find_index(tiles, &(&1["q"] == q and &1["r"] == r and &1["s"] == s)) do
       nil ->
-        [%{"q" => q, "r" => r, "s" => s, "terrain" => "plain", "objects" => [%{"type" => "wall"}]} | tiles]
+        [
+          %{
+            "q" => q,
+            "r" => r,
+            "s" => s,
+            "terrain" => "plain",
+            "objects" => [%{"type" => "wall"}]
+          }
+          | tiles
+        ]
 
       idx ->
         List.update_at(tiles, idx, &toggle_wall_object/1)
@@ -253,7 +282,10 @@ defmodule GameWeb.Admin.MapEditorLive do
 
     # Base tiles have no terrain — they are empty/OOB cells used only for editor rendering.
     base_tiles =
-      for q <- -radius..radius, r <- -radius..radius, s <- -radius..radius, q + r + s == 0,
+      for q <- -radius..radius,
+          r <- -radius..radius,
+          s <- -radius..radius,
+          q + r + s == 0,
           into: %{} do
         {Game.Grid.normalize({q, r, s}), %{terrain: nil, occupied_by: nil}}
       end

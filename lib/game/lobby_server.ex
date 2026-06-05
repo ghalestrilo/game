@@ -55,11 +55,27 @@ defmodule Game.LobbyServer do
   @impl true
   def init({id, :pvp}) do
     {:ok,
-     %{id: id, mode: :pvp, players: [], status: :waiting, game_pid: nil, settings: %{boosters: 0, map: nil}, last_active_at: DateTime.utc_now()}}
+     %{
+       id: id,
+       mode: :pvp,
+       players: [],
+       status: :waiting,
+       game_pid: nil,
+       settings: %{boosters: 0, map: nil},
+       last_active_at: DateTime.utc_now()
+     }}
   end
 
   def init({id, mode, build_opts}) when mode in [:campaign, :sandbox] do
-    state = %{id: id, mode: mode, players: [], status: :ready, game_pid: nil, last_active_at: DateTime.utc_now()}
+    state = %{
+      id: id,
+      mode: mode,
+      players: [],
+      status: :ready,
+      game_pid: nil,
+      last_active_at: DateTime.utc_now()
+    }
+
     {:ok, start_single_player_game(state, build_opts)}
   end
 
@@ -82,7 +98,16 @@ defmodule Game.LobbyServer do
 
       true ->
         team = "#{length(players) + 1}"
-        player = %{id: user.id, email: user.email, name: nil, ready: false, class: nil, team: team}
+
+        player = %{
+          id: user.id,
+          email: user.email,
+          name: nil,
+          ready: false,
+          class: nil,
+          team: team
+        }
+
         new_players = players ++ [player]
         new_status = if length(new_players) >= @min_players, do: :ready, else: :waiting
         new_state = %{state | players: new_players, status: new_status} |> broadcast()
@@ -238,7 +263,10 @@ defmodule Game.LobbyServer do
     combat = Game.CombatBuilder.build(build_opts.combatants, map_opt)
 
     game_state =
-      Map.merge(%{current_view: :combat, combat: combat, action_log: []}, build_opts[:extra_state] || %{})
+      Map.merge(
+        %{current_view: :combat, combat: combat, action_log: []},
+        build_opts[:extra_state] || %{}
+      )
 
     :ok = GenServer.call(game_pid, {:set_state, game_state})
 

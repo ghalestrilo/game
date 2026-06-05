@@ -33,9 +33,13 @@ defmodule Game.Card do
   @rarity_order %{common: 0, uncommon: 1, rare: 2, legendary: 3}
 
   def sort_by_rarity(cards) do
-    Enum.sort_by(cards, fn card ->
-      {Map.get(@rarity_order, card.rarity, 99), card.name}
-    end, :desc)
+    Enum.sort_by(
+      cards,
+      fn card ->
+        {Map.get(@rarity_order, card.rarity, 99), card.name}
+      end,
+      :desc
+    )
   end
 
   defstruct [
@@ -189,7 +193,13 @@ defmodule Game.Card do
               # Skip pre-resolution: AoE effects resolve formulas per-target inside apply_aoe_effect,
               # using blast-relative context (e.g. angle_push_from_blast).
               {new_combat, new_anims} =
-                apply_aoe_effect(resolved, aoe_range, effective_target, combat_state, cast_distance)
+                apply_aoe_effect(
+                  resolved,
+                  aoe_range,
+                  effective_target,
+                  combat_state,
+                  cast_distance
+                )
 
               {new_combat, Enum.reverse(new_anims) ++ anims}
             else
@@ -475,8 +485,9 @@ defmodule Game.Card do
 
   def get_targeting_type(%__MODULE__{}), do: :character
 
-  def get_trajectory_type(%__MODULE__{targeting: %{"trajectory_type" => trajectory_type}}) when is_binary(trajectory_type),
-    do: String.to_atom(trajectory_type)
+  def get_trajectory_type(%__MODULE__{targeting: %{"trajectory_type" => trajectory_type}})
+      when is_binary(trajectory_type),
+      do: String.to_atom(trajectory_type)
 
   def get_trajectory_type(%__MODULE__{}), do: :null
 
@@ -528,7 +539,8 @@ defmodule Game.Card do
 
           if JsonLogic.resolve(targeting_rule, data_context) do
             case targeting_type do
-              :tile -> {:ok, nil}
+              :tile ->
+                {:ok, nil}
 
               :character ->
                 case position_result do
@@ -758,11 +770,13 @@ defmodule Game.Card do
 
   def build_tile_overlay(_card, _combat), do: {%{}, %{}}
 
-  defp filter_by_trajectory(trajectory_type, grid, origin, range) when trajectory_type in [:null, :area] do
+  defp filter_by_trajectory(trajectory_type, grid, origin, range)
+       when trajectory_type in [:null, :area] do
     Game.Grid.tiles_in_range(grid, origin, range)
   end
 
-  defp filter_by_trajectory(trajectory_type, grid, origin, range) when trajectory_type in [:linear, :emanation] do
+  defp filter_by_trajectory(trajectory_type, grid, origin, range)
+       when trajectory_type in [:linear, :emanation] do
     Game.Grid.tiles_in_range(grid, origin, range)
     |> Enum.filter(&Game.Grid.has_linear_path?(grid, origin, &1))
   end

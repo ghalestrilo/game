@@ -15,7 +15,11 @@ defmodule Game.Combat.CardEffects.Move do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Move
 
-    def process(%Move{angle: angle, distance: distance, trajectory: trajectory}, target, %CombatState{} = combat_state)
+    def process(
+          %Move{angle: angle, distance: distance, trajectory: trajectory},
+          target,
+          %CombatState{} = combat_state
+        )
         when not is_nil(angle) and is_integer(angle) and trajectory in [:linear, "linear"] do
       grid = combat_state.grid
       {dq, dr, ds} = Grid.direction_from_angle(angle)
@@ -27,6 +31,7 @@ defmodule Game.Combat.CardEffects.Move do
            not Grid.tile_blocked?(grid, dest) do
         new_grid = Grid.update_position(grid, target, target.position, dest)
         new_target = Character.move(target, dest)
+
         combat_state
         |> CombatState.update_target(target, new_target)
         |> Map.put(:grid, new_grid)
@@ -35,7 +40,11 @@ defmodule Game.Combat.CardEffects.Move do
       end
     end
 
-    def process(%Move{angle: angle, distance: distance, trajectory: trajectory}, target, %CombatState{} = combat_state)
+    def process(
+          %Move{angle: angle, distance: distance, trajectory: trajectory},
+          target,
+          %CombatState{} = combat_state
+        )
         when not is_nil(angle) and is_integer(angle) and trajectory in [:null, "null"] do
       grid = combat_state.grid
       {dq, dr, ds} = Grid.direction_from_angle(angle)
@@ -45,6 +54,7 @@ defmodule Game.Combat.CardEffects.Move do
       if Map.has_key?(grid.tiles, dest) do
         new_grid = Grid.update_position(grid, target, target.position, dest)
         new_target = Character.move(target, dest)
+
         combat_state
         |> CombatState.update_target(target, new_target)
         |> Map.put(:grid, new_grid)
@@ -120,8 +130,10 @@ defmodule Game.Combat.CardEffects.Move do
     def get_value_label(%Move{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Move{distance: d}), do: "#{d}"
 
+    @impl Game.Combat.CardEffect
     def animate(%Move{}), do: %{label: "MOVE", color: :blue}
 
+    @impl Game.Combat.CardEffect
     def params(_), do: ["angle", "distance", "trajectory"]
   end
 end

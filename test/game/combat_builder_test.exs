@@ -20,15 +20,6 @@ defmodule Game.CombatBuilderTest do
     ]
   end
 
-  defp map_with_two_spawn_points do
-    %MapTemplate{
-      name: "test_map",
-      display_name: "Test",
-      tiles: %{},
-      spawn_points: %{team_1: {-3, 0, 3}, team_2: {3, 0, -3}}
-    }
-  end
-
   describe "build/2 with positionless specs and a map" do
     test "places characters at map spawn points" do
       combat = CombatBuilder.build(positionless_specs(), map: "two_towers")
@@ -75,7 +66,7 @@ defmodule Game.CombatBuilderTest do
   describe "build/2 grid faithfulness to map template" do
     test "grid contains exactly the tiles defined in the DB map — no extra tiles generated" do
       # 3-tile map: only these coords should exist in the combat grid.
-      {:ok, map} =
+      {:ok, _map} =
         Game.Maps.create_map(%{
           slug: "faithfulness_test",
           display_name: "Faithfulness Test",
@@ -128,7 +119,9 @@ defmodule Game.CombatBuilderTest do
       assert {:error, _} = result
 
       # {3,0,-3} is occupied by mage — also blocked
-      result2 = Game.Combat.process_action(combat, {:move, combat.current_turn.player, {3, 0, -3}})
+      result2 =
+        Game.Combat.process_action(combat, {:move, combat.current_turn.player, {3, 0, -3}})
+
       assert {:error, _} = result2
 
       # {1,0,-1} is on the map and free — movement allowed

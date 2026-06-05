@@ -110,7 +110,8 @@ defmodule Game.CombatBuilder do
     free_tiles =
       scratch_grid.tiles
       |> Enum.reject(fn {coord, tile} ->
-        MapSet.member?(taken, coord) or Grid.tile_blocked?(%Grid{tiles: scratch_grid.tiles}, coord)
+        MapSet.member?(taken, coord) or
+          Grid.tile_blocked?(%Grid{tiles: scratch_grid.tiles}, coord)
       end)
       |> Enum.map(fn {coord, _} -> coord end)
       |> Enum.shuffle()

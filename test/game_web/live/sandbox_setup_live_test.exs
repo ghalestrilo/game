@@ -4,7 +4,7 @@ defmodule GameWeb.SandboxSetupLiveTest do
   import Phoenix.LiveViewTest
 
   test "renders setup page", %{conn: conn} do
-    {:ok, view, html} = live(conn, ~p"/sandbox/setup")
+    {:ok, _view, html} = live(conn, ~p"/sandbox/setup")
     assert html =~ "Sandbox Setup"
     assert html =~ "Add a character"
   end

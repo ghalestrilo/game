@@ -37,8 +37,10 @@ defmodule Game.Combat.CardEffects.Slow do
     def get_value_label(%Slow{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Slow{value: v}), do: "#{v}"
 
+    @impl Game.Combat.CardEffect
     def animate(%Slow{}), do: %{label: "SLOW", color: :yellow}
 
+    @impl Game.Combat.CardEffect
     def params(_), do: ["value", "duration"]
   end
 end

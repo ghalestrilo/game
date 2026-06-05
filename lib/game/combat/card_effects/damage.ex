@@ -21,7 +21,12 @@ defmodule Game.Combat.CardEffects.Damage do
     def process(%Damage{value: amount} = _effect, target, %CombatState{} = combat_state) do
       caster = combat_state.current_turn.player
       outgoing = Character.effective_attribute(caster, "outgoing_damage_multiplier")
-      CombatState.update_target(combat_state, target, Character.apply_damage(target, amount * outgoing))
+
+      CombatState.update_target(
+        combat_state,
+        target,
+        Character.apply_damage(target, amount * outgoing)
+      )
     end
 
     @impl Game.Combat.CardEffect
@@ -37,8 +42,10 @@ defmodule Game.Combat.CardEffects.Damage do
     def get_value_label(%Damage{value: v}) when is_map(v), do: inspect(v)
     def get_value_label(%Damage{value: v}), do: "#{v}"
 
+    @impl Game.Combat.CardEffect
     def params(_), do: ["value"]
 
+    @impl Game.Combat.CardEffect
     def animate(%Damage{value: v}), do: %{label: "-#{v}", color: :red}
   end
 end

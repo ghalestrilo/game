@@ -71,8 +71,8 @@ defmodule GameWeb.GameBoard do
             </div>
           <% end %>
         </div>
-
-        <!-- Entity layer -->
+        
+    <!-- Entity layer -->
         <div class="absolute inset-0 pointer-events-none">
           <%= for character <- queue, character != nil, visible_to?(character, @current_player) do %>
             <div
@@ -291,7 +291,9 @@ defmodule GameWeb.GameBoard do
   end
 
   defp spawn_class(coord, spawn_index, :edit) do
-    if Elixir.Map.has_key?(spawn_index, coord), do: "!bg-info/20 ring-2 ring-inset ring-info/40", else: nil
+    if Elixir.Map.has_key?(spawn_index, coord),
+      do: "!bg-info/20 ring-2 ring-inset ring-info/40",
+      else: nil
   end
 
   defp spawn_class(_coord, _spawn_index, _context), do: nil

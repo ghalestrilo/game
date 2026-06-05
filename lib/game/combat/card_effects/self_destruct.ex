@@ -39,8 +39,10 @@ defmodule Game.Combat.CardEffects.SelfDestruct do
     def get_value_label(%SelfDestruct{value_label: label}) when is_binary(label), do: label
     def get_value_label(%SelfDestruct{}), do: ""
 
+    @impl Game.Combat.CardEffect
     def animate(%SelfDestruct{}), do: %{label: "GONE", color: :red}
 
+    @impl Game.Combat.CardEffect
     def params(_), do: []
   end
 end

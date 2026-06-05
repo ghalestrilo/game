@@ -30,8 +30,10 @@ defmodule Game.Combat.CardEffects.Regen do
     def get_value_label(%Regen{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Regen{heal: h}), do: "#{h}/turn"
 
+    @impl Game.Combat.CardEffect
     def animate(%Regen{heal: h}), do: %{label: "+#{h}/turn", color: :green}
 
+    @impl Game.Combat.CardEffect
     def params(_), do: ["value", "heal"]
   end
 end

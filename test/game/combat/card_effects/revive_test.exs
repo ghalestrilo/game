@@ -52,7 +52,10 @@ defmodule Game.Combat.CardEffects.ReviveTest do
       assert revived.hp == 1
     end
 
-    test "revived character is no longer in dead_characters", %{combat: combat, dead_fighter: fighter} do
+    test "revived character is no longer in dead_characters", %{
+      combat: combat,
+      dead_fighter: fighter
+    } do
       updated = CardEffect.process(%Revive{value: 5}, fighter, combat)
       assert Enum.empty?(CombatState.dead_characters(updated))
     end

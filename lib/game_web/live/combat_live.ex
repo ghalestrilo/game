@@ -21,8 +21,8 @@ defmodule GameWeb.CombatLive do
         current_player={@current_player}
         game_mode={Map.get(assigns, :game_mode)}
       />
-
-      <!-- Game area -->
+      
+    <!-- Game area -->
       <div class="flex-1 flex flex-col overflow-hidden">
         <%= if @game_state do %>
           <.live_component
@@ -33,8 +33,8 @@ defmodule GameWeb.CombatLive do
           />
         <% end %>
       </div>
-
-      <!-- Game Over Modal -->
+      
+    <!-- Game Over Modal -->
       <.modal
         :if={@game_state && @game_state.combat && @game_state.combat.state == :game_over}
         id="game-over-modal"

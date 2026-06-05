@@ -157,7 +157,12 @@ defmodule GameWeb.GameLive do
 
   @impl true
   def handle_event("pick_card", %{"card_index" => idx}, socket) do
-    card = Enum.at(socket.assigns.game_state.combat.current_turn.player.cards.hand, String.to_integer(idx))
+    card =
+      Enum.at(
+        socket.assigns.game_state.combat.current_turn.player.cards.hand,
+        String.to_integer(idx)
+      )
+
     if is_nil(card) do
       {:noreply, socket}
     else
@@ -167,13 +172,17 @@ defmodule GameWeb.GameLive do
     end
   end
 
-  def handle_event("handle_keys", %{"key" => "Escape"},
-      %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket) do
+  def handle_event(
+        "handle_keys",
+        %{"key" => "Escape"},
+        %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket
+      ) do
     card = combat.current_turn.card
     CombatController.dispatch(socket, %{type: :pick_card, card: card})
   end
 
-  def handle_event("handle_keys", %{"key" => key}, socket) when key in ["ArrowLeft", "ArrowRight"] do
+  def handle_event("handle_keys", %{"key" => key}, socket)
+      when key in ["ArrowLeft", "ArrowRight"] do
     hand = socket.assigns.game_state.combat.current_turn.player.cards.hand
     count = length(hand)
 
@@ -188,7 +197,11 @@ defmodule GameWeb.GameLive do
     end
   end
 
-  def handle_event("handle_keys", %{"key" => " "}, %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket) do
+  def handle_event(
+        "handle_keys",
+        %{"key" => " "},
+        %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket
+      ) do
     targets = keyboard_targets(combat)
 
     case Enum.at(targets, socket.assigns.keyboard_target_index) do
@@ -197,7 +210,11 @@ defmodule GameWeb.GameLive do
     end
   end
 
-  def handle_event("handle_keys", %{"key" => key}, %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket)
+  def handle_event(
+        "handle_keys",
+        %{"key" => key},
+        %{assigns: %{game_state: %{combat: %{state: :card_selected} = combat}}} = socket
+      )
       when key in ["s", "w", "ArrowDown", "ArrowUp"] do
     targets = keyboard_targets(combat)
     count = length(targets)
@@ -242,7 +259,10 @@ defmodule GameWeb.GameLive do
 
   @impl true
   def handle_event("win_match", _params, socket) do
-    current_player = socket.assigns.game_state.combat.current_turn.player || hd(socket.assigns.game_state.combat.queue)
+    current_player =
+      socket.assigns.game_state.combat.current_turn.player ||
+        hd(socket.assigns.game_state.combat.queue)
+
     updated_combat = force_game_over(socket.assigns.game_state.combat, current_player.team)
     new_state = %{socket.assigns.game_state | combat: updated_combat}
 
@@ -255,9 +275,9 @@ defmodule GameWeb.GameLive do
     action = "#{current_player.name}'s team (#{current_player.team}) wins the match!"
 
     {:noreply,
-      socket
-      |> assign(game_state: new_state)
-      |> update(:action_log, &Enum.slice([action | &1], 0, 20))}
+     socket
+     |> assign(game_state: new_state)
+     |> update(:action_log, &Enum.slice([action | &1], 0, 20))}
   end
 
   @impl true
@@ -268,7 +288,9 @@ defmodule GameWeb.GameLive do
         else: socket.assigns.game_state.combat.current_turn.player.id
 
     my_booster = get_in(socket.assigns.game_state, [:booster_state, player_id])
-    card = my_booster && Enum.at(Game.Card.sort_by_rarity(my_booster.cards), String.to_integer(idx))
+
+    card =
+      my_booster && Enum.at(Game.Card.sort_by_rarity(my_booster.cards), String.to_integer(idx))
 
     if card do
       {:ok, new_state} = Game.pick_booster_card(socket.assigns.game_pid, player_id, card)
@@ -328,16 +350,14 @@ defmodule GameWeb.GameLive do
   def handle_event("help", params, socket) do
     {:noreply,
      socket
-     |> assign(modal: :help)
-    }
+     |> assign(modal: :help)}
   end
 
   @impl true
   def handle_event("clear_modal", params, socket) do
     {:noreply,
      socket
-     |> assign(modal: :nil)
-    }
+     |> assign(modal: nil)}
   end
 
   # ---- render ----
@@ -396,7 +416,7 @@ defmodule GameWeb.GameLive do
         id="help-modal"
         show={true}
         on_cancel={JS.push("clear_modal")}
-        >
+      >
         <h1 class="text-xl font-bold">Controls</h1>
         <h2 class="text-lg">Mouse</h2>
         <p>Clique numa carta, clique em onde jogar ela, depois aperte "Skip Turn" pra passar</p>

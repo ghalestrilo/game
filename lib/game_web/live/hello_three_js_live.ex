@@ -7,6 +7,7 @@ defmodule GameWeb.HelloThreeJsLive do
       case Game.Maps.list_db() do
         [first | _] ->
           map = Game.Maps.from_db(first)
+
           map.tiles
           |> Enum.map(fn {{q, r, s}, %{objects: objects}} ->
             %{q: q, r: r, s: s, has_object: objects != []}

@@ -41,8 +41,10 @@ defmodule Game.Combat.CardEffects.Give do
     def get_value_label(%Give{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Give{}), do: ""
 
+    @impl Game.Combat.CardEffect
     def animate(%Give{}), do: %{label: "GIVE", color: :blue}
 
+    @impl Game.Combat.CardEffect
     def params(_), do: ["card", "pile"]
 
     defp pile_to_atom("draw"), do: :draw

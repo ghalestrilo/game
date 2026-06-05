@@ -3,7 +3,7 @@ defmodule Game.Combat.CardEffects.GiveTest do
 
   alias Game.Combat.CardEffect
   alias Game.Combat.CardEffects.Give
-  alias Game.{Character, CombatState, Grid, Fixtures, BaseCards}
+  alias Game.{CombatState, Grid, Fixtures, BaseCards}
 
   setup do
     {:ok, base_card} =

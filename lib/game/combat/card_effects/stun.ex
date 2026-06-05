@@ -26,8 +26,10 @@ defmodule Game.Combat.CardEffects.Stun do
     def get_value_label(%Stun{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Stun{value: v}), do: "#{v}"
 
+    @impl Game.Combat.CardEffect
     def params(_), do: ["value"]
 
+    @impl Game.Combat.CardEffect
     def animate(%Stun{}), do: %{label: "STUNNED", color: :yellow}
   end
 end

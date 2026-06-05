@@ -10,9 +10,9 @@ defmodule GameWeb.GameBoard3D do
 
   @class_models %{
     "barbarian" => "characters/Barbarian.glb",
-    "fighter"   => "characters/Knight.glb",
-    "rogue"     => "characters/Rogue_Hooded.glb",
-    "ranger"    => "characters/Ranger.glb"
+    "fighter" => "characters/Knight.glb",
+    "rogue" => "characters/Rogue_Hooded.glb",
+    "ranger" => "characters/Ranger.glb"
   }
   @default_model "characters/Mage.glb"
 
@@ -39,9 +39,9 @@ defmodule GameWeb.GameBoard3D do
         default: "#{base}/objects/detail_treeA.gltf.glb"
       },
       animations: %{
-        idle:  %{url: "#{base}/animation/Rig_Medium_General.glb",      clip: "Idle_A"},
-        walk:  %{url: "#{base}/animation/Rig_Medium_MovementBasic.glb", clip: "Walking_A"},
-        death: %{url: "#{base}/animation/Rig_Medium_General.glb",      clip: "Death_A"}
+        idle: %{url: "#{base}/animation/Rig_Medium_General.glb", clip: "Idle_A"},
+        walk: %{url: "#{base}/animation/Rig_Medium_MovementBasic.glb", clip: "Walking_A"},
+        death: %{url: "#{base}/animation/Rig_Medium_General.glb", clip: "Death_A"}
       }
     }
   end

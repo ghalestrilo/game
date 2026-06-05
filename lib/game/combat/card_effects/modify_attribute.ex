@@ -47,9 +47,12 @@ defmodule Game.Combat.CardEffects.ModifyAttribute do
     def get_value_label(%ModifyAttribute{value_label: label}) when is_binary(label), do: label
     def get_value_label(%ModifyAttribute{value: v}), do: "#{v}"
 
+    @impl Game.Combat.CardEffect
     def animate(%ModifyAttribute{value: v}) when v >= 0, do: %{label: "BUFF", color: :green}
+    @impl Game.Combat.CardEffect
     def animate(%ModifyAttribute{}), do: %{label: "DEBUFF", color: :yellow}
 
+    @impl Game.Combat.CardEffect
     def params(_), do: ["attribute", "value", "duration"]
   end
 end

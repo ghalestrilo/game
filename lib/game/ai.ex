@@ -97,7 +97,8 @@ defmodule Game.AI do
     with {:ok, card} <- pick_card(caster, filter),
          {:ok, target_pos} <- find_target(card, caster, combat),
          {:ok, combat_after_pick} <- apply_intent(combat, %{type: :pick_card, card: card}),
-         {:ok, result, _anims} <- apply_intent(combat_after_pick, %{type: :play_card, position: target_pos}) do
+         {:ok, result, _anims} <-
+           apply_intent(combat_after_pick, %{type: :play_card, position: target_pos}) do
       {:ok, result}
     end
   end
