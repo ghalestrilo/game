@@ -37,11 +37,12 @@ defmodule GameWeb.Admin.FormulaAliasLive do
         label: "Expression",
         render: fn assigns ->
           id = :crypto.strong_rand_bytes(8) |> Base.url_encode64(padding: false)
+          assigns = assign(assigns, id: id)
 
           ~H"""
           <div>
             <.live_component
-              id={id}
+              id={@id}
               module={GameWeb.Components.FormulaTreeComponent}
               value={@item.expression}
             />

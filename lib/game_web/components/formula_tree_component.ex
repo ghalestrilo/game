@@ -92,20 +92,21 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   defp jl_node(%{value: %{"if" => args}} = assigns) when is_list(args) do
     # assigns = assign(assigns, :chunks, Enum.chunk_every(args, 2))
     [if_clause, then_clause | rest] = args
+    assigns = assign(assigns, if_clause: if_clause, then_clause: then_clause, else_clause: hd(rest))
 
     ~H"""
     <div class="jl-if flex flex-col gap-1">
       <div class="jl-if-row flex flex-row items-center gap-1">
         <span class="jl-if-label badge badge-soft badge-info">IF</span>
-        <.jl_node value={if_clause} />
+        <.jl_node value={@if_clause} />
       </div>
       <div class="jl-if-row flex flex-row items-center gap-1">
         <span class="jl-if-label badge badge-soft badge-success">THEN</span>
-        <.jl_node value={then_clause} />
+        <.jl_node value={@then_clause} />
       </div>
-      <div :if={Enum.at(rest, 0)} class="jl-if-row flex flex-row items-center gap-1">
+      <div :if={@else_clause} class="jl-if-row flex flex-row items-center gap-1">
         <span class="jl-if-label badge badge-soft badge-error">ELSE</span>
-        <.jl_node value={Enum.at(rest, 0)} />
+        <.jl_node value={@else_clause} />
       </div>
     </div>
     """
@@ -121,17 +122,6 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   defp jl_node(%{value: %{"<" => [a, b]}} = assigns), do: jl_binary(assigns, "<", a, b)
   defp jl_node(%{value: %{"<=" => [a, b]}} = assigns), do: jl_binary(assigns, "<=", a, b)
 
-  defp jl_binary(assigns, op, left, right) do
-    assigns = assign(assigns, op: op, left: left, right: right)
-
-    ~H"""
-    <div class="jl-binary flex items-center gap-1">
-      <.jl_node value={@left} />
-      <span class="jl-op badge badge-soft badge-accent">{@op}</span>
-      <.jl_node value={@right} />
-    </div>
-    """
-  end
 
   # arithmetic
   defp jl_node(%{value: %{"+" => args}} = assigns), do: jl_arithmetic(assigns, "+", args)
@@ -140,21 +130,6 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   defp jl_node(%{value: %{"/" => args}} = assigns), do: jl_arithmetic(assigns, "/", args)
   defp jl_node(%{value: %{"%" => args}} = assigns), do: jl_arithmetic(assigns, "%", args)
 
-  defp jl_arithmetic(assigns, op, args) do
-    args_list = if is_list(args), do: args, else: [args]
-    assigns = assign(assigns, op: op, args: args_list)
-
-    ~H"""
-    <div class="jl-arith flex items-center gap-1 flex-wrap">
-      <%= for {child, i} <- Enum.with_index(@args) do %>
-        <.jl_node value={child} />
-        <%= if i < length(@args) - 1 do %>
-          <span class="jl-op badge badge-soft">{@op}</span>
-        <% end %>
-      <% end %>
-    </div>
-    """
-  end
 
   # in (contains)
   defp jl_node(%{value: %{"in" => [needle, haystack]}} = assigns) do
@@ -209,19 +184,6 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   defp jl_node(%{value: %{"some" => [arr, f]}} = assigns),
     do: jl_array_op(assigns, "some", arr, f)
 
-  defp jl_array_op(assigns, op, arr, formula) do
-    assigns = assign(assigns, op: op, arr: arr, formula: formula)
-
-    ~H"""
-    <div class="jl-fn flex flex-col gap-1">
-      <span class="jl-label badge badge-soft">{@op}</span>
-      <div class="pl-3 border-l border-base-content/20 flex flex-col gap-1">
-        <.jl_node value={@arr} />
-        <.jl_node value={@formula} />
-      </div>
-    </div>
-    """
-  end
 
   # reduce
   defp jl_node(%{value: %{"reduce" => [arr, formula, initial]}} = assigns) do
@@ -322,6 +284,49 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   defp jl_node(%{value: _value} = assigns) do
     ~H"""
     <span class="jl-value text-xs opacity-60">{inspect(@value)}</span>
+    """
+  end
+
+  defp jl_array_op(assigns, op, arr, formula) do
+    assigns = assign(assigns, op: op, arr: arr, formula: formula)
+
+    ~H"""
+    <div class="jl-fn flex flex-col gap-1">
+      <span class="jl-label badge badge-soft">{@op}</span>
+      <div class="pl-3 border-l border-base-content/20 flex flex-col gap-1">
+        <.jl_node value={@arr} />
+        <.jl_node value={@formula} />
+      </div>
+    </div>
+    """
+  end
+
+
+  defp jl_binary(assigns, op, left, right) do
+    assigns = assign(assigns, op: op, left: left, right: right)
+
+    ~H"""
+    <div class="jl-binary flex items-center gap-1">
+      <.jl_node value={@left} />
+      <span class="jl-op badge badge-soft badge-accent">{@op}</span>
+      <.jl_node value={@right} />
+    </div>
+    """
+  end
+
+  defp jl_arithmetic(assigns, op, args) do
+    args_list = if is_list(args), do: args, else: [args]
+    assigns = assign(assigns, op: op, args: args_list)
+
+    ~H"""
+    <div class="jl-arith flex items-center gap-1 flex-wrap">
+      <%= for {child, i} <- Enum.with_index(@args) do %>
+        <.jl_node value={child} />
+        <%= if i < length(@args) - 1 do %>
+          <span class="jl-op badge badge-soft">{@op}</span>
+        <% end %>
+      <% end %>
+    </div>
     """
   end
 end

@@ -347,14 +347,14 @@ defmodule GameWeb.GameLive do
   end
 
   @impl true
-  def handle_event("help", params, socket) do
+  def handle_event("help", _params, socket) do
     {:noreply,
      socket
      |> assign(modal: :help)}
   end
 
   @impl true
-  def handle_event("clear_modal", params, socket) do
+  def handle_event("clear_modal", _params, socket) do
     {:noreply,
      socket
      |> assign(modal: nil)}

@@ -1,5 +1,5 @@
 defprotocol Game.Combat.CardEffect do
-  defstruct [:type, :value]
+  # defstruct [:type, :value]
 
   @type t() :: %{
           type: String.t() | atom(),

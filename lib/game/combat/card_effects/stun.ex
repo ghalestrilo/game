@@ -15,14 +15,18 @@ defmodule Game.Combat.CardEffects.Stun do
     alias Game.Combat.CardEffects.Stun
 
     # Store value + 1 so that ticking from n to 0 results in n skipped turns
+    @impl Game.Combat.CardEffect
     def process(%Stun{value: duration}, target, %CombatState{} = combat_state) do
       updated_target = Character.add_status_effect(target, %{type: :stun, value: duration + 1})
       CombatState.update_target(combat_state, target, updated_target)
     end
 
+    @impl Game.Combat.CardEffect
     def get_description(%Stun{value: v}), do: "Stun target for #{v} turns"
+    @impl Game.Combat.CardEffect
     def get_icon(%Stun{}), do: "hero-bolt-slash-solid"
 
+    @impl Game.Combat.CardEffect
     def get_value_label(%Stun{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Stun{value: v}), do: "#{v}"
 

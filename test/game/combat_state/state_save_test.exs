@@ -74,11 +74,9 @@ defmodule Game.CombatState.StateSaveTest do
       decoded_pos = decoded_state.current_turn.starting_position
 
       # Convert both to a list for comparison if needed
-      original_pos_list =
-        if is_tuple(original_pos), do: Tuple.to_list(original_pos), else: original_pos
+      original_pos_list = Tuple.to_list(original_pos)
 
-      decoded_pos_list =
-        if is_tuple(decoded_pos), do: Tuple.to_list(decoded_pos), else: decoded_pos
+      decoded_pos_list =  Tuple.to_list(decoded_pos)
 
       assert original_pos_list == decoded_pos_list
     end

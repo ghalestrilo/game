@@ -15,6 +15,7 @@ defmodule Game.Combat.CardEffects.Cleanse do
 
     @negative_effects [:stuck, :slow, :stun, :dot]
 
+    @impl Game.Combat.CardEffect
     def process(%Cleanse{}, target, %CombatState{} = combat_state) do
       updated_target = %{
         target
@@ -24,9 +25,12 @@ defmodule Game.Combat.CardEffects.Cleanse do
       CombatState.update_target(combat_state, target, updated_target)
     end
 
+    @impl Game.Combat.CardEffect
     def get_description(%Cleanse{}), do: "Remove all negative status effects"
+    @impl Game.Combat.CardEffect
     def get_icon(%Cleanse{}), do: "hero-sparkles-solid"
 
+    @impl Game.Combat.CardEffect
     def get_value_label(%Cleanse{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Cleanse{}), do: ""
 

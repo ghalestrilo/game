@@ -162,7 +162,7 @@ defmodule Game.Card do
   end
 
   # Helper function to apply multiple card effects; returns {combat_state, animations}
-  defp apply_card_effects(initial_combat_state, effects, target, formula_state \\ nil)
+  defp apply_card_effects(initial_combat_state, effects, target, formula_state)
        when is_list(effects) do
     formula_state = formula_state || initial_combat_state
     cast_distance = compute_cast_distance(initial_combat_state, target)

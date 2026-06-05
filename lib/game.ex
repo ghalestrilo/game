@@ -3,8 +3,6 @@ defmodule Game do
   alias Game.CombatState
   alias Game.Combat
 
-  require Logger
-
   @initial_state %{
     # Creates a 5x5x5 hex grid centered at (0,0,0)
     grid: Game.Grid.new({2, 2, 2}),
@@ -216,25 +214,6 @@ defmodule Game do
     end
   end
 
-  defp append_log(state, nil), do: state
-
-  defp append_log(state, entry) do
-    log = Map.get(state, :action_log, [])
-    Map.put(state, :action_log, Enum.slice([entry | log], 0, 20))
-  end
-
-  defp resolve_animation_target(_combat, {:play_card_on_character, character}),
-    do: to_string(character.id)
-
-  defp resolve_animation_target(combat, {:play_card, position}) do
-    case Game.Grid.get_object(combat.grid, position) do
-      {:ok, %{id: id}} -> to_string(id)
-      _ -> nil
-    end
-  end
-
-  defp resolve_animation_target(_combat, _action), do: nil
-
   def handle_call({:pick_booster_card, player_id, card}, _from, state) do
     # Only update __constants__.players — the authoritative pre-combat character state.
     # queue and current_turn are derived from it when combat is (re)initialized.
@@ -330,6 +309,24 @@ defmodule Game do
       {:reply, {:error, "Can only enter shop after combat is over"}, state}
     end
   end
+  defp append_log(state, nil), do: state
+
+  defp append_log(state, entry) do
+    log = Map.get(state, :action_log, [])
+    Map.put(state, :action_log, Enum.slice([entry | log], 0, 20))
+  end
+
+  defp resolve_animation_target(_combat, {:play_card_on_character, character}),
+    do: to_string(character.id)
+
+  defp resolve_animation_target(combat, {:play_card, position}) do
+    case Game.Grid.get_object(combat.grid, position) do
+      {:ok, %{id: id}} -> to_string(id)
+      _ -> nil
+    end
+  end
+
+  defp resolve_animation_target(_combat, _action), do: nil
 
   defp generate_shop_cards(count) do
     Game.BaseCards.list_basecards()

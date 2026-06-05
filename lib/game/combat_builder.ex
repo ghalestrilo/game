@@ -109,7 +109,7 @@ defmodule Game.CombatBuilder do
 
     free_tiles =
       scratch_grid.tiles
-      |> Enum.reject(fn {coord, tile} ->
+      |> Enum.reject(fn {coord, _tile} ->
         MapSet.member?(taken, coord) or
           Grid.tile_blocked?(%Grid{tiles: scratch_grid.tiles}, coord)
       end)

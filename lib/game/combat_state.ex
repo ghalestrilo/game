@@ -6,7 +6,6 @@ defmodule Game.CombatState do
   These receive
   """
 
-  require Logger
   alias Game.Card
   alias Game.CombatState
   alias Game.{Character, Grid, TurnQueue}
