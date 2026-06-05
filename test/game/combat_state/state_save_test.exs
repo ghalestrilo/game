@@ -76,7 +76,7 @@ defmodule Game.CombatState.StateSaveTest do
       # Convert both to a list for comparison if needed
       original_pos_list = Tuple.to_list(original_pos)
 
-      decoded_pos_list =  Tuple.to_list(decoded_pos)
+      decoded_pos_list = Tuple.to_list(decoded_pos)
 
       assert original_pos_list == decoded_pos_list
     end

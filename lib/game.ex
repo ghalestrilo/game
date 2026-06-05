@@ -309,6 +309,7 @@ defmodule Game do
       {:reply, {:error, "Can only enter shop after combat is over"}, state}
     end
   end
+
   defp append_log(state, nil), do: state
 
   defp append_log(state, entry) do

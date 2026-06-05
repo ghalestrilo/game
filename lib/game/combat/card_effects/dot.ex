@@ -27,7 +27,7 @@ defmodule Game.Combat.CardEffects.Dot do
       do: "Deal #{dmg} damage per turn for #{v} turns"
 
     @impl Game.Combat.CardEffect
-      def get_icon(%Dot{}), do: "hero-fire-solid"
+    def get_icon(%Dot{}), do: "hero-fire-solid"
 
     @impl Game.Combat.CardEffect
     def get_value_label(%Dot{value_label: label}) when is_binary(label), do: label

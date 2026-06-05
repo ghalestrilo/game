@@ -92,7 +92,9 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   defp jl_node(%{value: %{"if" => args}} = assigns) when is_list(args) do
     # assigns = assign(assigns, :chunks, Enum.chunk_every(args, 2))
     [if_clause, then_clause | rest] = args
-    assigns = assign(assigns, if_clause: if_clause, then_clause: then_clause, else_clause: hd(rest))
+
+    assigns =
+      assign(assigns, if_clause: if_clause, then_clause: then_clause, else_clause: hd(rest))
 
     ~H"""
     <div class="jl-if flex flex-col gap-1">
@@ -122,14 +124,12 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   defp jl_node(%{value: %{"<" => [a, b]}} = assigns), do: jl_binary(assigns, "<", a, b)
   defp jl_node(%{value: %{"<=" => [a, b]}} = assigns), do: jl_binary(assigns, "<=", a, b)
 
-
   # arithmetic
   defp jl_node(%{value: %{"+" => args}} = assigns), do: jl_arithmetic(assigns, "+", args)
   defp jl_node(%{value: %{"-" => args}} = assigns), do: jl_arithmetic(assigns, "-", args)
   defp jl_node(%{value: %{"*" => args}} = assigns), do: jl_arithmetic(assigns, "*", args)
   defp jl_node(%{value: %{"/" => args}} = assigns), do: jl_arithmetic(assigns, "/", args)
   defp jl_node(%{value: %{"%" => args}} = assigns), do: jl_arithmetic(assigns, "%", args)
-
 
   # in (contains)
   defp jl_node(%{value: %{"in" => [needle, haystack]}} = assigns) do
@@ -184,7 +184,6 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   defp jl_node(%{value: %{"some" => [arr, f]}} = assigns),
     do: jl_array_op(assigns, "some", arr, f)
 
-
   # reduce
   defp jl_node(%{value: %{"reduce" => [arr, formula, initial]}} = assigns) do
     assigns = assign(assigns, arr: arr, formula: formula, initial: initial)
@@ -228,7 +227,7 @@ defmodule GameWeb.Components.FormulaTreeComponent do
     <span class="jl-var badge badge-outline">
       {@var_key}
       <%= if @var_default != nil do %>
-        <span class="opacity-50"> ??     {@var_default}</span>
+        <span class="opacity-50"> ??      {@var_default}</span>
       <% end %>
     </span>
     """
@@ -300,7 +299,6 @@ defmodule GameWeb.Components.FormulaTreeComponent do
     </div>
     """
   end
-
 
   defp jl_binary(assigns, op, left, right) do
     assigns = assign(assigns, op: op, left: left, right: right)
