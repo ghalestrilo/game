@@ -11,7 +11,10 @@ defmodule Game.MixProject do
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
-      listeners: [Phoenix.CodeReloader]
+      listeners: [Phoenix.CodeReloader],
+      # Docs
+      name: "Game",
+      docs: &docs/0
     ]
   end
 
@@ -71,7 +74,8 @@ defmodule Game.MixProject do
       {:broadway, "~> 1.1"},
       {:broadway_rabbitmq, "~> 0.8"},
       {:slugify, "~> 1.3"},
-      {:oban, "2.23.0"}
+      {:oban, "2.23.0"},
+      {:ex_doc, "~> 0.34", only: :dev, runtime: false}
     ]
   end
 
@@ -81,6 +85,52 @@ defmodule Game.MixProject do
   #     $ mix setup
   #
   # See the documentation for `Mix` for more info on aliases.
+  defp docs do
+    [
+      main: "readme",
+      extras:
+        [
+          "README.md",
+          "CRUSH.md": [title: "Dev Guide"],
+          "docs/ai-strategy-formula-action.md": [title: "AI Strategy Formulas"]
+        ] ++ extras_for_dir("docs/features", "Features"),
+      groups_for_extras: [
+        Features: ~r"docs/features/.+"
+      ],
+      groups_for_modules: [
+        Combat: [~r"Game\.Combat", Game.Card, Game.CombatState, Game.CombatBuilder],
+        "World & Grid": [Game.Grid, ~r"Game\.Maps", ~r"Game\.MapObject", Game.Tile],
+        "AI & Formulas": [Game.AI, Game.Formula, Game.FormulaAliases],
+        Content: [Game.Content, ~r"Game\.Base", ~r"Game\.Deck"],
+        Lobby: [Game.Lobby, Game.LobbyServer, ~r"Game\.Workers"],
+        Web: [~r"GameWeb\."]
+      ],
+      nest_modules_by_prefix: [GameWeb, Game.Combat, Game.Maps],
+      filter_modules: fn module, _metadata ->
+        module not in [
+          GameWeb.Endpoint,
+          GameWeb.Gettext,
+          GameWeb.Layouts,
+          GameWeb.ErrorHTML,
+          GameWeb.ErrorJSON,
+          GameWeb.Telemetry,
+          GameWeb.Theme,
+          Game.Mailer,
+          Game.Release,
+          Game.ProdRepo,
+          Game.Events.Publisher
+        ]
+      end
+    ]
+  end
+
+  defp extras_for_dir(dir, _group) do
+    dir
+    |> Path.join("*.md")
+    |> Path.wildcard()
+    |> Enum.sort()
+  end
+
   defp aliases do
     [
       setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
