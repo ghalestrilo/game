@@ -50,7 +50,7 @@ defmodule Game.MixProject do
       {:phoenix_live_dashboard, "~> 0.8.3"},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:tailwind, "~> 0.3", runtime: Mix.env() == :dev},
-      {:backpex, "~> 0.18.0"},
+      {:backpex, "~> 0.18.3"},
       {:heroicons,
        github: "tailwindlabs/heroicons",
        tag: "v2.1.1",
