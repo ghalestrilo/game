@@ -39,6 +39,7 @@ defmodule GameWeb.CoreComponents do
   attr :id, :string, required: true
   attr :show, :boolean, default: false
   attr :on_cancel, JS, default: %JS{}
+  attr :class, :string, default: nil
   slot :inner_block, required: true
 
   def modal(assigns) do
@@ -766,12 +767,6 @@ defmodule GameWeb.CoreComponents do
     </div>
     """
   end
-
-  defp rarity_bg_class(:common), do: "bg-common"
-  defp rarity_bg_class(:uncommon), do: "bg-uncommon"
-  defp rarity_bg_class(:rare), do: "bg-rare"
-  defp rarity_bg_class(:legendary), do: "bg-legendary"
-  defp rarity_bg_class(_), do: "bg-base-300"
 
   @doc """
   Renders a modal for browsing and optionally selecting cards from a list.

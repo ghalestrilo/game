@@ -15,6 +15,7 @@ defmodule Game.Combat.CardEffects.Dot do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Dot
 
+    @impl Game.Combat.CardEffect
     def process(%Dot{value: duration, damage: dmg}, target, %CombatState{} = combat_state) do
       updated_target =
         Character.add_status_effect(target, %{type: :dot, damage: dmg, value: duration})

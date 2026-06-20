@@ -47,7 +47,7 @@ defmodule Mix.Tasks.Game.PushContentSync do
         Game.ProdRepo.delete_all(FormulaAlias)
         Game.ProdRepo.delete_all(GameMap)
 
-        formula_alias_id_map =
+        _formula_alias_id_map =
           Enum.reduce(local_formula_aliases, %{}, fn local_formula_alias, acc ->
             prod_formula_alias =
               %FormulaAlias{}

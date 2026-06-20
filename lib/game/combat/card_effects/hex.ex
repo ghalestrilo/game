@@ -14,16 +14,20 @@ defmodule Game.Combat.CardEffects.Hex do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Hex
 
+    @impl Game.Combat.CardEffect
     def process(%Hex{value: duration}, target, %CombatState{} = combat_state) do
       updated_target = Character.add_status_effect(target, %{type: :hex, value: duration})
       CombatState.update_target(combat_state, target, updated_target)
     end
 
+    @impl Game.Combat.CardEffect
     def get_description(%Hex{value: v}),
       do: "Hex target for #{v} turns (inverts damage and healing)"
 
+    @impl Game.Combat.CardEffect
     def get_icon(%Hex{}), do: "hero-arrow-path-rounded-square-solid"
 
+    @impl Game.Combat.CardEffect
     def get_value_label(%Hex{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Hex{value: v}), do: "#{v}"
 

@@ -15,6 +15,7 @@ defmodule Game.Combat.CardEffects.Give do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Give
 
+    @impl Game.Combat.CardEffect
     def process(%Give{card: slug, pile: pile}, target, %CombatState{} = combat_state)
         when is_binary(slug) do
       pile_atom = pile_to_atom(pile)
@@ -35,9 +36,13 @@ defmodule Game.Combat.CardEffects.Give do
 
     def process(%Give{}, _target, combat_state), do: combat_state
 
+    @impl Game.Combat.CardEffect
     def get_description(%Give{pile: pile}), do: "Give target a card into their #{pile}"
+
+    @impl Game.Combat.CardEffect
     def get_icon(%Give{}), do: "hero-gift-solid"
 
+    @impl Game.Combat.CardEffect
     def get_value_label(%Give{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Give{}), do: ""
 

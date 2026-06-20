@@ -183,7 +183,7 @@ defmodule GameWeb.LobbyLive do
           <div class="list flex flex-col gap-4 mt-4">
             <% my_player = @lobby.players |> Enum.find(&(&1.id == @current_user_id)) %>
             <% my_class = my_player && my_player.class %>
-            <% my_team = my_player && my_player.team %>
+            <% _my_team = my_player && my_player.team %>
             <fieldset class="fieldset w-full bg-base-200 border-base-300 rounded-box border p-4">
               <legend class="fieldset-legend">My Character</legend>
               <form class="join w-full" phx-change="select_class">
@@ -206,7 +206,7 @@ defmodule GameWeb.LobbyLive do
                   <% end %>
                 </select>
               </form>
-              <% my_name = my_player && my_player.name %>
+              <% my_name = my_player.name %>
               <form class="join w-full" phx-change="set_name">
                 <label class="join-item btn btn-neutral no-animation flex-none">Display</label>
                 <input

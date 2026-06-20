@@ -167,11 +167,10 @@ defmodule Game do
         {:ok, card_selected_combat} ->
           # Then play the card
           case Combat.process_action(card_selected_combat, {:play_card, target_position}) do
-            {:ok, updated_combat} ->
+            {:ok, updated_combat, _animations} ->
               _current_character =
                 Enum.find(updated_combat.queue, &(&1.id == current_character.id))
 
-              # Update the character's state in the game state
               updated_state = %{state | combat: updated_combat}
               {:reply, {:ok, updated_combat}, updated_state}
 
@@ -326,8 +325,6 @@ defmodule Game do
       _ -> nil
     end
   end
-
-  defp resolve_animation_target(_combat, _action), do: nil
 
   defp generate_shop_cards(count) do
     Game.BaseCards.list_basecards()

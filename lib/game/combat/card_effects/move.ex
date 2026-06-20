@@ -15,6 +15,7 @@ defmodule Game.Combat.CardEffects.Move do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Move
 
+    @impl Game.Combat.CardEffect
     def process(
           %Move{angle: angle, distance: distance, trajectory: trajectory},
           target,
@@ -121,12 +122,15 @@ defmodule Game.Combat.CardEffects.Move do
       end
     end
 
+    @impl Game.Combat.CardEffect
     def get_description(%Move{angle: angle, distance: distance}) do
       "Move target #{distance} tile(s) in direction #{angle}"
     end
 
+    @impl Game.Combat.CardEffect
     def get_icon(%Move{}), do: "hero-arrows-pointing-out-solid"
 
+    @impl Game.Combat.CardEffect
     def get_value_label(%Move{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Move{distance: d}), do: "#{d}"
 

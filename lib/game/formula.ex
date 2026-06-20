@@ -401,7 +401,7 @@ defmodule Game.Formula do
 
   @doc "Updates the formula tree node at the given path index list."
   @spec update_at_path(map(), list(), any()) :: map()
-  def update_at_path(formula, [_index | _rest] = path, new_value)
+  def update_at_path(formula, [_index | _rest] = _path, _new_value)
       when is_map(formula) and map_size(formula) == 0 do
     # Can't navigate into an empty formula — no-op
     formula

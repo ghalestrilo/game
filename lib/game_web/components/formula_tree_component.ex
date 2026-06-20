@@ -38,7 +38,7 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   # ---------- RECURSIVE NODE COMPONENT ----------
 
   # alias
-  defp jl_node(%{value: %{"alias" => name}} = assigns) do
+  defp jl_node(%{value: %{"alias" => _name}} = assigns) do
     ~H"""
     <span class="jl-var badge badge-outline badge-warning">{@value["alias"]}</span>
     """
@@ -147,18 +147,6 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   # max, min
   defp jl_node(%{value: %{"max" => args}} = assigns), do: jl_minmax(assigns, "max", args)
   defp jl_node(%{value: %{"min" => args}} = assigns), do: jl_minmax(assigns, "min", args)
-
-  defp jl_minmax(assigns, op, args) do
-    args_list = if is_list(args), do: args, else: [args]
-    assigns = assign(assigns, op: op, args: args_list)
-
-    ~H"""
-    <div class="jl-fn flex items-center gap-1">
-      <span class="jl-label badge badge-soft">{@op}</span>
-      <.jl_node :for={child <- @args} value={child} />
-    </div>
-    """
-  end
 
   # cat (string concatenation)
   defp jl_node(%{value: %{"cat" => _}} = assigns) do
@@ -283,6 +271,18 @@ defmodule GameWeb.Components.FormulaTreeComponent do
   defp jl_node(%{value: _value} = assigns) do
     ~H"""
     <span class="jl-value text-xs opacity-60">{inspect(@value)}</span>
+    """
+  end
+
+  defp jl_minmax(assigns, op, args) do
+    args_list = if is_list(args), do: args, else: [args]
+    assigns = assign(assigns, op: op, args: args_list)
+
+    ~H"""
+    <div class="jl-fn flex items-center gap-1">
+      <span class="jl-label badge badge-soft">{@op}</span>
+      <.jl_node :for={child <- @args} value={child} />
+    </div>
     """
   end
 

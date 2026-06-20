@@ -31,23 +31,25 @@ defmodule GameWeb.Admin.BaseDeckLive do
         orderable: false,
         type: :assoc,
         render: fn assigns ->
-          cards =
-            Game.Content.get_base_deck_cards(assigns.item)
-            |> Enum.map(&Map.take(&1, [:id, :base_card_id, :name, :rarity]))
-            |> Enum.map(fn %{name: name} = card ->
-              acronym =
-                name
-                |> String.split(" ")
-                |> Enum.map(fn word -> String.slice(word, 0..0) end)
-                |> Enum.join("")
+          assigns =
+            Phoenix.Component.assign(assigns, :cards,
+              Game.Content.get_base_deck_cards(assigns.item)
+              |> Enum.map(&Map.take(&1, [:id, :base_card_id, :name, :rarity]))
+              |> Enum.map(fn %{name: name} = card ->
+                acronym =
+                  name
+                  |> String.split(" ")
+                  |> Enum.map(fn word -> String.slice(word, 0..0) end)
+                  |> Enum.join("")
 
-              Map.put(card, :acronym, acronym)
-            end)
-            |> Enum.sort_by(& &1.rarity)
+                Map.put(card, :acronym, acronym)
+              end)
+              |> Enum.sort_by(& &1.rarity)
+            )
 
           ~H"""
           <div class="flex flex-wrap gap-1">
-            <div :for={card <- cards} class="tooltip" data-tip={card.name}>
+            <div :for={card <- @cards} class="tooltip" data-tip={card.name}>
               <a
                 class={["badge px-1 w-8 text-primary-content/60", rarity_bg_class(card.rarity)]}
                 href={"/admin/base_cards/#{card.base_card_id}/show"}

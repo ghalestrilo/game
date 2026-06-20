@@ -15,6 +15,7 @@ defmodule Game.Combat.CardEffects.Slow do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Slow
 
+    @impl Game.Combat.CardEffect
     def process(
           %Slow{value: reduction, duration: duration},
           target,
@@ -26,14 +27,17 @@ defmodule Game.Combat.CardEffects.Slow do
       CombatState.update_target(combat_state, target, updated_target)
     end
 
+    @impl Game.Combat.CardEffect
     def get_description(%Slow{value: v, duration: nil}),
       do: "Reduce target's movement by #{v} permanently"
 
     def get_description(%Slow{value: v, duration: d}),
       do: "Reduce target's movement by #{v} for #{d} turns"
 
+    @impl Game.Combat.CardEffect
     def get_icon(%Slow{}), do: "hero-arrow-down-solid"
 
+    @impl Game.Combat.CardEffect
     def get_value_label(%Slow{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Slow{value: v}), do: "#{v}"
 

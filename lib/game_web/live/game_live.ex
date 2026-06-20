@@ -34,7 +34,7 @@ defmodule GameWeb.GameLive do
 
     case Lobby.get(lobby_id) do
       {:error, :not_found} ->
-        {:ok, push_navigate(socket, to: ~p"/mulztiplayer")}
+        {:ok, push_navigate(socket, to: ~p"/multiplayer")}
 
       {:ok, %{game_pid: nil}} ->
         {:ok, push_navigate(socket, to: ~p"/multiplayer/#{lobby_id}")}

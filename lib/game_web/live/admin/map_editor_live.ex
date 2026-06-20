@@ -1,7 +1,7 @@
 defmodule GameWeb.Admin.MapEditorLive do
   use GameWeb, :live_view
 
-  alias Game.{CombatState, Grid, Maps}
+  alias Game.{CombatState, Maps}
 
   @editor_padding 2
   @editor_min_radius 3

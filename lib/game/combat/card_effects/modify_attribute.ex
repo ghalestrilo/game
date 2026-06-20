@@ -20,6 +20,7 @@ defmodule Game.Combat.CardEffects.ModifyAttribute do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.ModifyAttribute
 
+    @impl Game.Combat.CardEffect
     def process(
           %ModifyAttribute{attribute: attr, value: v, duration: d},
           target,
@@ -36,14 +37,17 @@ defmodule Game.Combat.CardEffects.ModifyAttribute do
       CombatState.update_target(combat_state, target, updated_target)
     end
 
+    @impl Game.Combat.CardEffect
     def get_description(%ModifyAttribute{attribute: attr, value: v, duration: nil}),
       do: "Modify #{attr} by #{v} permanently"
 
     def get_description(%ModifyAttribute{attribute: attr, value: v, duration: d}),
       do: "Modify #{attr} by #{v} for #{d} turns"
 
+    @impl Game.Combat.CardEffect
     def get_icon(%ModifyAttribute{}), do: "hero-adjustments-horizontal-solid"
 
+    @impl Game.Combat.CardEffect
     def get_value_label(%ModifyAttribute{value_label: label}) when is_binary(label), do: label
     def get_value_label(%ModifyAttribute{value: v}), do: "#{v}"
 

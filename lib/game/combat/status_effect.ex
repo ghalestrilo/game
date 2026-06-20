@@ -50,7 +50,6 @@ defmodule Game.StatusEffect do
   end
 
   def get_display_text(%{type: :dot, value: value, duration: duration}) do
-    sign = if value > 0, do: "+", else: "-"
     "#{value} dmg/turn (#{duration} turns)"
   end
 

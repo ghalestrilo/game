@@ -317,7 +317,6 @@ defmodule GameWeb.FormulaEditorComponent do
           case min_args do
             n when is_integer(n) -> List.duplicate("", n)
             :variable -> [""]
-            _ -> []
           end
 
         %{operator => default_args}

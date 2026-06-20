@@ -314,11 +314,7 @@ defmodule Game.Card do
     end
   end
 
-  # Backwards-compatible arity-3 clause used by existing callers
-  defp resolve_effect_value(effect, target, combat_state),
-    do: resolve_effect_value(effect, target, combat_state, nil)
-
-  defp build_effect_context(target, combat_state, cast_distance \\ nil) do
+  defp build_effect_context(target, combat_state, cast_distance) do
     caster = CombatState.get_current_player(combat_state)
     {:ok, state_json} = Jason.encode(combat_state)
     {:ok, state_map} = Jason.decode(state_json)
@@ -839,7 +835,7 @@ defmodule Game.Card do
     end)
   end
 
-  def is_one_time_use?(card) do
+  def is_one_time_use?(_card) do
     false
   end
 

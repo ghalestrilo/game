@@ -14,6 +14,7 @@ defmodule Game.Combat.CardEffects.Ethereal do
   defimpl Game.Combat.CardEffect do
     alias Game.Combat.CardEffects.Ethereal
 
+    @impl Game.Combat.CardEffect
     def process(%Ethereal{value: duration}, target, %CombatState{} = combat_state) do
       updated_target =
         Character.add_status_effect(target, %{type: :ethereal, value: duration})
@@ -21,11 +22,14 @@ defmodule Game.Combat.CardEffects.Ethereal do
       CombatState.update_target(combat_state, target, updated_target)
     end
 
+    @impl Game.Combat.CardEffect
     def get_description(%Ethereal{value: v}),
       do: "Become untargetable for #{v + 1} turns. Dispels on cast."
 
+    @impl Game.Combat.CardEffect
     def get_icon(%Ethereal{}), do: "hero-cube-transparent-solid"
 
+    @impl Game.Combat.CardEffect
     def get_value_label(%Ethereal{value_label: label}) when is_binary(label), do: label
     def get_value_label(%Ethereal{value: v}), do: "#{v}"
 

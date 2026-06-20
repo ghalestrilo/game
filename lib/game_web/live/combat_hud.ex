@@ -1,7 +1,6 @@
 defmodule GameWeb.CombatHUD do
   use Phoenix.LiveComponent
   import GameWeb.CoreComponents
-  alias Phoenix.LiveView.JS
 
   @impl true
   def update(assigns, socket) do
